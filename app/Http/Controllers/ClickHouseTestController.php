@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 class ClickHouseTestController extends Controller
 {
     //
-    public function init($config): void{
+    public function init(): void{
         $config = [
             'host' => '192.168.1.1',
             'port' => '8123',
