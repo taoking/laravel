@@ -10,14 +10,20 @@
         "fruitcake/laravel-cors": "dev-develop",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^9.0",
-        "laravel/tinker": "^2.5|dev-develop"
+        "laravel/tinker": "^2.5|dev-develop",
+        "fruitcake/laravel-cors": "^2.0",
+        "laravel/tinker": "^2.5",
+        "smi2/phpclickhouse": "^1.4"
     },
     "require-dev": {
+        "facade/ignition": "^2.5",
         "fakerphp/faker": "^1.9.1",
         "laravel/sail": "^1.0.1",
         "mockery/mockery": "^1.4.2",
         "nunomaduro/collision": "^6.0",
-        "phpunit/phpunit": "^9.3.3"
+        "phpunit/phpunit": "^9.3.3",
+        "psalm/plugin-laravel": "^1.5",
+        "vimeo/psalm": "^4.9"
     },
     "autoload": {
         "psr-4": {
