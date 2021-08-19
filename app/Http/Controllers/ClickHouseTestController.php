@@ -21,4 +21,9 @@ class ClickHouseTestController extends Controller
         $db->setTimeout(10);       // 10 seconds
         $db->setConnectTimeOut(5); // 5 seconds
     }
+
+    public function test(): void
+    {
+        echo 'test';
+    }
 }
