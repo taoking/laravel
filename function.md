@@ -19,7 +19,7 @@ composer require --dev nunomaduro/larastan
 Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
 composer require "doctrine/dbal: ~2.3"
 
+php artisan ide-helper:generate - 为 Facades 生成注释
+_php artisan ide-helper:models_ - 为数据模型生成注释
+php artisan ide-helper:meta - 生成 PhpStorm Meta file
 
-php artisan ide-helper:generate
-php artisan ide-helper:models -W
-php artisan ide-helper:meta
