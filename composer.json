@@ -14,6 +14,9 @@
         "league/oauth2-client": "^2.6",
         "league/oauth2-server": "^8.3",
         "sentry/sentry-laravel": "2.10.2",
+        "elasticsearch/elasticsearch": "^8.1",
+        "php-amqplib/php-amqplib": "^3.2",
+        "predis/predis": "^1.1",
         "smi2/phpclickhouse": "^1.4"
     },
     "require-dev": {
@@ -23,7 +26,8 @@
         "mockery/mockery": "^1.4.2",
         "nunomaduro/collision": "^5.0",
         "phpunit/phpunit": "^9.3.3",
-        "psalm/plugin-laravel": "^1.5",
+        "psalm/plugin-laravel": "^1.6",
+        "psalm/plugin-phpunit": "^0.16.1",
         "vimeo/psalm": "^4.9"
     },
     "autoload": {
