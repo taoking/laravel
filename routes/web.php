@@ -17,3 +17,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 Route::get('/test', [ClickHouseTestController::class,"test"]);
+Route::get('/es', [\App\Http\Controllers\EsController::class,"index"]);
