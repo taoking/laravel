@@ -4,7 +4,7 @@ return [
 
     'es_host' =>[
         [
-            'host' => '172.18.0.4',
+            'host' => env('ES_HOST', '172.20.0.2'),
             'port' => '9200',
             'scheme' => 'http',
             'user' => '',

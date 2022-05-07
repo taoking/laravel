@@ -12,5 +12,6 @@ class EsController extends Controller
     public function index(EsService $service)
     {
         $service->init();
+        $service->initOrg();
     }
 }
