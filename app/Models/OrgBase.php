@@ -9,5 +9,5 @@ class OrgBase extends Model
 {
     use HasFactory;
 
-    protected $table = 'ud_yqyc_org_base';
+    protected $table = 'db_qyzy_orgdtl';
 }

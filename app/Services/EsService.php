@@ -19,9 +19,9 @@ class EsService
 
     public  function init()
     {
-        $info = explode(",","基础设施投资,高技术投资");
-        print_r($info);exit;
-        print_r([Config::get('app.es_host')]);
+//        $info = explode(",","基础设施投资,高技术投资");
+//        print_r($info);exit;
+//        print_r([Config::get('app.es_host')]);
 //        $client = ClientBuilder::create()->setHosts(['10.220.30.80:9200'])->build();
 //        echo $client->ping();
         $this->client = ClientBuilder::create()
