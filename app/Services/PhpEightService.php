@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+
 class PhpEightService
 {
     //1  match
@@ -37,4 +40,18 @@ class PhpEightService
     // 5  get_resource_id
 
     // 6  nullsafe  $country = $session?->user?->getAddress()?->country;
+
+
+
+
+
+
+    //
+    function normal(){
+        optional();
+        tap();
+        Arr::get();
+        Arr::dot();
+        Str::slug();
+    }
 }

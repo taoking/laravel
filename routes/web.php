@@ -18,3 +18,6 @@ Route::get('/', function () {
 });
 Route::get('/test', [ClickHouseTestController::class,"test"]);
 Route::get('/es', [\App\Http\Controllers\EsController::class,"index"]);
+
+
+Route::get('office',[\App\Http\Controllers\OfficeController::class,'read']);
