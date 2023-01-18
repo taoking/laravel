@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class EsController extends Controller
 {
 
-    public function index(EsService $service)
+    public function index(EsService $service):void
     {
         $service->init();
         $service->initOrg();

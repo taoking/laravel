@@ -17,7 +17,7 @@ class ClickHouseTestController extends Controller
         ];
         $db = new Client($config);
         $db->database('default');
-        $db->setTimeout(1.5);      // 1500 ms
+//        $db->setTimeout(2);      // 1500 ms
         $db->setTimeout(10);       // 10 seconds
         $db->setConnectTimeOut(5); // 5 seconds
     }

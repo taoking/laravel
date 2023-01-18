@@ -9,7 +9,7 @@ class TestController extends Controller
     //
 
 
-    function use(){
+    function use(): void{
         $a =     function(){
             return $this->dfsd;
         };
@@ -17,7 +17,6 @@ class TestController extends Controller
         $a->bind(name::class);
     }
 }
-
 class name{
   public   $dfsd = 'xxxx';
 }

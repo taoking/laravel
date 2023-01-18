@@ -17,7 +17,7 @@ class EsService
         $this->init();
     }
 
-    public  function init()
+    public  function init(): void
     {
 //        $info = explode(",","基础设施投资,高技术投资");
 //        print_r($info);exit;
@@ -35,7 +35,7 @@ class EsService
         echo $response['version']['number']; // 8.0.0
     }
 
-    public function initOrg()
+    public function initOrg(): void
     {
 //        $info = OrgBase::first();
 echo date('Y-m-d H:i:s');

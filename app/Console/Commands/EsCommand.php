@@ -32,11 +32,11 @@ class EsCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     *  Execute the console command.
      *
-     * @return int
+     * //     * @return int
      */
-    public function handle(EsService $service)
+    public function handle(EsService $service): void
     {
         echo '11331';
         $service->initOrg();
