@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\Debugbar\Facades\Debugbar;
 use ClickHouseDB\Client;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,7 @@ class ClickHouseTestController extends Controller
 
     public function test(): void
     {
+        Debugbar::error('Error!');
         echo 'test';
     }
 }
