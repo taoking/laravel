@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Controllers\ClickHouseTestController;
 use Illuminate\Support\Facades\Route;
-use \App\Http\Controllers\ClickHouseTestController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -16,8 +16,9 @@ use \App\Http\Controllers\ClickHouseTestController;
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get('/test', [ClickHouseTestController::class,"test"]);
-Route::get('/es', [\App\Http\Controllers\EsController::class,"index"]);
+Route::get('/test', [ClickHouseTestController::class,'test']);
+Route::get('/es', [\App\Http\Controllers\EsController::class,'index']);
+Route::get('/es/search', [\App\Http\Controllers\EsController::class,'search']);
 
-
-Route::get('office',[\App\Http\Controllers\OfficeController::class,'read']);
+Route::get('office', [\App\Http\Controllers\OfficeController::class,'read']);
+Route::get('doris', [\App\Http\Controllers\DorisController::class,'addData']);
