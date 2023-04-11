@@ -36,6 +36,7 @@
         "phpunit/phpunit": "^9.3.3",
         "psalm/plugin-laravel": "^1.6",
         "psalm/plugin-phpunit": "^0.16.1",
+        "symfony/var-dumper": "*",
         "vimeo/psalm": "^4.9"
     },
     "autoload": {
