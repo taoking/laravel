@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+// 学习要点：Laravel 10 默认 session driver 是 file，本地运行不依赖数据库。
+// 生产多实例通常会改为 redis 或 database，避免登录态只存在单机文件系统。
 return [
 
     /*

@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+// 学习要点：数据库配置声明连接参数，Laravel 会在首次查询、迁移或事务时按需建立连接。
+// Laravel 10 默认 DB_CONNECTION 是 mysql；本机需要启用 pdo_mysql 扩展并配置 .env。
 return [
 
     /*

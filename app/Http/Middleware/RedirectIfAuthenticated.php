@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
+// 学习要点：guest 中间件常用这个逻辑。
+// 已登录用户访问登录/注册页时，会被重定向到 RouteServiceProvider::HOME。
 class RedirectIfAuthenticated
 {
     /**

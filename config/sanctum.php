@@ -2,6 +2,8 @@
 
 use Laravel\Sanctum\Sanctum;
 
+// 学习要点：Sanctum 提供轻量 API token 和 SPA cookie/session 认证。
+// Laravel 10 骨架默认引入 Sanctum，并在 User 模型中使用 HasApiTokens。
 return [
 
     /*

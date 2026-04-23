@@ -5,6 +5,8 @@ namespace App\Providers;
 // use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
+// 学习要点：AuthServiceProvider 用于注册授权策略和 Gate。
+// 认证解决“你是谁”，授权解决“你能不能做这件事”。
 class AuthServiceProvider extends ServiceProvider
 {
     /**
@@ -13,6 +15,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
+        // 示例：Post::class => PostPolicy::class
         //
     ];
 
@@ -21,6 +24,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 可以在这里使用 Gate::define(...) 注册简单授权规则。
         //
     }
 }

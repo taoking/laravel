@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
  */
+// 学习要点：Factory 用于生成测试或 seeder 数据。
+// User 模型使用 HasFactory 后，可以通过 User::factory() 创建用户。
 class UserFactory extends Factory
 {
     /**
@@ -27,6 +29,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            // 静态缓存 password hash，避免批量创建用户时重复计算同一个哈希。
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
@@ -37,6 +40,7 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
+        // state() 返回一个派生状态，便于测试未验证邮箱用户。
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);

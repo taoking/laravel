@@ -3,6 +3,9 @@
 
 define('LARAVEL_START', microtime(true));
 
+// 学习要点：artisan 是 Laravel 10 的 CLI 单入口。
+// 所有 `php artisan ...` 命令都会先执行这个文件，再通过 Console Kernel 分发到具体命令。
+
 /*
 |--------------------------------------------------------------------------
 | Register The Auto Loader
@@ -15,8 +18,10 @@ define('LARAVEL_START', microtime(true));
 |
 */
 
+// 加载 Composer 自动加载器，确保框架类、应用命令和第三方包可以被解析。
 require __DIR__.'/vendor/autoload.php';
 
+// 创建 Application，并绑定 Console Kernel、HTTP Kernel、Exception Handler。
 $app = require_once __DIR__.'/bootstrap/app.php';
 
 /*
@@ -30,8 +35,11 @@ $app = require_once __DIR__.'/bootstrap/app.php';
 |
 */
 
+// 通过容器解析 Console Kernel。这个契约在 bootstrap/app.php 中绑定到 App\Console\Kernel。
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 
+// ArgvInput 读取命令行参数，ConsoleOutput 负责终端输出。
+// handle() 会匹配并执行目标 Artisan 命令，返回进程状态码。
 $status = $kernel->handle(
     $input = new Symfony\Component\Console\Input\ArgvInput,
     new Symfony\Component\Console\Output\ConsoleOutput
@@ -48,6 +56,8 @@ $status = $kernel->handle(
 |
 */
 
+// 命令执行后进入收尾阶段，触发 terminating callbacks 等终止逻辑。
 $kernel->terminate($input, $status);
 
+// 进程退出码会被 shell、CI/CD、部署脚本使用；0 表示成功，非 0 表示失败。
 exit($status);

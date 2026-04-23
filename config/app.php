@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\ServiceProvider;
 
+// 学习要点：config/app.php 是 Laravel 10 应用级核心配置。
+// 这里能看到 Provider 列表和 Facade alias；新骨架会把部分配置移动到 bootstrap/app.php。
 return [
 
     /*
@@ -156,6 +158,7 @@ return [
     */
 
     'providers' => ServiceProvider::defaultProviders()->merge([
+        // defaultProviders() 是框架默认服务提供者；merge() 合并应用自己的 Provider。
         /*
          * Package Service Providers...
          */
@@ -182,6 +185,7 @@ return [
     */
 
     'aliases' => Facade::defaultAliases()->merge([
+        // Facade alias 让代码可以使用 Route、Schema、Cache 等短类名。
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 

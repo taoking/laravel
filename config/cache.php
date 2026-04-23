@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+// 学习要点：Laravel 10 默认 cache driver 是 file，便于开箱即用。
+// 生产环境常切换为 redis 或 memcached；业务代码通常依赖 Cache facade 或 cache repository。
 return [
 
     /*

@@ -1,5 +1,7 @@
 <?php
 
+// 学习要点：Laravel 10 默认 queue connection 是 sync，任务会在当前进程同步执行。
+// 生产环境通常改为 redis、database 或 sqs，并由 queue worker 长进程消费任务。
 return [
 
     /*

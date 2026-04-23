@@ -1,5 +1,7 @@
 <?php
 
+// 学习要点：认证配置的两个核心概念是 guard 和 provider。
+// guard 说明如何认证当前请求；provider 说明用户数据从哪里读取。
 return [
 
     /*
