@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+// 学习要点：缓存接口统一，后端可替换。
+// 业务代码通常调用 Cache facade 或注入 cache repository，而不是关心底层是 database、Redis 还是 Memcached。
 return [
 
     /*

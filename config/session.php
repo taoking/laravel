@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Str;
 
+// 学习要点：session 负责在多次 HTTP 请求之间保存用户状态。
+// 当前默认 driver 是 database，需要 migrations 中的 sessions 表；生产多实例也常用 Redis。
 return [
 
     /*

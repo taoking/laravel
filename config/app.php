@@ -1,5 +1,8 @@
 <?php
 
+// 学习要点：config/*.php 会在启动阶段被加载到配置仓库。
+// 业务代码应通过 config('app.name') 读取配置，而不是直接 env('APP_NAME')。
+// 生产环境执行 `php artisan config:cache` 后，配置会被编译缓存，运行时读取更快也更稳定。
 return [
 
     /*

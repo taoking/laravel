@@ -2,6 +2,8 @@
 
 use App\Models\User;
 
+// 学习要点：认证配置的两个核心概念是 guard 和 provider。
+// guard 说明“如何识别当前请求的用户”，provider 说明“用户数据从哪里取”。
 return [
 
     /*

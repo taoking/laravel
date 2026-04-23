@@ -3,6 +3,8 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+// 学习要点：数据库配置声明连接信息，不直接建立连接。
+// Laravel 会在 DB、Eloquent 或迁移真正需要数据库时，通过连接管理器按需创建连接。
 return [
 
     /*

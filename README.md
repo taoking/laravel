@@ -21,6 +21,15 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## 中文源码学习文档
+
+本仓库已新增面向源码学习和面试准备的中文说明文档：
+
+- [Laravel 框架学习与面试说明文档](docs/laravel-framework-study-guide.md)
+- [Laravel 启动与关闭流程说明](docs/laravel-startup-shutdown-flow.md)
+
+该文档按当前本地骨架说明 HTTP/CLI 启动流程、主要类、服务容器、Service Provider、路由/中间件、Eloquent、迁移、队列、缓存、测试与面试高频问题，并说明本地 `13.x` 分支和远端 `10.x` 骨架的差异。
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.

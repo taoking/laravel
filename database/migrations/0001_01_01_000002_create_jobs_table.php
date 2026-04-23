@@ -4,6 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// 学习要点：当前骨架默认 queue connection 是 database，因此需要 jobs 相关表。
+// 队列的核心价值是把慢任务从 HTTP 请求链路拆出去，提升响应速度和系统韧性。
 return new class extends Migration
 {
     /**
@@ -11,6 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // jobs 表保存待执行任务。worker 会不断拉取可用任务，执行成功后删除，失败则按策略重试。
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
             $table->string('queue')->index();
@@ -21,6 +24,7 @@ return new class extends Migration
             $table->unsignedInteger('created_at');
         });
 
+        // job_batches 表保存批量任务状态，支持 Bus::batch(...) 这种批处理 API。
         Schema::create('job_batches', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->string('name');
@@ -34,6 +38,7 @@ return new class extends Migration
             $table->integer('finished_at')->nullable();
         });
 
+        // failed_jobs 记录最终失败的任务，便于排查、告警和手动重试。
         Schema::create('failed_jobs', function (Blueprint $table) {
             $table->id();
             $table->string('uuid')->unique();

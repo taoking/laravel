@@ -6,13 +6,18 @@ use Symfony\Component\Console\Input\ArgvInput;
 
 define('LARAVEL_START', microtime(true));
 
-// Register the Composer autoloader...
+// 学习要点：artisan 是 CLI 单入口，对应 HTTP 世界里的 public/index.php。
+// 所有 `php artisan ...` 命令都会先执行这里，再由 Application 分发到具体命令。
+
+// 注册 Composer 自动加载器，让框架类、应用类和第三方包都可以按命名空间加载。
 require __DIR__.'/vendor/autoload.php';
 
-// Bootstrap Laravel and handle the command...
+// 创建并配置 Application。HTTP 和 CLI 共用同一个容器和服务提供者体系。
 /** @var Application $app */
 $app = require_once __DIR__.'/bootstrap/app.php';
 
+// ArgvInput 读取命令行参数；handleCommand() 会启动 Console Application、注册命令并执行目标命令。
 $status = $app->handleCommand(new ArgvInput);
 
+// Artisan 命令用进程退出码表达执行结果：0 表示成功，非 0 通常表示失败。
 exit($status);
