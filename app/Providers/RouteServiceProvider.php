@@ -41,6 +41,11 @@ class RouteServiceProvider extends ServiceProvider
             // routes/web.php 使用 web 中间件组，适合浏览器页面、session、cookie、CSRF。
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
+
+            if (config('interview_examples.enabled')) {
+                Route::middleware('web')
+                    ->group(base_path('routes/interview_examples.php'));
+            }
         });
     }
 }

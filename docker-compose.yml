@@ -1,0 +1,109 @@
+services:
+  laravel.test:
+    build:
+      context: .
+      dockerfile: docker/php/8.3/Dockerfile
+      args:
+        WWWGROUP: '${WWWGROUP:-1000}'
+        WWWUSER: '${WWWUSER:-1000}'
+    image: senior-php-laravel/php83
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '${APP_PORT:-8000}:80'
+    environment:
+      APP_ENV: '${APP_ENV:-local}'
+      APP_DEBUG: '${APP_DEBUG:-true}'
+      APP_URL: 'http://localhost:${APP_PORT:-8000}'
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: '${DB_DATABASE:-laravel}'
+      DB_USERNAME: '${DB_APP_USERNAME:-laravel}'
+      DB_PASSWORD: '${DB_APP_PASSWORD:-secret}'
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+    volumes:
+      - '.:/var/www/html'
+    networks:
+      - learning
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - '${FORWARD_DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: '${DB_DATABASE:-laravel}'
+      MYSQL_USER: '${DB_APP_USERNAME:-laravel}'
+      MYSQL_PASSWORD: '${DB_APP_PASSWORD:-secret}'
+    volumes:
+      - 'learning-mysql:/var/lib/mysql'
+    networks:
+      - learning
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 --silent']
+      retries: 10
+      timeout: 5s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+      - 'learning-redis:/data'
+    networks:
+      - learning
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      retries: 10
+      timeout: 5s
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - '${FORWARD_RABBITMQ_PORT:-5672}:5672'
+      - '${FORWARD_RABBITMQ_MANAGEMENT_PORT:-15672}:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: '${RABBITMQ_USER:-laravel}'
+      RABBITMQ_DEFAULT_PASS: '${RABBITMQ_PASSWORD:-secret}'
+    volumes:
+      - 'learning-rabbitmq:/var/lib/rabbitmq'
+    networks:
+      - learning
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      retries: 10
+      timeout: 5s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '${FORWARD_MAILPIT_PORT:-8025}:8025'
+    networks:
+      - learning
+
+networks:
+  learning:
+    driver: bridge
+
+volumes:
+  learning-mysql:
+    driver: local
+  learning-redis:
+    driver: local
+  learning-rabbitmq:
+    driver: local
