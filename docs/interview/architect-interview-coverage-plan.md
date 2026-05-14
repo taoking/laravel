@@ -54,8 +54,8 @@
 | 层级 | 面试官看什么 | 当前状态 | 后续补齐方向 |
 | --- | --- | --- | --- |
 | L1 用法层 | Laravel API 会不会用，功能是否跑通 | 已基本达标 | 保持接口文档和测试同步 |
-| L2 原理层 | 为什么这样设计，底层机制是什么 | 部分达标 | Laravel 源码、PHP 底层、MySQL/Redis 原理要绑定项目代码 |
-| L3 生产层 | 失败怎么办，如何观测，如何恢复，如何压测 | 明显不足 | 补故障复现、补偿命令、压测数据、日志样例和排障 Runbook |
+| L2 原理层 | 为什么这样设计，底层机制是什么 | 已逐步达标 | 后续继续补源码行级阅读、Octane 常驻容器案例和数据库锁复现 |
+| L3 生产层 | 失败怎么办，如何观测，如何恢复，如何压测 | 部分达标 | Docker smoke、补偿命令和排障 Runbook 已补，后续继续补压测数据、APM 式日志样例和容量评估 |
 | L4 架构层 | 方案边界、选型取舍、演进路线 | 初步具备 | 补 Outbox、MQ 选型、缓存一致性、模块边界和容量评估 |
 
 ## 2. 知识覆盖评分
@@ -70,11 +70,11 @@
 | MySQL 深度 | 7/10 | 有指标查询、索引、造数命令、Explain 命令和 seek pagination 示例 | 缺真实百万级压测结果、慢 SQL 日志样例和事务锁复现实验 |
 | Redis 深度 | 7/10 | 有空值缓存、随机 TTL、token lock、热点 ZSet、Lua 限流实验 | 缺 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标 |
 | Queue/MQ 深度 | 8/10 | Redis Queue 可靠性 + Kafka 事件流已完成闭环 | Outbox Pattern 仍是文档级，RabbitMQ 暂未落地代码 |
-| 安全能力 | 7/10 | 签名、反重放、越权、上传校验、审计日志 | SSRF、XSS、CSRF、反序列化、敏感数据脱敏缺专题实验 |
+| 安全能力 | 8/10 | 签名、反重放、越权、上传校验、SSRF 检查、审计脱敏和安全攻防测试 | 后续可补 CSP、OAuth2、反序列化真实漏洞复现和安全扫描报告 |
 | 架构设计 | 6/10 | Domains、Service、Query Object、Event-Driven 已出现 | DTO、Value Object、Repository 取舍、Outbox、模块边界还需成文 |
 | 性能优化 | 6/10 | 缓存、Explain、wrk 脚本、Runbook | 缺基准数据、前后对比、容量估算和 APM 式定位流程 |
 | 测试与质量 | 8/10 | Feature Test、Pint、PHPStan、Psalm、GitHub Actions CI | 缺浏览器自动化和覆盖率策略 |
-| 部署运维 | 6/10 | Docker Compose、Nginx、FPM、Supervisor | 缺一键启动完整验收、日志样例、502/504 实战复盘 |
+| 部署运维 | 8/10 | Docker Compose、Nginx、FPM、Queue、Scheduler、Kafka、healthcheck、smoke 脚本和排障 Runbook | 后续可补真实发布脚本、日志样例、监控指标和灰度回滚演练 |
 
 ## 3. 面试追问地图
 
@@ -416,7 +416,7 @@
 ### AIP-10 Docker 一键运行与生产排障
 
 - 优先级：P2
-- 对应待开发项：P3-04，可提升为 P2
+- 对应待开发项：P3-04，已完成
 - 目标：把 Docker 从配置可用推进到完整运行证据。
 - 交付：
   - 完整 `docker compose up -d --build` 验收记录。
@@ -426,16 +426,22 @@
 - 验收：
   - 容器启动后可访问 `/login`、`/docs/api`、`/api/v1/health`。
   - Queue、Scheduler、Kafka 命令可执行。
+- 完成证据：
+  - `scripts/deploy/docker-smoke.sh` 已完成一键验收脚本。
+  - `docker/php/Dockerfile` 已补 Node/npm 和 `phpredis` 扩展。
+  - `docker-compose.yml` 已补 healthcheck、依赖顺序和 `restart: unless-stopped`。
+  - `docker/nginx/default.conf` 已补 Docker DNS 动态解析，避免 app 容器重建后 Nginx FastCGI 指向旧 IP。
+  - 真实 smoke 已通过，最终 `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均处于运行状态。
+  - `docs/deploy/docker-deploy-runbook.md` 已补发布回滚、日志查看和 502/504/MySQL/Redis/Kafka/权限排障。
 
 ## 5. 推荐执行顺序
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
-| 2 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
-| 3 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
-| 4 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
-| 5 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
+| 1 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
+| 2 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
+| 3 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
+| 4 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -709,6 +715,8 @@
 
 ### 6.10 AIP-10 / P3-04：Docker 一键运行与生产排障
 
+状态：已完成。
+
 执行目标：让 Docker 和部署文档从“配置存在”提升到“可一键验收、可排障复盘”。
 
 代码路径：
@@ -732,6 +740,14 @@
 - Docker Compose 配置可校验，服务启动流程有明确命令和预期输出。
 - 文档能回答“502/504 怎么排查”“队列线上如何常驻”“多机 Scheduler 如何避免重复执行”。
 
+完成证据：
+
+- `scripts/deploy/docker-smoke.sh` 可一键执行 build/up、依赖安装、前端构建、迁移、Seed、队列重启、Kafka topic 创建和 HTTP 检查。
+- `docker-compose.yml` 已补 healthcheck、服务依赖顺序和 `restart: unless-stopped`。
+- `docker/php/Dockerfile` 已补 Node/npm 与 `phpredis` 扩展，解决容器内 `npm run build` 和 Redis Queue 运行问题。
+- `docker/nginx/default.conf` 已补 Docker DNS 动态解析，解决 app 重建后的 Nginx 上游旧 IP 问题。
+- 真实 smoke 结果：`/up`、`/login`、`/docs/api`、`/api/v1/health` 通过，最终 `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均运行。
+
 ## 7. 面试通过标准
 
 一个专题补齐后，必须同时满足：
@@ -749,10 +765,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-10，对应 `docs/pending-development-tasks.md` 中的 P3-04。
+下一轮开发建议直接执行 P2-02 Excel 导入解析。
 
-目标是把 Docker 和部署文档从“配置存在”提升到“可一键验收、可排障复盘”：
+目标是把当前 CSV 导入闭环提升为更贴近企业后台的文件导入能力：
 
-- 记录完整 `docker compose up -d --build` 验收流程。
-- 补容器健康检查、日志查看和常见 502/504/权限/连接失败排障表。
-- 明确 Queue、Scheduler、Kafka 命令在容器中的执行方式。
+- 引入或封装 Excel 解析流程，明确 CSV/XLSX 的差异和内存风险。
+- 补导入模板、列映射、格式校验、失败行定位和批量入库策略。
+- 补大文件处理边界：分片、队列、重试、幂等、进度、失败补偿。

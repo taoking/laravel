@@ -211,6 +211,14 @@ docs/
 | `php artisan kafka:lag audit-log-consumer` | 查看 consumer group lag |
 | `php artisan kafka:dead-letter:replay metrics.data.changed.dlq` | replay 死信消息 |
 
+### 4.4 部署验收入口
+
+| Command | 用途 |
+| --- | --- |
+| `scripts/deploy/docker-smoke.sh` | 一键验证 Docker Compose、依赖安装、前端构建、迁移、Seed、队列重启、Kafka topic 和 HTTP 入口 |
+| `SKIP_HTTP=1 scripts/deploy/docker-smoke.sh` | 仅验证容器与应用初始化，不执行 HTTP 请求 |
+| `SKIP_UP=1 scripts/deploy/docker-smoke.sh` | 容器已启动时重复执行应用初始化和健康检查 |
+
 ## 5. 数据模型规划
 
 首批核心表：
@@ -624,6 +632,7 @@ docs/
   - `docker/php/opcache.ini`
   - `docker/nginx/default.conf`
   - `docker/supervisor/worker.conf`
+  - `scripts/deploy/docker-smoke.sh`
   - `docs/deploy/docker-deploy-runbook.md`
 - 面试入口：
   - `docs/interview/project-story.md`
@@ -632,6 +641,10 @@ docs/
   - Nginx + PHP-FPM + MySQL + Redis + Queue Worker + Scheduler。
   - OPcache 配置样例。
   - Supervisor Worker 样例。
+  - Docker healthcheck、服务启动依赖和 `restart: unless-stopped`。
+  - `phpredis` 扩展和 Node/npm 容器构建依赖。
+  - Nginx 通过 Docker DNS 动态解析 `app:9000`，避免 app 重建后 FastCGI 指向旧 IP。
+  - 一键 smoke 已验证 `/login`、`/docs/api`、`/api/v1/health`。
   - 发布、回滚、502/504 排查。
   - wrk 压测脚本。
   - 项目包装话术和资深追问。

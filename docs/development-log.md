@@ -686,3 +686,51 @@ docker compose config
 - PhaseTwelveOpenApiContractTest 通过：2 个测试、41 个断言。
 - 全量测试通过：59 个测试、360 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验和 Docker Compose 配置校验均通过。
+
+## 2026-05-15 P3-04 Docker 一键启动验收
+
+目标：把 Docker 从静态配置推进到可一键运行、可验收、可排障的部署证据。
+
+### 开发内容
+
+- 更新 `docker/php/Dockerfile`：
+  - 安装 Node/npm，支持容器内 `npm ci` 和 `npm run build`。
+  - 通过 PECL 安装并启用 `redis` 扩展，使 Docker 环境与 `REDIS_CLIENT=phpredis` 一致。
+- 更新 `docker-compose.yml`：
+  - 为 `app`、`nginx`、`mysql`、`redis` 增加 healthcheck。
+  - 为依赖服务增加 `depends_on.condition: service_healthy`。
+  - 为运行态服务增加 `restart: unless-stopped`，保证 `queue:restart` 后 Worker 可被重新拉起。
+  - 为 `app` 增加 `node-modules` 命名卷，避免容器 `npm ci` 覆盖宿主机原生依赖。
+- 新增 `scripts/deploy/docker-smoke.sh`：
+  - 执行 `docker compose config`、`up -d --build`、composer、npm build、key、migrate、seed、queue restart。
+  - 配置容器内 Git `safe.directory /var/www/html`，避免 bind mount 所有权提示干扰验收日志。
+  - 在 HTTP 验收前强制重建 Nginx 并对 `/up`、`/login`、`/docs/api`、`/api/v1/health` 做重试检查。
+  - 在最终 `docker compose ps` 前等待 `app`、`nginx`、`mysql`、`redis` health 状态稳定。
+  - Kafka topic 优先通过宿主机 `KAFKA_DRIVER=docker php artisan kafka:topics --create` 验证项目封装；不可用时退回 Kafka 容器 CLI。
+- 更新 `docker/nginx/default.conf`：
+  - 使用 Docker DNS `127.0.0.11` 和变量形式 `fastcgi_pass` 动态解析 `app:9000`，避免 app 容器重建后 Nginx 指向旧 IP。
+  - 验证 `/login`、`/docs/api`、`/api/v1/health`。
+- 更新 `docs/deploy/docker-deploy-runbook.md`：
+  - 补 smoke 用法、访问路径、日志命令、发布回滚命令和 502/504/MySQL/Redis/Kafka/权限排障表。
+- 新增 `tests/Feature/PhaseFourteenDockerRunbookTest.php`：
+  - 校验 Compose 配置、smoke 脚本关键步骤和部署 Runbook 排障路径。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+scripts/deploy/docker-smoke.sh
+php artisan test --filter=PhaseFourteenDockerRunbookTest
+docker compose config
+```
+
+真实 smoke 结果：
+
+- PhaseFourteenDockerRunbookTest 通过：5 个测试、39 个断言。
+- `composer install`、`npm ci`、`npm run build`、`migrate --seed`、`queue:restart` 均通过。
+- Kafka topic 创建通过，输出 `Kafka topics ready: 6`。
+- `/login`、`/docs/api`、`/api/v1/health` 均可访问。
+- 最终 `docker compose ps` 显示 `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均为运行态，其中 `app`、`nginx`、`mysql`、`redis` 为 healthy。
+- 全量测试通过：64 个测试、399 个断言。

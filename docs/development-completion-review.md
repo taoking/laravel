@@ -1,6 +1,6 @@
 # 开发完成度审计与后续执行说明
 
-审计日期：2026-05-14  
+审计日期：2026-05-15
 当前分支：`13.x`  
 项目定位：通过 Laravel 13 指标分析平台，用代码实例覆盖资深 PHP 面试中的语言、框架、数据库、Redis、队列、安全、性能和部署主题。
 
@@ -28,6 +28,7 @@
 | P2-03 | GitHub Actions CI | 已完成 | `.github/workflows/ci.yml`、`docs/testing-ci/github-actions.md` |
 | P2-01 | OpenAPI 中文化和示例补全 | 已完成 | `/docs/api`、`tests/Feature/PhaseTwelveOpenApiContractTest.php` |
 | P2-04 | 安全攻防增强 | 已完成 | `/api/v1/security/url-check`、`docs/security/web-attack-labs.md` |
+| P3-04 | Docker 一键启动验收 | 已完成 | `scripts/deploy/docker-smoke.sh`、`docs/deploy/docker-deploy-runbook.md` |
 
 ## 2. 多语言实现说明
 
@@ -149,13 +150,14 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 - P0 后台列表页面已接入真实 API，后续可继续打磨交互细节和浏览器端自动化测试。
 - OpenAPI YAML 已补中文摘要、请求示例和错误响应示例，后续重点是保持新接口同步。
 - CSV 导入已具备闭环，Excel 导入可在后续接入专用解析库。
-- Docker 配置已可静态校验，后续可补充完整容器启动截图、日志样例和线上排障案例。
+- Docker 一键启动验收已完成，`scripts/deploy/docker-smoke.sh` 可验证 build/up、依赖安装、前端构建、迁移、Seed、队列重启、Kafka topic 和 HTTP 入口。
 - PHPStan/Larastan/Psalm 静态分析已完成并提升为后续开发准入门禁；Kafka 使用专题已完成最小事件流闭环，详细说明见 `docs/queue/kafka-practice.md`。
 - P1-03 MQ 与队列可靠性专题已完成，导入队列已补充失败分类、尝试次数、终态幂等和 `imports:compensate` 补偿命令。
 - P1-01 Redis 缓存专题实验已完成，指标缓存已补空值缓存、随机 TTL、token lock、热点 ZSet 和 Lua 限流实验。
 - P1-06 Laravel 源码专题文档已完成，Container、Provider、Facade、Middleware、Router、Eloquent 和 Queue Worker 均已绑定项目代码入口。
 - P1-08 MySQL 大数据性能实证已完成，具备造数、Explain 和 seek pagination 命令。
-- P2-04 安全攻防增强已完成，具备 SSRF 检查接口、审计脱敏、XSS/SQL 注入/上传/签名攻防测试和专题文档。下一项高优先级任务为 P3-04 Docker 一键启动验收。
+- P2-04 安全攻防增强已完成，具备 SSRF 检查接口、审计脱敏、XSS/SQL 注入/上传/签名攻防测试和专题文档。
+- P3-04 Docker 一键启动验收已完成，补齐生产部署证据、运行态健康检查和排障 Runbook。下一项高优先级任务为 P2-02 Excel 导入解析。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -167,7 +169,7 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 | 检查项 | 结果 |
 | --- | --- |
 | 前端生产构建 | `npm run build` 通过 |
-| PHP 测试 | `php artisan test` 通过，59 个测试、360 个断言 |
+| PHP 测试 | `php artisan test` 通过，64 个测试、399 个断言 |
 | 静态分析 | `composer analyse:phpstan`、`composer analyse:psalm` 通过 |
 | 导入队列可靠性专项测试 | `php artisan test --filter=PhaseFourImportQueueTest` 通过，8 个测试、45 个断言 |
 | Redis 缓存可靠性专项测试 | `php artisan test --filter=PhaseEightRedisCacheReliabilityTest` 通过，5 个测试、27 个断言 |
@@ -176,12 +178,14 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 | PHP 语言底层专项测试 | `php artisan test --filter=PhaseElevenPhpLanguageLabTest` 通过，3 个测试、13 个断言 |
 | OpenAPI 契约专项测试 | `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过，2 个测试、41 个断言 |
 | 安全攻防专项测试 | `php artisan test --filter=PhaseThirteenSecurityAttackLabTest` 通过，5 个测试、15 个断言 |
+| Docker Runbook 专项测试 | `php artisan test --filter=PhaseFourteenDockerRunbookTest` 通过，5 个测试、39 个断言 |
 | Kafka 专项测试 | `php artisan test --filter=PhaseSevenKafkaMessagingTest` 通过，3 个测试、19 个断言 |
 | Kafka 命令注册 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 |
 | Docker Kafka 集成 | `docker compose up -d kafka`、`KAFKA_DRIVER=docker php artisan kafka:topics --create`、生产和消费命令通过 |
 | PHP 代码格式 | `./vendor/bin/pint --test` 通过 |
 | Composer 配置 | `composer validate --strict` 通过 |
 | Docker Compose 配置 | `docker compose config` 通过 |
+| Docker 一键 smoke | `scripts/deploy/docker-smoke.sh` 通过，`app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均运行，`/up`、`/login`、`/docs/api`、`/api/v1/health` 可访问 |
 | GitHub Actions CI 配置 | `.github/workflows/ci.yml` 覆盖 Composer、静态分析、Pint、PHPUnit、npm build 和 Docker Compose 校验 |
 | 路由注册 | `php artisan route:list --except-vendor` 显示 43 条项目路由 |
 | 登录页中文基准 | `/login` 输出 `<html lang="zh-CN">` 和 `<title inertia>指标分析平台</title>` |

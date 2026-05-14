@@ -524,11 +524,12 @@
 
 ### P3-04 Docker 一键启动验收
 
-- 状态：待开发
+- 状态：已完成
 - 目标：把 Docker 配置从静态校验推进到完整运行验收。
 - 建议范围：
   - `docker-compose.yml`
   - `docker/`
+  - `scripts/deploy/docker-smoke.sh`
   - `docs/deploy/docker-deploy-runbook.md`
 - 功能要求：
   - 完整验证 Nginx、PHP-FPM、MySQL、Redis、Queue、Scheduler。
@@ -537,6 +538,14 @@
 - 验收标准：
   - `docker compose up -d --build` 后可以访问 `/login` 和 `/docs/api`。
   - 队列和调度容器正常运行。
+- 完成证据：
+  - `docker/php/Dockerfile` 已补 Node/npm 和 `phpredis` 扩展，支持容器内前端构建和 Redis Queue。
+  - `docker-compose.yml` 已补健康检查、启动依赖和 `restart: unless-stopped`，`queue:restart` 后 Worker 可自动拉起。
+  - `docker/nginx/default.conf` 已使用 Docker DNS 动态解析 `app:9000`，避免 app 重建后 Nginx 指向旧 FastCGI IP。
+  - `scripts/deploy/docker-smoke.sh` 已提供一键验收：Compose config、build/up、composer、npm build、key、migrate/seed、queue restart、Kafka topics 和 HTTP 检查。
+  - `docs/deploy/docker-deploy-runbook.md` 已补访问路径、日志命令、发布回滚和 502/504/MySQL/Redis/Kafka/权限排障表。
+  - `tests/Feature/PhaseFourteenDockerRunbookTest.php` 已覆盖 Compose 配置、smoke 脚本和部署 Runbook。
+  - 真实 Docker smoke 已通过，最终 `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均处于运行状态，`/login`、`/docs/api`、`/api/v1/health` 可访问。
 
 ### P3-05 语义搜索和 AI 加分模块
 
@@ -554,12 +563,11 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P3-04 Docker 一键启动验收。
-2. P2-02 Excel 导入解析。
-3. P3-02 大数据导出异步化。
-4. P3-01 Excel 导入。
-5. P3-05 语义搜索和 AI 加分模块。
+1. P2-02 Excel 导入解析。
+2. P3-02 大数据导出异步化。
+3. P3-01 Excel 导入。
+4. P3-05 语义搜索和 AI 加分模块。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI 和 P2-04 安全攻防均已完成。后续优先补 Docker 一键启动和生产排障，再补导入导出增强。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-04 安全攻防和 P3-04 Docker 一键启动验收均已完成。后续优先补企业导入导出增强，尤其是 Excel 解析、大文件异步导出和下载鉴权。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

@@ -120,6 +120,8 @@
 - 审计日志接口：`app/Http/Controllers/Api/V1/Audit/AuditLogController.php`
 - 性能 Runbook：`docs/performance/performance-runbook.md`
 - Docker 部署 Runbook：`docs/deploy/docker-deploy-runbook.md`
+- Docker 一键 smoke 脚本：`scripts/deploy/docker-smoke.sh`
+- Docker Runbook 验收测试：`tests/Feature/PhaseFourteenDockerRunbookTest.php`
 - 架构师面试覆盖度计划和任务卡：`docs/interview/architect-interview-coverage-plan.md`
 - Laravel Container 专题：`docs/laravel-core/container.md`
 - Laravel ServiceProvider 专题：`docs/laravel-core/service-provider.md`
@@ -246,8 +248,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化和 P2-04 安全攻防增强已完成，后续优先进入 Docker 一键启动和生产排障。
-- 后续开发提交前必须保持 `composer analyse` 通过；P3-04 Docker 一键启动验收是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-04 安全攻防增强和 P3-04 Docker 一键启动验收已完成，后续优先进入 Excel 导入解析和大数据导出增强。
+- 后续开发提交前必须保持 `composer analyse` 通过；P2-02 Excel 导入解析是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。
