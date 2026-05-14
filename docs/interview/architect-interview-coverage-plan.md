@@ -66,7 +66,7 @@
 | Laravel 使用广度 | 8/10 | Controller、Request、Resource、Model、Policy、Middleware、Job、Event、Command | 源码级解释还不够代码化 |
 | Laravel 源码深度 | 7/10 | 已有 Container、Provider、Facade、Pipeline、Router、Eloquent、Queue Worker 专题 | 后续可继续补源码行级阅读和 Octane 常驻容器案例 |
 | PHP 语言底层 | 4/10 | 知识地图中有规划 | 缺数组、COW、引用、Generator、Attribute、Enum 的可运行示例 |
-| PHP 运行机制 | 5/10 | 有 FPM/部署文档 | 缺 FPM 进程估算、Worker 内存泄漏、常驻进程、Octane 对比实验 |
+| PHP 运行机制 | 7/10 | 有 FPM/Worker/Octane 文档和 runtime 实验命令 | 缺真实 FPM 压测、Octane 实装和线上内存曲线 |
 | MySQL 深度 | 7/10 | 有指标查询、索引、造数命令、Explain 命令和 seek pagination 示例 | 缺真实百万级压测结果、慢 SQL 日志样例和事务锁复现实验 |
 | Redis 深度 | 7/10 | 有空值缓存、随机 TTL、token lock、热点 ZSet、Lua 限流实验 | 缺 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标 |
 | Queue/MQ 深度 | 8/10 | Redis Queue 可靠性 + Kafka 事件流已完成闭环 | Outbox Pattern 仍是文档级，RabbitMQ 暂未落地代码 |
@@ -326,6 +326,7 @@
 ### AIP-06 PHP-FPM、Worker、Octane 与多进程
 
 - 优先级：P1
+- 状态：已完成
 - 对应待开发项：P1-05
 - 目标：补齐 PHP 运行机制和常驻进程追问。
 - 代码交付：
@@ -337,6 +338,10 @@
 - 验收：
   - 能解释 FPM、CLI、Queue Worker、Scheduler、Octane 生命周期差异。
   - 能回答 Worker 为什么要 restart、内存泄漏如何发现。
+- 完成证据：
+  - 已新增 `runtime:worker-lab memory-growth` 和 `runtime:worker-lab lifecycle`。
+  - 已新增 `docs/runtime/php-fpm-worker-octane.md`。
+  - 已新增 `tests/Feature/PhaseTenRuntimeProcessTest.php`。
 
 ### AIP-07 安全攻防增强
 
@@ -406,12 +411,11 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
-| 2 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
-| 3 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 4 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 5 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 6 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 1 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
+| 2 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
+| 3 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 4 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 5 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -691,12 +695,12 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-06，对应 `docs/pending-development-tasks.md` 中的 P1-05。
+下一轮开发建议直接执行 AIP-04，对应 `docs/pending-development-tasks.md` 中的 P1-07。
 
-目标是补齐 PHP 运行机制、常驻进程和生产排障：
+目标是用可运行实验补齐 PHP 语言底层：
 
-- 写清 FPM、CLI、Queue Worker、Scheduler、Octane 生命周期差异。
-- 增加长进程内存增长模拟命令。
-- 记录 `queue:restart`、Supervisor graceful stop 和部署平滑处理。
-- 补 FPM `pm` 模式、进程数估算、OPcache 生效机制。
-- 补 502/504、内存泄漏、Worker 旧代码和 Scheduler 多机重复执行排障表。
+- 演示数组 copy-on-write 和引用打破 COW。
+- 演示对象赋值、clone 和引用赋值差异。
+- 演示 Generator 读取大文件相对数组加载的内存优势。
+- 演示 Enum、Attribute、Readonly、Closure、Arrow Function 的项目适用场景。
+- 文档补 PHP 7.4 到 PHP 8.4 的面试差异表。

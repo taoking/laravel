@@ -169,7 +169,8 @@
 4. P1-01 Redis 缓存专题实验：已完成，指标缓存具备空值缓存、随机 TTL、token lock 和 Lua 限流实验。
 5. P1-06 Laravel 源码专题文档：已完成，Container、Provider、Facade、Middleware、Router、Eloquent、Queue Worker 均绑定项目入口。
 6. P1-08 MySQL 大数据性能实证：已完成，具备造数、Explain 和 seek pagination 命令。
-7. P1-07 PHP 语言底层代码示例：下一项 P1 任务，补齐 COW、引用、Generator、Enum、Attribute 等可运行实验。
+7. P1-05 多进程、Worker 与 Octane 专题：已完成，具备 runtime 实验命令和运行机制文档。
+8. P1-07 PHP 语言底层代码示例：下一项 P1 任务，补齐 COW、引用、Generator、Enum、Attribute 等可运行实验。
 
 ### P1-01 Redis 缓存专题实验
 
@@ -295,7 +296,7 @@
 
 ### P1-05 多进程、Worker 与 Octane 专题
 
-- 状态：待开发
+- 状态：已完成
 - 目标：补齐 PHP 多进程、常驻进程、FPM、Queue Worker 和 Octane/Swoole 的面试表达。
 - 建议范围：
   - 新增 `docs/runtime`
@@ -310,6 +311,10 @@
   - 有可运行 Artisan 命令。
   - 文档包含进程模型图或流程说明。
   - 能回答“为什么 Worker 更新代码后要 restart”。
+- 完成记录：
+  - 已新增 `runtime:worker-lab memory-growth` 和 `runtime:worker-lab lifecycle`。
+  - 已新增 `docs/runtime/php-fpm-worker-octane.md`。
+  - 已新增 `tests/Feature/PhaseTenRuntimeProcessTest.php`。
 
 ### P1-06 Laravel 源码专题文档
 
@@ -531,13 +536,12 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P1-05 多进程、Worker 与 Octane 专题。
-2. P1-07 PHP 语言底层代码示例。
-3. P2-03 GitHub Actions CI。
-4. P2-01 OpenAPI 中文化和示例补全。
-5. P2-04 安全攻防增强。
-6. P3-04 Docker 一键启动验收。
+1. P1-07 PHP 语言底层代码示例。
+2. P2-03 GitHub Actions CI。
+3. P2-01 OpenAPI 中文化和示例补全。
+4. P2-04 安全攻防增强。
+5. P3-04 Docker 一键启动验收。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题和 P1-08 MySQL 大数据性能实证均已完成。架构师面试评估显示，后续最需要补齐的是 PHP 运行机制和 PHP 语言底层。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证和 P1-05 运行机制专题均已完成。架构师面试评估显示，后续最需要补齐的是 PHP 语言底层。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

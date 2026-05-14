@@ -461,3 +461,45 @@ git diff --check
 - 全量测试通过：47 个测试、289 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - `metrics:seed-large-dataset`、`metrics:explain-query`、`metrics:seek-page` 命令已注册。
+
+## 2026-05-15 P1-05 多进程、Worker 与 Octane 专题
+
+目标：补齐 PHP 运行机制、常驻进程、FPM、Queue Worker、Scheduler 和 Octane 的面试表达，并提供可运行实验命令。
+
+### 开发内容
+
+- 新增 `RuntimeWorkerLabCommand`：
+  - `php artisan runtime:worker-lab memory-growth`
+  - `php artisan runtime:worker-lab lifecycle`
+- 新增 `docs/runtime/php-fpm-worker-octane.md`：
+  - PHP-FPM、CLI、Queue Worker、Scheduler、Octane 生命周期对比。
+  - FPM `pm` 模式和进程数估算。
+  - Queue Worker 为什么要 `queue:restart`。
+  - Scheduler 多机重复执行处理。
+  - Octane 常驻内存风险。
+  - OPcache、502/504、内存泄漏排障。
+- 新增 `tests/Feature/PhaseTenRuntimeProcessTest.php`。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan runtime:worker-lab lifecycle
+php artisan test --filter=PhaseTenRuntimeProcessTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseTenRuntimeProcessTest 通过：2 个测试、2 个断言。
+- 全量测试通过：49 个测试、291 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- `runtime:worker-lab` 命令已注册，可用于运行机制演示和面试追问复盘。
