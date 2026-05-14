@@ -108,6 +108,7 @@ onMounted(loadTasks);
                             <tr>
                                 <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-slate-500">{{ t('table.file') }}</th>
                                 <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-slate-500">{{ t('table.status') }}</th>
+                                <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-slate-500">{{ t('table.attempts') }}</th>
                                 <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-slate-500">{{ t('table.rows') }}</th>
                                 <th class="px-5 py-3 text-left text-xs font-semibold uppercase text-slate-500">{{ t('table.failed') }}</th>
                                 <th class="px-5 py-3 text-right text-xs font-semibold uppercase text-slate-500">{{ t('table.action') }}</th>
@@ -115,17 +116,23 @@ onMounted(loadTasks);
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             <tr v-if="loading">
-                                <td colspan="5" class="px-5 py-8 text-center text-sm text-slate-500">{{ t('message.loading') }}</td>
+                                <td colspan="6" class="px-5 py-8 text-center text-sm text-slate-500">{{ t('message.loading') }}</td>
                             </tr>
                             <tr v-else-if="tasks.length === 0">
-                                <td colspan="5" class="px-5 py-8 text-center text-sm text-slate-500">{{ t('empty.no_rows') }}</td>
+                                <td colspan="6" class="px-5 py-8 text-center text-sm text-slate-500">{{ t('empty.no_rows') }}</td>
                             </tr>
                             <tr v-for="task in tasks" v-else :key="task.id">
                                 <td class="px-5 py-4 text-sm">
                                     <div class="font-medium text-slate-950">{{ task.original_name }}</div>
                                     <div class="mt-1 text-xs text-slate-500">{{ task.idempotency_key }}</div>
                                 </td>
-                                <td class="px-5 py-4 text-sm text-slate-600">{{ t(`status.${task.status}`) }}</td>
+                                <td class="px-5 py-4 text-sm text-slate-600">
+                                    <div>{{ t(`status.${task.status}`) }}</div>
+                                    <div v-if="task.failure_type" class="mt-1 text-xs text-red-600">
+                                        {{ t(`failure_type.${task.failure_type}`) }}
+                                    </div>
+                                </td>
+                                <td class="px-5 py-4 text-sm text-slate-600">{{ task.attempts ?? 0 }}</td>
                                 <td class="px-5 py-4 text-sm text-slate-600">{{ task.success_rows }} / {{ task.total_rows }}</td>
                                 <td class="px-5 py-4 text-sm text-slate-600">{{ task.failed_rows }}</td>
                                 <td class="px-5 py-4 text-right text-sm">

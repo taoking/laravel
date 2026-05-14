@@ -199,3 +199,116 @@ git diff --check
 git diff --check
 git status --short
 ```
+
+## 2026-05-15 架构师面试复审与任务卡增强
+
+目标：再次以资深架构师/面试官视角复核当前项目的知识覆盖、使用深度和可追问程度，把后续补齐计划细化到后续 agent 可以直接执行的任务卡。
+
+### 执行过程
+
+- 抽查项目路由：`php artisan route:list --except-vendor`，当前显示 43 条项目路由。
+- 抽查 Kafka 命令：`php artisan list kafka --raw`，当前显示 5 个 Kafka 命令。
+- 抽查代码入口：
+  - `routes/api.php`
+  - `composer.json`
+  - `resources/js/Pages/*`
+  - `app/Console/Commands/*`
+  - `tests/Feature/Phase*Test.php`
+- 抽查专题文档：
+  - `docs/interview/architect-interview-coverage-plan.md`
+  - `docs/pending-development-tasks.md`
+  - `docs/development-completion-review.md`
+  - `docs/learning-index.md`
+  - `docs/queue/import-export-worker.md`
+
+### 复审结论
+
+- 当前项目功能主线完整，能支撑 Laravel 企业后台、RBAC、指标 API、导入导出、审计、安全、Kafka 和静态分析的面试表达。
+- 当前项目下一阶段不应优先扩展普通 CRUD，而应补可靠性、Redis 深度、Laravel 源码、PHP 底层、MySQL 大数据性能、PHP-FPM/Worker/Octane 和 CI/CD。
+- 每个后续专题必须同时有代码入口、测试或命令、中文专题文档、生产风险说明和资深追问，只有概念文档不能算完成。
+
+### 文档变更
+
+- 更新 `docs/interview/architect-interview-coverage-plan.md`：
+  - 增加本次复审证据。
+  - 增加 L1 用法层、L2 原理层、L3 生产层、L4 架构层评估标准。
+  - 增加 AIP-01 到 AIP-10 的后续 agent 执行任务卡。
+  - 明确每个任务的代码路径、实施路径和验收标准。
+- 更新 `docs/pending-development-tasks.md`：
+  - 明确后续任务领取时必须先读取架构师计划中的任务卡。
+- 更新 `docs/learning-index.md`：
+  - 将架构师计划描述调整为“覆盖度评估、追问地图和后续 agent 执行任务卡”。
+
+### 验收计划
+
+本次只增强计划文档，不进行业务代码开发。提交前需要执行：
+
+```bash
+git diff --check
+git status --short
+```
+
+## 2026-05-15 P1-03 MQ 与队列可靠性专题
+
+目标：把当前导入队列扩展为可讲解、可测试、可补偿的 MQ 可靠性案例，补齐 Redis Queue 与 Kafka 边界、失败分类、重复执行和人工补偿追问。
+
+### 开发内容
+
+- 新增迁移 `2026_05_15_000001_add_reliability_fields_to_import_tasks_table.php`：
+  - `attempts`
+  - `failure_type`
+  - `last_failed_at`
+  - `compensated_at`
+  - `compensation_reason`
+- 更新 `ImportTask` 和 `ImportTaskResource`，暴露可靠性字段。
+- 更新 `ProcessMetricImportJob`：
+  - `completed` 和 `completed_with_errors` 作为终态跳过。
+  - Job 开始时记录实际处理次数。
+  - 缺文件等 Job 级异常记录 `failure_type`、`last_failed_at` 和 `error_message`。
+  - 文件不可读时抛出明确的 `RuntimeException`。
+- 更新 `ImportTaskController@retry`：
+  - 重试时清理失败分类。
+  - 记录 `compensated_at` 和 `compensation_reason=manual retry endpoint`。
+- 新增 `ImportCompensateCommand`：
+  - 命令：`php artisan imports:compensate`
+  - 支持 `--dry-run`、`--id`、`--status`、`--older-than-minutes`、`--limit`、`--clear-failures`。
+- 更新 `public/docs/openapi.yaml`，补充 ImportTask 可靠性字段。
+- 更新 `docs/queue/import-export-worker.md`：
+  - 状态机、幂等策略、失败分类、补偿命令。
+  - Redis Queue、RabbitMQ、Kafka 选型对比。
+  - 基础问题和资深追问。
+- 更新 `docs/pending-development-tasks.md`、`docs/learning-index.md`、`docs/development-completion-review.md`。
+
+### 测试覆盖
+
+新增或增强 `tests/Feature/PhaseFourImportQueueTest.php`：
+
+- 缺文件导致 Job 级失败，记录 `failure_type=storage` 和 `attempts`。
+- `completed_with_errors` 终态重复执行跳过。
+- `imports:compensate` 可以补偿 failed 任务并重新派发 Job。
+- `imports:compensate --dry-run` 不修改任务。
+- 原有导入幂等、重试、权限、导出和 OpenAPI 测试继续保留。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseFourImportQueueTest
+php artisan list imports --raw
+DB_CONNECTION=sqlite DB_DATABASE=/Users/tao/workspace/code/laravel/laravel/database/database.sqlite php artisan imports:compensate --dry-run
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseFourImportQueueTest 通过：8 个测试、45 个断言。
+- 全量测试通过：40 个测试、254 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- `imports:compensate` 命令已注册，SQLite 演示库 dry-run 输出 `No import tasks matched compensation criteria.`。

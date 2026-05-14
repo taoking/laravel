@@ -605,6 +605,7 @@ KAFKA_DRIVER=docker php artisan kafka:consume audit-log-consumer --max=1
 - 后台任务优先 Redis Queue。
 - 需要事件订阅、事件回放、跨系统分发、高吞吐日志流时使用 Kafka。
 - Kafka 不应替代所有 Laravel Job；边界清晰才是架构能力。
+- Redis Queue 的失败分类、终态幂等和补偿命令见 `docs/queue/import-export-worker.md`。
 
 ## 14. 面试覆盖
 

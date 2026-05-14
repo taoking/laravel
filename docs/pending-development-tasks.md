@@ -12,7 +12,7 @@
 
 - PHPStan/Larastan/Psalm 已提升为 P1 工程质量基线，后续每个开发任务都要先保证 `composer analyse` 可通过。
 - Kafka 使用专题已完成 P1 最小事件流闭环。
-- 资深架构师/面试官覆盖度评估已写入 `docs/interview/architect-interview-coverage-plan.md`，后续补齐重点转为 MQ 可靠性、Redis 深度、Laravel 源码、MySQL 性能实证、PHP 运行机制和 CI/CD。
+- 资深架构师/面试官覆盖度评估已写入 `docs/interview/architect-interview-coverage-plan.md`，该文档现在包含后续 agent 可直接执行的任务卡；补齐重点转为 MQ 可靠性、Redis 深度、Laravel 源码、MySQL 性能实证、PHP 运行机制和 CI/CD。
 
 ## 1. 优先级定义
 
@@ -165,8 +165,8 @@
 
 1. P1-02 静态分析基线：已完成，作为后续开发准入门禁。
 2. P1-04 Kafka 使用专题实验：已完成，提供 Kafka 事件流最小闭环。
-3. P1-03 MQ 与队列可靠性专题：下一项高优先级开发任务，与 Kafka 实现联动补强。
-4. P1-01 Redis 缓存专题实验：在 Kafka 主链路完成后继续增强缓存面试场景。
+3. P1-03 MQ 与队列可靠性专题：已完成，导入队列具备失败分类、尝试次数、终态幂等和补偿命令。
+4. P1-01 Redis 缓存专题实验：下一项高优先级开发任务，继续增强缓存面试场景。
 5. P1-06 Laravel 源码专题文档：绑定项目代码入口，补齐源码级追问。
 6. P1-07 PHP 语言底层代码示例：补齐 COW、引用、Generator、Enum、Attribute 等可运行实验。
 7. P1-08 MySQL 大数据性能实证：补齐 Explain、慢 SQL、分页优化和容量评估证据。
@@ -221,7 +221,7 @@
 
 ### P1-03 MQ 与队列可靠性专题
 
-- 状态：待开发
+- 状态：已完成
 - 目标：把当前导入队列扩展为可讲解的 MQ 可靠性案例。
 - 建议范围：
   - `app/Jobs/ProcessMetricImportJob.php`
@@ -235,11 +235,17 @@
 - 验收标准：
   - 测试覆盖失败、重试、重复执行和补偿。
   - 文档能回答“消息丢失、重复消费、顺序性、死信”的面试问题。
+- 完成记录：
+  - `import_tasks` 已增加 `attempts`、`failure_type`、`last_failed_at`、`compensated_at` 和 `compensation_reason`。
+  - `ProcessMetricImportJob` 已将 `completed`、`completed_with_errors` 作为终态跳过，并记录 Job 级失败分类。
+  - 已新增 `php artisan imports:compensate`，支持 `--dry-run`、`--id`、`--status`、`--older-than-minutes`、`--limit` 和 `--clear-failures`。
+  - 已更新 `docs/queue/import-export-worker.md`，补充 Redis Queue、RabbitMQ、Kafka 选型和可靠性追问。
+  - `tests/Feature/PhaseFourImportQueueTest.php` 已覆盖缺文件失败、终态重复执行、补偿命令和 dry-run。
 
 ### P1-04 Kafka 使用专题实验
 
 - 状态：已完成
-- 当前优先级：P1 高，已完成最小可验收事件流闭环；后续 P1-03 继续补强 MQ 可靠性专题。
+- 当前优先级：P1 高，已完成最小可验收事件流闭环；P1-03 已继续补强 MQ 可靠性专题。
 - 目标：把 Kafka 从概念对比提升为 Laravel 13 项目中的消息事件流实践模块，既能本地运行，又能覆盖事件驱动、幂等、顺序性、消费者组、offset、失败补偿、死信和面试表达。
 - 执行计划：`docs/queue/kafka-practice.md`。
 - 建议范围：
@@ -504,15 +510,16 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P1-03 MQ 与队列可靠性专题。
-2. P1-01 Redis 缓存专题实验。
-3. P1-06 Laravel 源码专题文档。
-4. P1-08 MySQL 大数据性能实证。
-5. P1-05 多进程、Worker 与 Octane 专题。
-6. P1-07 PHP 语言底层代码示例。
-7. P2-03 GitHub Actions CI。
-8. P2-01 OpenAPI 中文化和示例补全。
-9. P2-04 安全攻防增强。
-10. P3-04 Docker 一键启动验收。
+1. P1-01 Redis 缓存专题实验。
+2. P1-06 Laravel 源码专题文档。
+3. P1-08 MySQL 大数据性能实证。
+4. P1-05 多进程、Worker 与 Octane 专题。
+5. P1-07 PHP 语言底层代码示例。
+6. P2-03 GitHub Actions CI。
+7. P2-01 OpenAPI 中文化和示例补全。
+8. P2-04 安全攻防增强。
+9. P3-04 Docker 一键启动验收。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线和 P1-04 Kafka 事件流闭环均已完成。架构师面试评估显示，后续最需要补齐的是可靠性、缓存、源码、性能和运行机制。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环和 P1-03 MQ 队列可靠性均已完成。架构师面试评估显示，后续最需要补齐的是 Redis 深度、源码、性能和运行机制。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+
+执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

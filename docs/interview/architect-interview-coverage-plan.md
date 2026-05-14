@@ -13,6 +13,26 @@
 
 本文用于把当前项目从“功能完整的学习项目”推进到“能承受资深面试连续追问的项目”。后续 Codex agent 应以本文作为面试深度补齐计划，并在每个任务完成后同步更新 `docs/pending-development-tasks.md`、相关专题文档和 `docs/development-log.md`。
 
+## 0. 本次复审证据
+
+本次复审不是只看计划文档，而是抽查了当前项目的真实入口：
+
+| 检查项 | 证据 | 面试价值 |
+| --- | --- | --- |
+| 路由规模 | `php artisan route:list --except-vendor` 显示 43 条项目路由 | 能说明后台、API、文档、登录和业务接口已经形成可演示闭环 |
+| Kafka 命令 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 | 能说明 Kafka 不只是文档概念，已有生产、消费、lag、topic、死信重放入口 |
+| 后台页面 | `resources/js/Pages/*` 覆盖登录、工作台、用户、角色、菜单、指标、导入、审计 | 能演示企业后台主流程和中文多语言界面 |
+| API 主线 | `routes/api.php` 覆盖健康检查、鉴权、权限、指标、导入导出、签名、审计 | 能串起 Auth、RBAC、业务 API、安全和审计 |
+| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7 | 能作为回归和面试证据，但还缺 Redis 深度、PHP 语言底层、MySQL 大数据性能和运行机制测试 |
+| 静态分析 | `composer.json` 已提供 `analyse`、`analyse:phpstan`、`analyse:psalm` | 已具备 P1 工程质量门禁 |
+| 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
+
+面试官结论：
+
+- 当前项目已经能支撑“Laravel 企业后台 + PHP 工程化 + 队列/Kafka + 权限审计”的主线表达。
+- 当前项目还不能完全支撑“资深架构师连续追问 30 到 60 分钟”的深度，因为部分高频专题只有设计说明或基础代码，没有故障复现、对比实验、性能证据和源码绑定。
+- 后续开发不应优先堆产品功能，应优先补齐可靠性、缓存、源码、PHP 底层、MySQL 性能、运行机制、CI/CD 和生产排障证据。
+
 ## 1. 总体结论
 
 当前项目已经具备资深 PHP/Laravel 面试的主线：
@@ -28,6 +48,15 @@
 - PHPStan/Larastan/Psalm 静态分析基线。
 
 但从架构师面试看，当前还存在一个关键问题：部分专题“有入口、有说明”，但还没有足够多的可运行实验和证据来承受 3 到 5 层追问。下一阶段的重点不是继续扩普通产品功能，而是补强可靠性、缓存、源码、性能、运行机制和工程化证据。
+
+建议把面试准备标准从“能讲功能”提升到“能讲事故、边界和取舍”：
+
+| 层级 | 面试官看什么 | 当前状态 | 后续补齐方向 |
+| --- | --- | --- | --- |
+| L1 用法层 | Laravel API 会不会用，功能是否跑通 | 已基本达标 | 保持接口文档和测试同步 |
+| L2 原理层 | 为什么这样设计，底层机制是什么 | 部分达标 | Laravel 源码、PHP 底层、MySQL/Redis 原理要绑定项目代码 |
+| L3 生产层 | 失败怎么办，如何观测，如何恢复，如何压测 | 明显不足 | 补故障复现、补偿命令、压测数据、日志样例和排障 Runbook |
+| L4 架构层 | 方案边界、选型取舍、演进路线 | 初步具备 | 补 Outbox、MQ 选型、缓存一致性、模块边界和容量评估 |
 
 ## 2. 知识覆盖评分
 
@@ -195,6 +224,7 @@
 ### AIP-01 MQ 与队列可靠性专题
 
 - 优先级：P1
+- 状态：已完成
 - 对应待开发项：P1-03
 - 目标：把 Redis Queue、Kafka、RabbitMQ 对比和任务可靠性讲深。
 - 代码交付：
@@ -208,6 +238,11 @@
 - 验收：
   - 测试覆盖失败、重试、重复执行、补偿。
   - 文档能回答消息丢失、重复消费、顺序性、死信、补偿和选型。
+- 完成证据：
+  - `ProcessMetricImportJob` 已补充终态幂等、尝试次数和失败分类。
+  - `php artisan imports:compensate` 已支持 dry-run、按 ID、按状态、按失败时间窗口和清理失败行补偿。
+  - `tests/Feature/PhaseFourImportQueueTest.php` 已覆盖失败、重复执行、补偿和 dry-run。
+  - `docs/queue/import-export-worker.md` 已补 Redis Queue、RabbitMQ、Kafka 对比和追问。
 
 ### AIP-02 Redis 深度实验
 
@@ -355,18 +390,278 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-01 MQ 与队列可靠性专题 | 承接现有 Redis Queue 和 Kafka，是最高频资深追问 |
-| 2 | AIP-02 Redis 深度实验 | Redis 是 PHP 后端高频核心能力，当前深度不足 |
-| 3 | AIP-03 Laravel 源码追问专题 | 区分会用 Laravel 和理解 Laravel |
-| 4 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
-| 5 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
-| 6 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
-| 7 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 8 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 9 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 10 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 1 | AIP-02 Redis 深度实验 | Redis 是 PHP 后端高频核心能力，当前深度不足 |
+| 2 | AIP-03 Laravel 源码追问专题 | 区分会用 Laravel 和理解 Laravel |
+| 3 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
+| 4 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
+| 5 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
+| 6 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
+| 7 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 8 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 9 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
 
-## 6. 面试通过标准
+## 6. 后续 Agent 执行任务卡
+
+后续 Codex agent 领取任务时，不要只按标题开发，必须按任务卡补齐代码、测试、文档和面试追问。每个任务完成后都要更新：
+
+- `docs/pending-development-tasks.md`
+- 本文档对应任务状态或补充记录
+- 对应专题文档
+- `docs/development-log.md`
+- 如新增 API，更新 `public/docs/openapi.yaml`
+- 如新增页面，更新 `docs/learning-index.md`
+
+### 6.1 AIP-01 / P1-03：MQ 与队列可靠性
+
+执行目标：把导入队列从“能异步执行”提升到“能解释可靠性、失败恢复、重复消费和补偿”。
+
+代码路径：
+
+- `app/Jobs/ProcessMetricImportJob.php`
+- `app/Domains/Imports/Models/ImportTask.php`
+- `app/Http/Controllers/Api/V1/Imports/ImportTaskController.php`
+- 新增 `app/Console/Commands/ImportCompensateCommand.php`
+- `database/migrations/*import_tasks*`
+- `tests/Feature/PhaseFourImportQueueTest.php` 或新增 `PhaseEightQueueReliabilityTest.php`
+
+实施路径：
+
+1. 为导入任务增加 `attempts`、`failure_type`、`last_failed_at`、`compensated_at`、`compensation_reason` 等字段。
+2. 明确终态幂等：`completed`、`completed_with_errors` 重复执行时直接跳过。
+3. 为缺文件、格式错误、业务行失败、未知异常做失败分类。
+4. 新增 `imports:compensate` 命令，支持按任务 ID、状态、失败时间窗口、dry-run 和清理失败行执行补偿。
+5. 在重试接口和补偿命令中说明哪些字段重置、哪些字段保留。
+6. 文档补充 Redis Queue、RabbitMQ、Kafka 的可靠性差异、死信、顺序性、重复消费和选型。
+
+验收标准：
+
+- 测试覆盖缺文件失败、重试、重复执行跳过、补偿命令成功执行。
+- 运行 `php artisan imports:compensate --dry-run` 有可解释输出。
+- `docs/queue/import-export-worker.md` 能回答“任务执行成功但 ack/delete 失败怎么办”“Job 执行一半失败怎么办”“为什么 Job 要幂等”。
+
+### 6.2 AIP-02 / P1-01：Redis 深度实验
+
+执行目标：把 Redis 从普通缓存使用提升到缓存可靠性和分布式并发控制专题。
+
+代码路径：
+
+- `app/Domains/Metrics/Services/HotMetricService.php`
+- `app/Http/Controllers/Api/V1/Metrics/MetricController.php`
+- 可新增 `app/Domains/Metrics/Services/MetricCacheService.php`
+- 可新增 `app/Console/Commands/RedisCacheLabCommand.php`
+- `tests/Feature/*Redis*Test.php`
+
+实施路径：
+
+1. 指标详情增加空值缓存，演示缓存穿透治理。
+2. 热点指标缓存增加随机 TTL，演示雪崩治理。
+3. 单指标缓存重建使用带 token 的分布式锁，演示击穿治理和避免误删。
+4. 热门指标排行榜使用 ZSet 思路，测试环境可降级为 Cache 适配。
+5. 增加 Lua 限流示例或命令，说明原子性。
+6. 新增 `docs/redis/cache-reliability.md`。
+
+验收标准：
+
+- 测试覆盖命中、空缓存、随机 TTL、锁释放、重复锁释放保护和限流。
+- 文档能回答 Laravel Cache 与 Redis 原生命令边界、大 Key、热 Key、缓存一致性和分布式锁误删。
+
+### 6.3 AIP-03 / P1-06：Laravel 源码追问专题
+
+执行目标：把“会用 Laravel”提升到“能从项目入口讲到框架源码机制”。
+
+文档路径：
+
+- `docs/laravel-core/container.md`
+- `docs/laravel-core/service-provider.md`
+- `docs/laravel-core/facade.md`
+- `docs/laravel-core/middleware-pipeline.md`
+- `docs/laravel-core/router-model-binding.md`
+- `docs/laravel-core/eloquent-query.md`
+- `docs/laravel-core/queue-worker.md`
+
+实施路径：
+
+1. 以 `MetricController@index` 作为 HTTP 请求主线，串起路由、Middleware、Controller、Request、Query Object、Resource。
+2. 以 `EnsureUserHasPermission` 说明 Middleware Pipeline 和异常返回。
+3. 以 `PermissionService`、`KafkaProducer` 说明 Service Container 解析和依赖注入。
+4. 以 `ProcessMetricImportJob` 说明 Queue Worker 生命周期。
+5. 每篇文档都写“项目入口、Laravel 源码类、关键机制、追问、生产风险”。
+
+验收标准：
+
+- 每篇至少 1 个项目入口、1 个源码类、5 个追问。
+- 能完整回答“Facade 是静态方法吗”“Controller 参数是谁注入的”“Middleware 洋葱模型异常如何返回”。
+
+### 6.4 AIP-04 / P1-07：PHP 语言底层实验
+
+执行目标：用可运行命令或测试证明 PHP 语言机制，不停留在八股。
+
+代码路径：
+
+- 新增 `app/Console/Commands/PhpLanguageLabCommand.php`
+- 或新增 `tests/Unit/PhpLanguageFeatureTest.php`
+- 新增 `docs/php-language/runtime-labs.md`
+
+实施路径：
+
+1. 演示数组 copy-on-write 和引用打破 COW。
+2. 演示对象赋值、clone 和引用赋值差异。
+3. 演示 Generator 读取大文件相对数组加载的内存优势。
+4. 演示 Enum、Attribute、Readonly、Closure、Arrow Function 的项目适用场景。
+5. 文档补 PHP 7.4 到 PHP 8.4 的面试差异表。
+
+验收标准：
+
+- 命令或测试能输出内存变化、引用行为和 Generator 行为。
+- 文档能回答“PHP 数组为什么既能 list 又能 map”“COW 何时发生”“Generator 为什么省内存”。
+
+### 6.5 AIP-05 / P1-08：MySQL 大数据性能实证
+
+执行目标：让指标查询优化有 Explain、慢 SQL 和压测证据。
+
+代码路径：
+
+- `app/Domains/Metrics/Queries/MetricQuery.php`
+- 可新增 `app/Console/Commands/SeedMetricDatasetCommand.php`
+- 可新增 `app/Console/Commands/ExplainMetricQueryCommand.php`
+- `docs/database/metric-query-explain.md`
+- 新增 `docs/database/large-pagination.md`
+
+实施路径：
+
+1. 新增 10 万到 100 万指标值造数命令，支持 dry-run 和分批写入。
+2. 捕获典型查询 Explain，记录索引命中、回表、Using filesort 等信息。
+3. 增加普通 offset 分页与 seek pagination 对比。
+4. 给出索引调整前后 SQL、Explain 和耗时样例。
+5. 补事务、死锁、MVCC、间隙锁的项目化追问。
+
+验收标准：
+
+- 有可复现造数命令和 Explain 输出。
+- 文档能回答“千万级分页如何做”“where function(column) 为什么索引失效”“覆盖索引和回表如何判断”。
+
+### 6.6 AIP-06 / P1-05：PHP-FPM、Worker、Octane 与多进程
+
+执行目标：补齐 PHP 运行机制、长进程和生产排障能力。
+
+代码路径：
+
+- 可新增 `app/Console/Commands/RuntimeWorkerLabCommand.php`
+- `docs/runtime/php-fpm-worker-octane.md`
+- `docs/deploy/docker-deploy-runbook.md`
+
+实施路径：
+
+1. 写清 HTTP/FPM、CLI、Queue Worker、Scheduler、Octane 生命周期差异。
+2. 增加长进程内存增长模拟命令。
+3. 增加 `queue:restart`、Supervisor graceful stop、部署平滑处理说明。
+4. 补 FPM `pm` 模式、进程数估算、OPcache 生效机制。
+5. 补 502/504、内存泄漏、Worker 旧代码、Scheduler 多机重复执行排障表。
+
+验收标准：
+
+- 有命令或文档样例能解释 Worker 常驻内存和发布后重启。
+- 文档能回答“为什么 PHP-FPM 不适合保存大量状态”“Octane 和 FPM 区别是什么”。
+
+### 6.7 AIP-08 / P2-03：CI/CD 与质量门禁
+
+执行目标：把本地质量检查固化为 CI。
+
+代码路径：
+
+- 新增 `.github/workflows/ci.yml`
+- 新增 `docs/testing-ci/github-actions.md`
+
+实施路径：
+
+1. CI 执行 `composer validate --strict`、`composer install`、`composer analyse`。
+2. 执行 `php artisan test`、`./vendor/bin/pint --test`。
+3. 执行 `npm ci`、`npm run build`。
+4. 执行 `docker compose config`。
+5. 文档说明失败处理策略和本地复现命令。
+
+验收标准：
+
+- GitHub Actions YAML 可被 `act` 或 GitHub PR 运行。
+- CI 失败项能映射到本地修复命令。
+
+### 6.8 AIP-09 / P2-01：OpenAPI 中文化和接口示例
+
+执行目标：让接口文档达到面试演示和后续协作可直接调试的标准。
+
+代码路径：
+
+- `public/docs/openapi.yaml`
+- `resources/views/docs/api.blade.php`
+- `routes/api.php`
+- 涉及 API 的 Feature Test
+
+实施路径：
+
+1. 对所有接口补中文 `summary`、`description`、标签说明。
+2. 为登录态接口补 401、403、422 响应示例。
+3. 为导入、导出、签名接口补请求示例和错误示例。
+4. 为签名、限流、CSRF、Session 鉴权补统一说明。
+5. 对照 `php artisan route:list --except-vendor`，确认 YAML 与实际路由一致。
+
+验收标准：
+
+- `/docs/api` 能按中文说明理解主要接口。
+- OpenAPI 覆盖当前 43 条项目路由中的 API 路由。
+- 文档能回答“接口契约如何维护”“鉴权失败和权限失败如何区分”。
+
+### 6.9 AIP-07 / P2-04：安全攻防增强
+
+执行目标：把安全能力从常规防护推进到攻击样例、测试和审计证据。
+
+代码路径：
+
+- `app/Http/Middleware/VerifyApiSignature.php`
+- `app/Http/Middleware/RecordOperationLog.php`
+- `app/Http/Controllers/Api/V1/Security/*`
+- `docs/security/security-audit.md`
+- 新增 `docs/security/web-attack-labs.md`
+- `tests/Feature/*Security*Test.php`
+
+实施路径：
+
+1. 增加 SSRF 防护示例，说明远程数据源、Webhook、文件导入的风险点。
+2. 增加 XSS 输出转义和富文本白名单说明。
+3. 增加审计日志敏感字段脱敏规则。
+4. 增加敏感操作二次确认或签名增强说明。
+5. 补越权、上传、签名、反重放、SSRF/XSS 的测试或演示命令。
+
+验收标准：
+
+- Feature Test 覆盖越权、签名、上传、SSRF/XSS 基础边界。
+- 文档能回答“只校验文件扩展名为什么不够”“审计日志如何避免泄露敏感数据”“反重放如何设计过期窗口”。
+
+### 6.10 AIP-10 / P3-04：Docker 一键运行与生产排障
+
+执行目标：让 Docker 和部署文档从“配置存在”提升到“可一键验收、可排障复盘”。
+
+代码路径：
+
+- `docker-compose.yml`
+- `docker/nginx/default.conf`
+- `docker/php/opcache.ini`
+- `docker/supervisor/worker.conf`
+- `docs/deploy/docker-deploy-runbook.md`
+
+实施路径：
+
+1. 补完整 `docker compose up -d --build` 验收流程。
+2. 补容器健康检查、启动顺序、依赖检查和日志查看命令。
+3. 补 Nginx 502/504、PHP-FPM 超时、MySQL 连接失败、Redis 队列不消费、Kafka 不可达排障表。
+4. 补发布、回滚、`queue:restart`、配置缓存、OPcache 刷新流程。
+5. 补本地演示路径：`/login`、`/admin`、`/docs/api`、`/api/v1/health`。
+
+验收标准：
+
+- Docker Compose 配置可校验，服务启动流程有明确命令和预期输出。
+- 文档能回答“502/504 怎么排查”“队列线上如何常驻”“多机 Scheduler 如何避免重复执行”。
+
+## 7. 面试通过标准
 
 一个专题补齐后，必须同时满足：
 
@@ -381,14 +676,14 @@
 
 如果只是写了概念文档，没有代码入口或可验证命令，不能算完成。
 
-## 7. 下一步建议
+## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-01，对应 `docs/pending-development-tasks.md` 中的 P1-03。
+下一轮开发建议直接执行 AIP-02，对应 `docs/pending-development-tasks.md` 中的 P1-01。
 
-目标是让当前导入队列具备完整可靠性案例：
+目标是把当前 Redis 使用从普通缓存提升到可追问的缓存可靠性案例：
 
-- 明确幂等键和状态机。
-- 增加补偿命令。
-- 覆盖失败、重试、重复执行和补偿测试。
-- 文档对比 Redis Queue、RabbitMQ、Kafka。
-- 把 Kafka 已完成内容作为事件流案例，把 Redis Queue 作为任务队列案例，两者边界讲清楚。
+- 指标详情空值缓存防穿透。
+- 热点指标缓存加随机 TTL 防雪崩。
+- 单指标缓存重建使用 token lock 防击穿和误删。
+- Lua 限流示例或命令。
+- 文档解释 Laravel Cache 与 Redis 原生命令边界、大 Key、热 Key 和一致性取舍。

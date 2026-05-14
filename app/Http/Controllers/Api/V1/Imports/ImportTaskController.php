@@ -100,8 +100,12 @@ class ImportTaskController extends Controller
             'success_rows' => 0,
             'failed_rows' => 0,
             'error_message' => null,
+            'failure_type' => null,
+            'last_failed_at' => null,
             'started_at' => null,
             'finished_at' => null,
+            'compensated_at' => now(),
+            'compensation_reason' => 'manual retry endpoint',
         ])->save();
 
         ProcessMetricImportJob::dispatch($import->id);

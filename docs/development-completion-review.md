@@ -19,6 +19,7 @@
 | UI i18n | 中文默认显示、英文切换、持久化语言偏好 | 已完成 | `/login`、`/admin` 页面右上角语言选择 |
 | P1-02 | PHPStan/Larastan/Psalm 静态分析基线 | 已完成 | `composer analyse`、`docs/testing-ci/static-analysis.md` |
 | P1-04 | Kafka 消息事件流实践模块 | 已完成 | `php artisan kafka:produce`、`php artisan kafka:consume`、`docs/queue/kafka-practice.md` |
+| P1-03 | MQ 与队列可靠性专题 | 已完成 | `php artisan imports:compensate --dry-run`、`docs/queue/import-export-worker.md` |
 
 ## 2. 多语言实现说明
 
@@ -108,6 +109,7 @@ php artisan test
 docker compose config
 php artisan kafka:topics --create
 php artisan test --filter=PhaseSevenKafkaMessagingTest
+php artisan test --filter=PhaseFourImportQueueTest
 ```
 
 验收账号：
@@ -137,7 +139,7 @@ php artisan test --filter=PhaseSevenKafkaMessagingTest
 - CSV 导入已具备闭环，Excel 导入可在后续接入专用解析库。
 - Docker 配置已可静态校验，后续可补充完整容器启动截图、日志样例和线上排障案例。
 - PHPStan/Larastan/Psalm 静态分析已完成并提升为后续开发准入门禁；Kafka 使用专题已完成最小事件流闭环，详细说明见 `docs/queue/kafka-practice.md`。
-- 下一项高优先级任务为 P1-03 MQ 与队列可靠性专题，围绕 Redis Queue 与 Kafka 的失败重试、重复消费、死信和补偿继续增强。
+- P1-03 MQ 与队列可靠性专题已完成，导入队列已补充失败分类、尝试次数、终态幂等和 `imports:compensate` 补偿命令。下一项高优先级任务为 P1-01 Redis 缓存专题实验。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -149,8 +151,9 @@ php artisan test --filter=PhaseSevenKafkaMessagingTest
 | 检查项 | 结果 |
 | --- | --- |
 | 前端生产构建 | `npm run build` 通过 |
-| PHP 测试 | `php artisan test` 通过，37 个测试、232 个断言 |
+| PHP 测试 | `php artisan test` 通过，40 个测试、254 个断言 |
 | 静态分析 | `composer analyse:phpstan`、`composer analyse:psalm` 通过 |
+| 导入队列可靠性专项测试 | `php artisan test --filter=PhaseFourImportQueueTest` 通过，8 个测试、45 个断言 |
 | Kafka 专项测试 | `php artisan test --filter=PhaseSevenKafkaMessagingTest` 通过，3 个测试、19 个断言 |
 | Kafka 命令注册 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 |
 | Docker Kafka 集成 | `docker compose up -d kafka`、`KAFKA_DRIVER=docker php artisan kafka:topics --create`、生产和消费命令通过 |

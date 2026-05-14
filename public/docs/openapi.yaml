@@ -1217,6 +1217,8 @@ components:
           type: integer
         failed_rows:
           type: integer
+        attempts:
+          type: integer
         failures:
           type: array
           items:
@@ -1228,6 +1230,19 @@ components:
                 type: object
               errors:
                 type: object
+        error_message:
+          type: [string, 'null']
+        failure_type:
+          type: [string, 'null']
+          enum: [storage, data_format, unexpected, null]
+        last_failed_at:
+          type: [string, 'null']
+          format: date-time
+        compensated_at:
+          type: [string, 'null']
+          format: date-time
+        compensation_reason:
+          type: [string, 'null']
     ExportTask:
       type: object
       properties:

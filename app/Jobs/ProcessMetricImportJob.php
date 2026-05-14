@@ -14,6 +14,7 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\LazyCollection;
+use RuntimeException;
 use Throwable;
 
 class ProcessMetricImportJob implements ShouldQueue
@@ -30,15 +31,24 @@ class ProcessMetricImportJob implements ShouldQueue
     {
         $task = ImportTask::query()->findOrFail($this->importTaskId);
 
-        if (in_array($task->status, ['processing', 'completed'], true)) {
+        if (in_array($task->status, ['processing', 'completed', 'completed_with_errors'], true)) {
             return;
+        }
+
+        $attempts = max($task->attempts + 1, $this->attempts());
+
+        if ($task->status === 'failed') {
+            $task->failures()->delete();
         }
 
         $task->forceFill([
             'status' => 'processing',
+            'attempts' => $attempts,
             'started_at' => now(),
             'finished_at' => null,
             'error_message' => null,
+            'failure_type' => null,
+            'last_failed_at' => null,
         ])->save();
 
         try {
@@ -48,6 +58,8 @@ class ProcessMetricImportJob implements ShouldQueue
             $task->forceFill([
                 'status' => 'failed',
                 'error_message' => $exception->getMessage(),
+                'failure_type' => $this->failureType($exception),
+                'last_failed_at' => now(),
                 'finished_at' => now(),
             ])->save();
 
@@ -140,7 +152,11 @@ class ProcessMetricImportJob implements ShouldQueue
     private function csvRows(string $path): LazyCollection
     {
         return LazyCollection::make(function () use ($path) {
-            $handle = fopen($path, 'rb');
+            $handle = @fopen($path, 'rb');
+
+            if (! is_resource($handle)) {
+                throw new RuntimeException("Unable to open import file [{$path}].");
+            }
 
             try {
                 while (($row = fgetcsv($handle)) !== false) {
@@ -182,6 +198,21 @@ class ProcessMetricImportJob implements ShouldQueue
             'payload' => $payload,
             'errors' => $errors,
         ]);
+    }
+
+    private function failureType(Throwable $exception): string
+    {
+        $message = strtolower($exception->getMessage());
+
+        if (str_contains($message, 'unable to open import file') || str_contains($message, 'no such file')) {
+            return 'storage';
+        }
+
+        if (str_contains($message, 'parse') || str_contains($message, 'format')) {
+            return 'data_format';
+        }
+
+        return 'unexpected';
     }
 
     private function publishCompletedEvent(KafkaProducer $producer, ImportTask $task): void

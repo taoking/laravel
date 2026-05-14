@@ -6,12 +6,15 @@ use App\Domains\Files\Models\UploadedFile as UploadedFileRecord;
 use App\Domains\Imports\Models\ExportTask;
 use App\Domains\Imports\Models\ImportFailure;
 use App\Domains\Imports\Models\ImportTask;
+use App\Domains\Messaging\KafkaProducer;
 use App\Domains\Metrics\Models\MetricValue;
+use App\Jobs\ProcessMetricImportJob;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class PhaseFourImportQueueTest extends TestCase
@@ -59,6 +62,12 @@ class PhaseFourImportQueueTest extends TestCase
             'original_name' => 'metric-values.csv',
             'visibility' => 'private',
         ]);
+
+        $task = ImportTask::query()->findOrFail($taskId);
+        $this->assertSame(1, $task->attempts);
+        (new ProcessMetricImportJob($taskId))->handle(app(KafkaProducer::class));
+        $this->assertSame(1, $task->refresh()->attempts);
+        $this->assertSame(1, $task->failures()->count());
     }
 
     public function test_import_idempotency_key_prevents_duplicate_tasks_and_retry_reprocesses(): void
@@ -87,6 +96,109 @@ class PhaseFourImportQueueTest extends TestCase
             ->postJson("/api/v1/imports/{$first}/retry")
             ->assertOk()
             ->assertJsonPath('data.import_task.status', 'completed');
+    }
+
+    public function test_import_job_records_failure_classification_and_attempt_count(): void
+    {
+        Storage::fake('local');
+
+        $task = ImportTask::query()->create([
+            'idempotency_key' => 'import-missing-file',
+            'original_name' => 'missing.csv',
+            'disk' => 'local',
+            'path' => 'imports/missing.csv',
+            'status' => 'pending',
+        ]);
+
+        try {
+            (new ProcessMetricImportJob($task->id))->handle(app(KafkaProducer::class));
+            $this->fail('The import job should fail when the source file is missing.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('Unable to open import file', $exception->getMessage());
+        }
+
+        $task->refresh();
+        $this->assertSame('failed', $task->status);
+        $this->assertSame(1, $task->attempts);
+        $this->assertSame('storage', $task->failure_type);
+        $this->assertNotNull($task->last_failed_at);
+        $this->assertNotNull($task->finished_at);
+    }
+
+    public function test_import_compensation_command_resets_failed_task_and_dispatches_job(): void
+    {
+        Storage::fake('local');
+        $this->seed(DatabaseSeeder::class);
+
+        Storage::disk('local')->put('imports/compensate.csv', implode("\n", [
+            'metric_code,region_code,frequency_code,period_date,period_label,value,source',
+            'revenue_amount,CN-SH,monthly,2026-05-01,2026-05,1300000,compensation',
+        ]));
+
+        $task = ImportTask::query()->create([
+            'idempotency_key' => 'import-compensation',
+            'original_name' => 'compensate.csv',
+            'disk' => 'local',
+            'path' => 'imports/compensate.csv',
+            'status' => 'failed',
+            'attempts' => 1,
+            'failed_rows' => 1,
+            'error_message' => 'File was temporarily unavailable.',
+            'failure_type' => 'storage',
+            'last_failed_at' => now()->subMinutes(10),
+            'finished_at' => now()->subMinutes(10),
+        ]);
+        ImportFailure::query()->create([
+            'import_task_id' => $task->id,
+            'row_number' => 2,
+            'payload' => ['metric_code' => 'revenue_amount'],
+            'errors' => ['storage' => ['source unavailable']],
+        ]);
+
+        $this->artisan('imports:compensate', [
+            '--id' => [$task->id],
+            '--clear-failures' => true,
+        ])->assertExitCode(0);
+
+        $task->refresh();
+        $this->assertSame('completed', $task->status);
+        $this->assertSame(2, $task->attempts);
+        $this->assertSame(0, $task->failed_rows);
+        $this->assertNull($task->failure_type);
+        $this->assertNotNull($task->compensated_at);
+        $this->assertSame('manual compensation via imports:compensate', $task->compensation_reason);
+        $this->assertSame(0, $task->failures()->count());
+        $this->assertDatabaseHas(MetricValue::class, [
+            'period_date' => '2026-05-01 00:00:00',
+            'period_label' => '2026-05',
+            'source' => 'compensation',
+        ]);
+    }
+
+    public function test_import_compensation_dry_run_does_not_mutate_tasks(): void
+    {
+        Storage::fake('local');
+
+        $task = ImportTask::query()->create([
+            'idempotency_key' => 'import-compensation-dry-run',
+            'original_name' => 'dry-run.csv',
+            'disk' => 'local',
+            'path' => 'imports/dry-run.csv',
+            'status' => 'failed',
+            'attempts' => 1,
+            'failure_type' => 'storage',
+            'last_failed_at' => now()->subMinutes(10),
+        ]);
+
+        $this->artisan('imports:compensate', [
+            '--id' => [$task->id],
+            '--dry-run' => true,
+        ])->assertExitCode(0);
+
+        $task->refresh();
+        $this->assertSame('failed', $task->status);
+        $this->assertSame(1, $task->attempts);
+        $this->assertNull($task->compensated_at);
     }
 
     public function test_import_and_export_permissions_are_enforced(): void

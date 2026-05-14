@@ -197,6 +197,7 @@ docs/
 | Command | 用途 |
 | --- | --- |
 | `php artisan metrics:daily-summary` | 指标日常统计检查 |
+| `php artisan imports:compensate --dry-run` | 导入任务补偿预检查 |
 | `php artisan kafka:topics --create` | 创建或查看 Kafka topic |
 | `php artisan kafka:produce metric.import.completed` | 生产导入完成事件 |
 | `php artisan kafka:consume audit-log-consumer` | 消费事件并执行业务 handler |
@@ -492,6 +493,7 @@ docs/
   - `app/Http/Controllers/Api/V1/Imports/ImportTaskController.php`
   - `app/Http/Controllers/Api/V1/Imports/ExportTaskController.php`
   - `app/Jobs/ProcessMetricImportJob.php`
+  - `app/Console/Commands/ImportCompensateCommand.php`
   - `app/Console/Commands/ComputeMetricDailySummary.php`
   - `routes/console.php`
 - 文档入口：
@@ -505,6 +507,8 @@ docs/
   - 导入任务可重试。
   - 无导入/导出权限用户被拒绝。
   - 导出任务幂等创建。
+  - 导入 Job 记录尝试次数、失败分类和最近失败时间。
+  - `imports:compensate` 支持 dry-run 和补偿 failed 任务。
   - `metrics:daily-summary` 命令可执行。
 
 ### Phase 5：缓存、限流、安全和审计
