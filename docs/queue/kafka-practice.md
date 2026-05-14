@@ -2,12 +2,47 @@
 
 更新日期：2026-05-14  
 任务编号：P1-04  
-状态：待开发  
-当前优先级：P1 高，P1-02 静态分析基线完成后的下一项核心开发任务
+状态：已完成
+当前优先级：P1 高，已完成最小可验收事件流闭环；后续由 P1-03 继续补强 MQ 可靠性
 
 适用项目：Laravel 13 指标分析平台
 
 本文是 Kafka 专题的执行计划。目标不是只实现一个生产者和消费者，而是在 Laravel 13 项目中建设一个“学习 + 实战 + 面试”一体化的消息事件流实践模块。
+
+## 实现摘要
+
+当前实现采用双驱动：
+
+- `local`：文件型本地驱动，用于自动化测试、离线演示和 Codex agent 验收，不依赖本机 Kafka 服务。
+- `docker`：通过 `docker compose exec kafka` 调用 Kafka CLI，连接 `docker-compose.yml` 中的单节点 Kafka。
+
+选择原因：
+
+- 没有把 `ext-rdkafka` 作为硬依赖，避免本地 PHP 扩展缺失导致项目无法安装。
+- 保留真实 Kafka Docker 环境和 CLI 操作路径，可通过 `KAFKA_DRIVER=docker` 做集成演示。
+- 自动化测试验证消息协议、幂等表、handler 副作用、失败状态和 dead letter，不依赖外部容器。
+
+已实现代码入口：
+
+| 类型 | 路径 |
+| --- | --- |
+| 配置 | `config/kafka.php` |
+| Docker | `docker-compose.yml` 的 `kafka` 服务 |
+| 消息对象 | `app/Domains/Messaging/KafkaMessage.php`、`KafkaRecord.php` |
+| Producer | `app/Domains/Messaging/KafkaProducer.php` |
+| Consumer | `app/Domains/Messaging/KafkaConsumerService.php` |
+| Client | `app/Domains/Messaging/Clients/LocalKafkaClient.php`、`DockerKafkaClient.php` |
+| Handler | `app/Domains/Messaging/Handlers/AuditLogEventHandler.php`、`MetricCacheRefreshHandler.php` |
+| 幂等模型 | `app/Domains/Messaging/Models/ConsumedMessage.php` |
+| 迁移 | `database/migrations/2026_05_14_000008_create_consumed_messages_table.php` |
+| 命令 | `app/Console/Commands/Kafka*.php` |
+| 测试 | `tests/Feature/PhaseSevenKafkaMessagingTest.php` |
+
+已接入业务事件：
+
+- `ProcessMetricImportJob` 在导入完成后发布 `metric.import.completed`。
+- `MetricController` 在指标新增、更新、删除后发布 `metric.data.changed`。
+- `WriteAuditLog` 在审计日志写入后发布 `audit.event.created`，失败只 report，不阻断主业务。
 
 ## 0. 执行优先级和准入门禁
 
@@ -76,8 +111,9 @@ Kafka 更适合事件流：
 | 命令 | `kafka:topics` | 创建或查看 topic |
 | 命令 | `kafka:produce {event}` | 生产测试事件 |
 | 命令 | `kafka:consume {consumer_group}` | 启动消费者 |
+| 命令 | `kafka:lag` | 查看消费者组消息堆积 |
 | 命令 | `kafka:dead-letter:replay` | 死信人工补偿和重新消费 |
-| 测试 | `tests/Feature/KafkaMessagingTest.php` | 生产、消费、幂等、失败补偿验收 |
+| 测试 | `tests/Feature/PhaseSevenKafkaMessagingTest.php` | 生产、消费、幂等、失败补偿验收 |
 | 文档 | `docs/queue/kafka-practice.md` | 本文档，随实现持续更新 |
 
 约束：
@@ -319,7 +355,7 @@ Kafka 可以做到消息持久化、消费者 offset 管理和至少一次消费
 | `consumer_group` | string | 消费者组 |
 | `event_type` | string | 事件类型 |
 | `idempotency_key` | string | 业务幂等键 |
-| `status` | string | `processing`、`processed`、`failed`、`dead_lettered` |
+| `status` | string | `processing`、`completed`、`failed`、`dead_lettered` |
 | `processed_at` | timestamp nullable | 成功处理时间 |
 | `error_message` | text nullable | 错误信息 |
 | `created_at` | timestamp | 创建时间 |
@@ -336,17 +372,17 @@ Kafka 可以做到消息持久化、消费者 offset 管理和至少一次消费
 1. Consumer 收到消息后解析 headers 和 payload。
 2. 使用 `consumer_group + idempotency_key` 尝试写入 `processing` 记录。
 3. 如果唯一索引冲突，说明已处理或处理中：
-   - `processed`：跳过业务处理并提交 offset。
+   - `completed`：跳过业务处理并确认消费。
    - `processing`：根据超时时间判断是否抢占或跳过。
    - `failed`：按重试策略决定是否重试。
 4. 在数据库事务内执行业务副作用。
-5. 业务成功后将记录更新为 `processed`，写入 `processed_at`。
-6. 再手动提交 offset。
+5. 业务成功后将记录更新为 `completed`，写入 `processed_at`。
+6. 真实 Kafka 集成中再提交 offset；当前 Docker CLI 演示由 Kafka console consumer 管理 offset，本地驱动用文件 offset 模拟。
 
 关键问题：
 
 - 如果业务成功但提交 offset 失败，消息可能再次被消费。
-- 再次消费时幂等表已是 `processed`，消费者跳过业务副作用，然后重新提交 offset。
+- 再次消费时幂等表已是 `completed`，消费者跳过业务副作用，然后重新确认消费。
 - 这就是通过幂等表解决重复消费的核心。
 
 幂等键生成规则：
@@ -424,8 +460,8 @@ Dead letter payload：
 
 人工补偿：
 
-- 通过 `php artisan kafka:dead-letter:list` 查看死信。
-- 修复数据或代码后执行 `php artisan kafka:dead-letter:replay --topic=metrics.data.changed.dlq --message-id=...`。
+- 通过 `php artisan kafka:lag dead-letter-replay --topic=metrics.data.changed.dlq` 查看死信堆积。
+- 修复数据或代码后执行 `php artisan kafka:dead-letter:replay metrics.data.changed.dlq`。
 - replay 时必须保留原始 `message_id` 或生成新的补偿 `message_id`，并明确记录补偿来源。
 - 毒性消息不能无限重试，必须进入死信并允许人工处理，避免消费者卡死。
 
@@ -441,12 +477,12 @@ Offset：
 
 - offset 是消费者在 partition 内的消费位置。
 - 自动提交 offset 简单但风险更高，可能出现业务未完成但 offset 已提交。
-- 本专题要求手动提交 offset：业务成功并写入幂等表后再提交。
+- 生产级客户端建议手动提交 offset：业务成功并写入幂等表后再提交；当前 Docker CLI 演示以 console consumer 管理 offset，代码仍保留 `consumed_messages` 作为业务幂等边界。
 
 Ack：
 
-- 在代码表达中，ack 等价于确认当前消息已成功处理并提交 offset。
-- 失败时不提交 offset，按重试或死信策略处理。
+- 在代码表达中，ack 等价于确认当前消息已成功处理；生产级客户端还应在该点提交 offset。
+- 失败时记录 `failed` 或 `dead_lettered`，按重试或死信策略处理。
 
 Rebalance：
 
@@ -472,9 +508,10 @@ php artisan kafka:topics --create
 生产消息：
 
 ```bash
-php artisan kafka:produce metric.import.completed --import-task-id=1
-php artisan kafka:produce metric.data.changed --metric-id=1 --change-type=updated
-php artisan kafka:produce audit.event.created --action=metric.updated
+php artisan kafka:produce metric.import.completed
+php artisan kafka:produce metric.data.changed
+php artisan kafka:produce audit.event.created
+php artisan kafka:produce metric.import.completed --payload='{"import_task_id":1,"status":"completed","total_rows":10,"success_rows":10,"failed_rows":0}'
 ```
 
 消费消息：
@@ -488,15 +525,23 @@ php artisan kafka:consume metric-summary-consumer
 死信补偿：
 
 ```bash
-php artisan kafka:dead-letter:list
-php artisan kafka:dead-letter:replay --topic=metrics.data.changed.dlq --message-id=...
+php artisan kafka:dead-letter:replay metrics.data.changed.dlq
 ```
 
 消息堆积观察：
 
 ```bash
-php artisan kafka:lag
-php artisan kafka:lag --group=audit-log-consumer
+php artisan kafka:lag audit-log-consumer
+php artisan kafka:lag cache-refresh-consumer --topic=metrics.data.changed
+```
+
+真实 Docker Kafka 演示：
+
+```bash
+docker compose up -d kafka
+KAFKA_DRIVER=docker php artisan kafka:topics --create
+KAFKA_DRIVER=docker php artisan kafka:produce metric.import.completed
+KAFKA_DRIVER=docker php artisan kafka:consume audit-log-consumer --max=1
 ```
 
 ## 12. 测试与验收
@@ -515,6 +560,15 @@ php artisan kafka:lag --group=audit-log-consumer
 - 超过重试次数后进入 dead letter topic。
 - 消费者组内启动两个消费者时，同一 partition 不会被两个消费者同时消费。
 - 文档中能解释 offset、consumer group、ack、rebalance、lag、死信、幂等、顺序性。
+
+当前自动化验收：
+
+- `php artisan test --filter=PhaseSevenKafkaMessagingTest` 通过。
+- `kafka:topics --create` 可创建本地测试 topic。
+- `kafka:produce metric.import.completed` + `kafka:consume audit-log-consumer` 可写入审计日志。
+- 重复投递相同 `idempotency_key` 不会重复写入业务副作用。
+- handler 抛错后记录 failed，达到最大次数后进入 dead letter topic。
+- `kafka:lag audit-log-consumer` 可输出本地驱动 lag。
 
 建议测试：
 
@@ -587,17 +641,17 @@ php artisan kafka:lag --group=audit-log-consumer
 面试表达：
 
 > 我在 Laravel 13 指标分析平台里没有把 Kafka 当成普通队列使用，而是把它设计成消息事件流模块。项目里 Redis Queue 负责 CSV 导入、导出这类后台任务，Kafka 负责指标导入完成、指标数据变更和审计事件这类业务事实的分发。  
-> 我设计了 topic、message key、事件 version、trace_id、consumer group、手动 offset 提交和消费幂等表。对于同一指标的变更事件，我使用 metric_id 作为 key，让它们进入同一 partition 保持局部顺序；对于重复消费，我通过 consumer_group + idempotency_key 做唯一约束，业务成功后再提交 offset。  
+> 我设计了 topic、message key、事件 version、trace_id、consumer group、offset 处理边界和消费幂等表。对于同一指标的变更事件，我使用 metric_id 作为 key，让它们进入同一 partition 保持局部顺序；对于重复消费，我通过 consumer_group + idempotency_key 做唯一约束，业务成功后再确认消费。
 > 失败处理上，我区分可重试异常和不可重试异常，超过重试次数后进入 dead letter topic，并提供人工补偿和重新消费命令。这个模块能说明我理解事件驱动架构、Kafka 与 Redis Queue 的边界，也能把消息顺序性、幂等、失败补偿和消费者组这些面试高频问题落到 Laravel 企业项目代码里。
 
 ## 16. 实施步骤
 
-建议拆成 5 个迭代：
+已完成 5 个迭代：
 
 1. 环境与选型：确定 Kafka 客户端，补 Docker 单节点 Kafka，补 `config/kafka.php`。
 2. 消息协议：实现事件 DTO、topic 配置、message key、headers、version。
 3. 生产消费：实现 Producer、Consumer、Artisan produce/consume 命令。
-4. 可靠性：实现 `consumed_messages`、手动 offset、重试、dead letter、replay。
+4. 可靠性：实现 `consumed_messages`、offset 模拟/说明、重试、dead letter、replay。
 5. 验收包装：补测试、lag 观察命令、Redis Queue 对比文档、面试题和项目表达。
 
 完成定义：
@@ -605,5 +659,5 @@ php artisan kafka:lag --group=audit-log-consumer
 - 本文所有“核心功能清单”均有代码或明确实现说明。
 - 三个业务事件均可生产、消费和验证业务副作用。
 - 幂等、顺序性、失败补偿均有测试或集成测试说明。
-- `docs/pending-development-tasks.md` 将 P1-04 状态更新为“已完成”。
-- `docs/learning-index.md` 增加实际代码入口和验收命令。
+- `docs/pending-development-tasks.md` 已将 P1-04 状态更新为“已完成”。
+- `docs/learning-index.md` 已增加实际代码入口和验收命令。

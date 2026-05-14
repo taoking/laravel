@@ -9,6 +9,7 @@ docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
 docker compose exec app npm install
 docker compose exec app npm run build
+docker compose up -d kafka
 ```
 
 访问路径：
@@ -25,6 +26,25 @@ docker compose exec app npm run build
 - `redis`：缓存、限流、队列。
 - `queue`：Queue Worker。
 - `scheduler`：Laravel Scheduler。
+- `kafka`：单节点 Kafka，供 P1-04 消息事件流专题本地演示使用。
+
+## Kafka 本地演示
+
+默认 `.env.example` 使用 `KAFKA_DRIVER=local`，适合自动化测试和离线演示。需要连接真实 Docker Kafka 时，使用环境变量临时切换：
+
+```bash
+docker compose up -d kafka
+KAFKA_DRIVER=docker php artisan kafka:topics --create
+KAFKA_DRIVER=docker php artisan kafka:produce metric.import.completed
+KAFKA_DRIVER=docker php artisan kafka:consume audit-log-consumer --max=1
+KAFKA_DRIVER=docker php artisan kafka:lag audit-log-consumer
+```
+
+本地测试命令：
+
+```bash
+php artisan test --filter=PhaseSevenKafkaMessagingTest
+```
 
 ## 生产发布步骤
 

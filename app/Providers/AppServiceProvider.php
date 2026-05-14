@@ -2,9 +2,18 @@
 
 namespace App\Providers;
 
+use App\Domains\Messaging\Clients\DockerKafkaClient;
+use App\Domains\Messaging\Clients\LocalKafkaClient;
+use App\Domains\Messaging\Contracts\KafkaClient;
+use App\Domains\Messaging\Handlers\AuditLogEventHandler;
+use App\Domains\Messaging\Handlers\MetricCacheRefreshHandler;
+use App\Domains\Messaging\KafkaConsumerService;
+use App\Domains\Messaging\KafkaMessageFactory;
 use App\Events\AuditEvent;
 use App\Listeners\WriteAuditLog;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
@@ -23,7 +32,35 @@ class AppServiceProvider extends ServiceProvider
         // register() 只负责“登记服务”，例如：
         // $this->app->bind(PaymentGateway::class, StripeGateway::class);
         // 面试重点：register 阶段应尽量避免使用还未 boot 的其他服务。
-        //
+        $this->app->singleton(KafkaClient::class, function (Application $app): KafkaClient {
+            if (config('kafka.driver') === 'docker') {
+                return new DockerKafkaClient(
+                    composeCommand: config('kafka.docker.compose', ['docker', 'compose']),
+                    service: (string) config('kafka.docker.service', 'kafka'),
+                    brokers: (string) config('kafka.brokers', 'kafka:9092'),
+                    timeout: (int) config('kafka.docker.timeout', 30),
+                );
+            }
+
+            return new LocalKafkaClient(
+                files: $app->make(Filesystem::class),
+                basePath: (string) config('kafka.local_path', storage_path('app/kafka')),
+            );
+        });
+
+        $this->app->tag([
+            AuditLogEventHandler::class,
+            MetricCacheRefreshHandler::class,
+        ], 'kafka.handlers');
+
+        $this->app->singleton(KafkaConsumerService::class, function (Application $app): KafkaConsumerService {
+            return new KafkaConsumerService(
+                client: $app->make(KafkaClient::class),
+                factory: $app->make(KafkaMessageFactory::class),
+                handlers: $app->tagged('kafka.handlers'),
+                maxAttempts: (int) config('kafka.retry.max_attempts', 3),
+            );
+        });
     }
 
     /**

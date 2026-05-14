@@ -18,7 +18,7 @@
 3. `docs/development-completion-review.md`：当前开发完成度、访问路径、验收命令和后续执行规则。
 4. `docs/pending-development-tasks.md`：后续待开发任务清单、优先级、交付物和验收标准。
 5. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
-6. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块计划，当前下一项高优先级开发任务。
+6. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块说明，已完成 P1-04 最小事件流闭环。
 7. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
 8. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
 9. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
@@ -76,6 +76,11 @@
 - 指标 Explain 复盘：`docs/database/metric-query-explain.md`
 - 导入导出 Worker：`docs/queue/import-export-worker.md`
 - Kafka 消息事件流计划：`docs/queue/kafka-practice.md`
+- Kafka 配置：`config/kafka.php`
+- Kafka Docker 服务：`docker-compose.yml`
+- Kafka 消息模块：`app/Domains/Messaging`
+- Kafka Artisan 命令：`app/Console/Commands/KafkaTopicsCommand.php`、`KafkaProduceCommand.php`、`KafkaConsumeCommand.php`、`KafkaLagCommand.php`、`KafkaDeadLetterReplayCommand.php`
+- Kafka 验收测试：`tests/Feature/PhaseSevenKafkaMessagingTest.php`
 - 导入任务模型：`app/Domains/Imports/Models/ImportTask.php`
 - 上传文件模型：`app/Domains/Files/Models/UploadedFile.php`
 - 导出任务模型：`app/Domains/Imports/Models/ExportTask.php`
@@ -117,6 +122,7 @@
 composer install
 npm install
 composer analyse
+php artisan kafka:topics --create
 npm run build
 php artisan test
 php artisan serve --host=127.0.0.1 --port=8000
@@ -193,7 +199,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动已完成，P1-02 静态分析基线已完成，后续优先进入 Kafka 使用专题、MQ 可靠性、OpenAPI 中文化和更细粒度面试笔记。
-- 后续开发提交前必须保持 `composer analyse` 通过；Kafka 专题是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线和 P1-04 Kafka 使用专题已完成，后续优先进入 MQ 可靠性、OpenAPI 中文化和更细粒度面试笔记。
+- 后续开发提交前必须保持 `composer analyse` 通过；P1-03 MQ 与队列可靠性专题是当前下一项高优先级任务。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

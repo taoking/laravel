@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Metrics;
 
+use App\Domains\Messaging\KafkaProducer;
 use App\Domains\Metrics\Models\Metric;
 use App\Domains\Metrics\Queries\MetricQuery;
 use App\Domains\Metrics\Services\HotMetricService;
@@ -44,11 +45,12 @@ class MetricController extends Controller
         );
     }
 
-    public function store(MetricUpsertRequest $request): JsonResponse
+    public function store(MetricUpsertRequest $request, KafkaProducer $producer): JsonResponse
     {
         $metric = Metric::query()->create($request->validated() + [
             'created_by' => $request->user()->id,
         ]);
+        $this->publishMetricChanged($producer, $metric, 'created', array_keys($request->validated()), $request);
 
         AuditEvent::dispatch('metric.created', Metric::class, $metric->id, [
             'code' => $metric->code,
@@ -72,10 +74,12 @@ class MetricController extends Controller
         ]);
     }
 
-    public function update(MetricUpsertRequest $request, Metric $metric): JsonResponse
+    public function update(MetricUpsertRequest $request, Metric $metric, KafkaProducer $producer): JsonResponse
     {
-        $metric->fill($request->validated())->save();
+        $validated = $request->validated();
+        $metric->fill($validated)->save();
         Cache::forget("metrics:detail:{$metric->id}");
+        $this->publishMetricChanged($producer, $metric, 'updated', array_keys($validated), $request);
 
         AuditEvent::dispatch('metric.updated', Metric::class, $metric->id, [
             'code' => $metric->code,
@@ -86,18 +90,34 @@ class MetricController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Metric $metric): JsonResponse
+    public function destroy(Request $request, Metric $metric, KafkaProducer $producer): JsonResponse
     {
         $metricId = $metric->id;
         $metricCode = $metric->code;
 
         $metric->delete();
         Cache::forget("metrics:detail:{$metricId}");
+        $this->publishMetricChanged($producer, $metric, 'deleted', ['deleted_at'], $request);
 
         AuditEvent::dispatch('metric.deleted', Metric::class, $metricId, [
             'code' => $metricCode,
         ], $request);
 
         return ApiResponse::success(message: 'Deleted.');
+    }
+
+    /**
+     * @param  list<string>  $changedFields
+     */
+    private function publishMetricChanged(KafkaProducer $producer, Metric $metric, string $changeType, array $changedFields, Request $request): void
+    {
+        $producer->publishEvent('metric.data.changed', [
+            'metric_id' => $metric->id,
+            'change_id' => $metric->id.':'.$changeType.':'.now()->timestamp,
+            'change_type' => $changeType,
+            'changed_fields' => $changedFields,
+            'occurred_at' => now()->toIso8601String(),
+            'operator_id' => $request->user()?->id,
+        ], traceId: (string) $request->attributes->get('trace_id'));
     }
 }

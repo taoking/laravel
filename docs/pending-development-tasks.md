@@ -160,8 +160,8 @@
 当前 P1 执行顺序：
 
 1. P1-02 静态分析基线：已完成，作为后续开发准入门禁。
-2. P1-04 Kafka 使用专题实验：下一项高优先级开发任务。
-3. P1-03 MQ 与队列可靠性专题：与 Kafka 实现联动补强。
+2. P1-04 Kafka 使用专题实验：已完成，提供 Kafka 事件流最小闭环。
+3. P1-03 MQ 与队列可靠性专题：下一项高优先级开发任务，与 Kafka 实现联动补强。
 4. P1-01 Redis 缓存专题实验：在 Kafka 主链路完成后继续增强缓存面试场景。
 
 ### P1-01 Redis 缓存专题实验
@@ -231,8 +231,8 @@
 
 ### P1-04 Kafka 使用专题实验
 
-- 状态：待开发
-- 当前优先级：P1 高，P1-02 静态分析基线完成后的下一项核心开发任务。
+- 状态：已完成
+- 当前优先级：P1 高，已完成最小可验收事件流闭环；后续 P1-03 继续补强 MQ 可靠性专题。
 - 目标：把 Kafka 从概念对比提升为 Laravel 13 项目中的消息事件流实践模块，既能本地运行，又能覆盖事件驱动、幂等、顺序性、消费者组、offset、失败补偿、死信和面试表达。
 - 执行计划：`docs/queue/kafka-practice.md`。
 - 建议范围：
@@ -265,6 +265,14 @@
   - 消费失败时能记录失败状态，超过最大重试次数后进入 dead letter topic。
   - 消费者组内启动两个消费者时，同一 partition 不会被两个消费者同时消费。
   - 文档能回答 Kafka 与 Redis Queue 的区别、Kafka 顺序性、offset、consumer group、ack、rebalance、lag、死信、幂等和数据库事务与消息发送一致性。
+- 完成记录：
+  - 已新增 Kafka 单节点 Docker 服务：`docker-compose.yml` 中的 `kafka`。
+  - 已新增配置：`config/kafka.php`。
+  - 已新增领域模块：`app/Domains/Messaging`。
+  - 已新增消费幂等表：`consumed_messages`。
+  - 已新增命令：`kafka:topics`、`kafka:produce`、`kafka:consume`、`kafka:lag`、`kafka:dead-letter:replay`。
+  - 已接入真实业务事件：导入完成、指标数据变更、审计事件创建。
+  - 已新增测试：`tests/Feature/PhaseSevenKafkaMessagingTest.php`，覆盖生产、消费、审计副作用、幂等、缓存刷新、失败和死信。
 
 ### P1-05 多进程、Worker 与 Octane 专题
 
@@ -437,12 +445,11 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P1-04 Kafka 使用专题实验。
-2. P1-03 MQ 与队列可靠性专题。
-3. P2-01 OpenAPI 中文化和示例补全。
-4. P1-01 Redis 缓存专题实验。
-5. P3-04 Docker 一键启动验收。
-6. P3-01 Excel 导入。
-7. P3-02 大数据导出异步化。
+1. P1-03 MQ 与队列可靠性专题。
+2. P2-01 OpenAPI 中文化和示例补全。
+3. P1-01 Redis 缓存专题实验。
+4. P3-04 Docker 一键启动验收。
+5. P3-01 Excel 导入。
+6. P3-02 大数据导出异步化。
 
-原因：P0 后台真实数据联动已完成，P1-02 静态分析基线也已完成，后续开发必须保持 `composer analyse` 通过。下一轮应直接推进 Kafka，把它挂在导入、审计或指标变更的真实业务事件上实现，而不是只做孤立 Demo；P1-03 的 MQ 可靠性专题应围绕 Kafka 和现有 Redis Queue 做对比补强。
+原因：P0 后台真实数据联动、P1-02 静态分析基线和 P1-04 Kafka 事件流闭环均已完成，后续开发必须保持 `composer analyse` 通过。下一轮应围绕现有 Redis Queue 和 Kafka 实现补强 P1-03，覆盖消息丢失、重复消费、顺序性、死信、补偿和 Redis Queue/RabbitMQ/Kafka 取舍。

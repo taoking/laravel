@@ -93,3 +93,63 @@ git diff --check
 - Pint 格式检查、Composer 严格校验、Docker Compose 配置校验、diff 空白检查均通过。
 - 项目路由注册正常：`php artisan route:list --except-vendor` 显示 43 条路由。
 - 后续 Kafka、Redis、队列和接口任务提交前必须保持 `composer analyse` 通过。
+
+## 2026-05-14 P1-04 Kafka 消息事件流实践模块
+
+目标：把 Kafka 从概念对比提升为 Laravel 13 项目中的消息事件流实践模块，覆盖事件发布、消费、consumer group、幂等、失败重试、dead letter、lag 观察和 Redis Queue 边界说明。
+
+### 开发内容
+
+- `docker-compose.yml` 新增单节点 Kafka 服务。
+- 新增 `config/kafka.php`，配置 driver、broker、topic、consumer group、重试和 dead letter topic。
+- 新增 `app/Domains/Messaging`：
+  - `KafkaMessage`、`KafkaRecord` 消息协议对象。
+  - `KafkaProducer` 和 `KafkaConsumerService`。
+  - `LocalKafkaClient` 文件型测试驱动和 `DockerKafkaClient` Docker Kafka CLI 驱动。
+  - `AuditLogEventHandler` 和 `MetricCacheRefreshHandler`。
+  - `ConsumedMessage` 幂等消费模型。
+- 新增迁移：`consumed_messages`，通过 `consumer_group + idempotency_key` 约束重复消费。
+- 新增 Artisan 命令：
+  - `kafka:topics`
+  - `kafka:produce`
+  - `kafka:consume`
+  - `kafka:lag`
+  - `kafka:dead-letter:replay`
+- 接入真实业务事件：
+  - `ProcessMetricImportJob` 导入完成后发布 `metric.import.completed`。
+  - `MetricController` 指标新增、更新、删除后发布 `metric.data.changed`。
+  - `WriteAuditLog` 审计日志写入后发布 `audit.event.created`，发布失败只 report，不阻断主业务。
+- 新增 `tests/Feature/PhaseSevenKafkaMessagingTest.php`，覆盖生产消费、审计日志副作用、幂等跳过、缓存刷新、失败记录和 dead letter。
+- 更新 `docs/queue/kafka-practice.md`、`docs/pending-development-tasks.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 Docker runbook。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+composer analyse
+php artisan test
+php artisan test --filter=PhaseSevenKafkaMessagingTest
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+php artisan list kafka --raw
+php artisan kafka:topics --create
+php artisan kafka:lag audit-log-consumer
+docker compose up -d kafka
+KAFKA_DRIVER=docker php artisan kafka:topics --create
+KAFKA_DRIVER=docker DB_CONNECTION=sqlite DB_DATABASE=/Users/tao/workspace/code/laravel/laravel/database/database.sqlite php artisan kafka:produce metric.import.completed --payload='{"import_task_id":9001,"status":"completed","total_rows":2,"success_rows":2,"failed_rows":0}' --idempotency-key=metric-import:9001:completed:v1 --trace-id=trace-docker-kafka
+KAFKA_DRIVER=docker DB_CONNECTION=sqlite DB_DATABASE=/Users/tao/workspace/code/laravel/laravel/database/database.sqlite php artisan kafka:consume audit-log-consumer --max=1 --timeout-ms=10000
+git diff --check
+```
+
+验收结果：
+
+- Kafka 专项测试通过：3 个测试、19 个断言。
+- 全量测试通过：37 个测试、232 个断言。
+- 静态分析、前端构建、Pint、Composer 校验、Docker Compose 配置校验均通过。
+- Kafka 命令已注册 5 个。
+- 本地 driver 可创建 6 个 topic / dead letter topic。
+- 本地 lag 命令可输出 `audit-log-consumer` 的 topic lag。
+- Docker Kafka 容器启动成功，`KAFKA_DRIVER=docker` 可创建 topic、生产消息并消费写入审计日志。

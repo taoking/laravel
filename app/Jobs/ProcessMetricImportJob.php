@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domains\Imports\Models\ImportFailure;
 use App\Domains\Imports\Models\ImportTask;
+use App\Domains\Messaging\KafkaProducer;
 use App\Domains\Metrics\Models\Frequency;
 use App\Domains\Metrics\Models\Metric;
 use App\Domains\Metrics\Models\MetricValue;
@@ -25,7 +26,7 @@ class ProcessMetricImportJob implements ShouldQueue
 
     public function __construct(public int $importTaskId) {}
 
-    public function handle(): void
+    public function handle(KafkaProducer $producer): void
     {
         $task = ImportTask::query()->findOrFail($this->importTaskId);
 
@@ -42,6 +43,7 @@ class ProcessMetricImportJob implements ShouldQueue
 
         try {
             $this->process($task);
+            $this->publishCompletedEvent($producer, $task->refresh());
         } catch (Throwable $exception) {
             $task->forceFill([
                 'status' => 'failed',
@@ -179,6 +181,20 @@ class ProcessMetricImportJob implements ShouldQueue
             'row_number' => $rowNumber,
             'payload' => $payload,
             'errors' => $errors,
+        ]);
+    }
+
+    private function publishCompletedEvent(KafkaProducer $producer, ImportTask $task): void
+    {
+        $producer->publishEvent('metric.import.completed', [
+            'import_task_id' => $task->id,
+            'status' => $task->status,
+            'total_rows' => $task->total_rows,
+            'success_rows' => $task->success_rows,
+            'failed_rows' => $task->failed_rows,
+            'started_at' => $task->started_at?->toIso8601String(),
+            'finished_at' => $task->finished_at?->toIso8601String(),
+            'operator_id' => $task->user_id,
         ]);
     }
 }

@@ -192,6 +192,17 @@ docs/
 | POST | `/api/v1/exports` | 创建导出任务 |
 | GET | `/api/v1/audit-logs` | 审计日志列表 |
 
+### 4.3 Artisan 命令入口
+
+| Command | 用途 |
+| --- | --- |
+| `php artisan metrics:daily-summary` | 指标日常统计检查 |
+| `php artisan kafka:topics --create` | 创建或查看 Kafka topic |
+| `php artisan kafka:produce metric.import.completed` | 生产导入完成事件 |
+| `php artisan kafka:consume audit-log-consumer` | 消费事件并执行业务 handler |
+| `php artisan kafka:lag audit-log-consumer` | 查看 consumer group lag |
+| `php artisan kafka:dead-letter:replay metrics.data.changed.dlq` | replay 死信消息 |
+
 ## 5. 数据模型规划
 
 首批核心表：
