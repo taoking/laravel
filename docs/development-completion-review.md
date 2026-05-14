@@ -22,6 +22,7 @@
 | P1-03 | MQ 与队列可靠性专题 | 已完成 | `php artisan imports:compensate --dry-run`、`docs/queue/import-export-worker.md` |
 | P1-01 | Redis 缓存专题实验 | 已完成 | `php artisan redis:cache-lab lua-rate-limit`、`docs/redis/cache-reliability.md` |
 | P1-06 | Laravel 源码专题文档 | 已完成 | `docs/laravel-core/container.md`、`docs/laravel-core/queue-worker.md` |
+| P1-08 | MySQL 大数据性能实证 | 已完成 | `php artisan metrics:explain-query`、`docs/database/large-pagination.md` |
 
 ## 2. 多语言实现说明
 
@@ -113,6 +114,7 @@ php artisan kafka:topics --create
 php artisan test --filter=PhaseSevenKafkaMessagingTest
 php artisan test --filter=PhaseFourImportQueueTest
 php artisan test --filter=PhaseEightRedisCacheReliabilityTest
+php artisan test --filter=PhaseNineDatabasePerformanceTest
 ```
 
 验收账号：
@@ -144,7 +146,8 @@ php artisan test --filter=PhaseEightRedisCacheReliabilityTest
 - PHPStan/Larastan/Psalm 静态分析已完成并提升为后续开发准入门禁；Kafka 使用专题已完成最小事件流闭环，详细说明见 `docs/queue/kafka-practice.md`。
 - P1-03 MQ 与队列可靠性专题已完成，导入队列已补充失败分类、尝试次数、终态幂等和 `imports:compensate` 补偿命令。
 - P1-01 Redis 缓存专题实验已完成，指标缓存已补空值缓存、随机 TTL、token lock、热点 ZSet 和 Lua 限流实验。
-- P1-06 Laravel 源码专题文档已完成，Container、Provider、Facade、Middleware、Router、Eloquent 和 Queue Worker 均已绑定项目代码入口。下一项高优先级任务为 P1-08 MySQL 大数据性能实证。
+- P1-06 Laravel 源码专题文档已完成，Container、Provider、Facade、Middleware、Router、Eloquent 和 Queue Worker 均已绑定项目代码入口。
+- P1-08 MySQL 大数据性能实证已完成，具备造数、Explain 和 seek pagination 命令。下一项高优先级任务为 P1-05 多进程、Worker 与 Octane 专题。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -156,10 +159,11 @@ php artisan test --filter=PhaseEightRedisCacheReliabilityTest
 | 检查项 | 结果 |
 | --- | --- |
 | 前端生产构建 | `npm run build` 通过 |
-| PHP 测试 | `php artisan test` 通过，45 个测试、281 个断言 |
+| PHP 测试 | `php artisan test` 通过，47 个测试、289 个断言 |
 | 静态分析 | `composer analyse:phpstan`、`composer analyse:psalm` 通过 |
 | 导入队列可靠性专项测试 | `php artisan test --filter=PhaseFourImportQueueTest` 通过，8 个测试、45 个断言 |
 | Redis 缓存可靠性专项测试 | `php artisan test --filter=PhaseEightRedisCacheReliabilityTest` 通过，5 个测试、27 个断言 |
+| 数据库性能专项测试 | `php artisan test --filter=PhaseNineDatabasePerformanceTest` 通过，2 个测试、8 个断言 |
 | Kafka 专项测试 | `php artisan test --filter=PhaseSevenKafkaMessagingTest` 通过，3 个测试、19 个断言 |
 | Kafka 命令注册 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 |
 | Docker Kafka 集成 | `docker compose up -d kafka`、`KAFKA_DRIVER=docker php artisan kafka:topics --create`、生产和消费命令通过 |

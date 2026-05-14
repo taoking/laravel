@@ -410,3 +410,54 @@ git diff --check
 ```bash
 git diff --check
 ```
+
+## 2026-05-15 P1-08 MySQL 大数据性能实证
+
+目标：把指标查询优化从说明推进到可验证的命令和文档证据，覆盖造数、Explain、索引失效、回表/覆盖索引和大数据分页优化。
+
+### 开发内容
+
+- 新增 `SeedMetricDatasetCommand`：
+  - 命令：`php artisan metrics:seed-large-dataset`
+  - 支持 `--rows`、`--metrics`、`--batch` 和 `--dry-run`。
+  - 使用 `MetricValue::upsert()`，避免重复造数产生重复周期数据。
+- 新增 `ExplainMetricQueryCommand`：
+  - 命令：`php artisan metrics:explain-query`
+  - SQLite 使用 `EXPLAIN QUERY PLAN`。
+  - MySQL 使用 `EXPLAIN`。
+- 新增 `MetricSeekPageCommand`：
+  - 命令：`php artisan metrics:seek-page`
+  - 演示基于 `id < last_seen_id` 的 seek pagination。
+- 新增 `tests/Feature/PhaseNineDatabasePerformanceTest.php`：
+  - 验证 dry-run 不写数据。
+  - 验证批量造数。
+  - 验证 Explain 和 seek pagination 命令可执行。
+- 更新 `docs/database/metric-query-explain.md`：
+  - Explain 关注点、索引失效、回表、覆盖索引和面试追问。
+- 新增 `docs/database/large-pagination.md`：
+  - offset pagination 与 seek pagination 对比。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan list metrics --raw
+php artisan metrics:seed-large-dataset --rows=10 --metrics=2 --batch=5 --dry-run
+php artisan test --filter=PhaseNineDatabasePerformanceTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseNineDatabasePerformanceTest 通过：2 个测试、8 个断言。
+- 全量测试通过：47 个测试、289 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- `metrics:seed-large-dataset`、`metrics:explain-query`、`metrics:seek-page` 命令已注册。

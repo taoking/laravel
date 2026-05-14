@@ -67,7 +67,7 @@
 | Laravel 源码深度 | 7/10 | 已有 Container、Provider、Facade、Pipeline、Router、Eloquent、Queue Worker 专题 | 后续可继续补源码行级阅读和 Octane 常驻容器案例 |
 | PHP 语言底层 | 4/10 | 知识地图中有规划 | 缺数组、COW、引用、Generator、Attribute、Enum 的可运行示例 |
 | PHP 运行机制 | 5/10 | 有 FPM/部署文档 | 缺 FPM 进程估算、Worker 内存泄漏、常驻进程、Octane 对比实验 |
-| MySQL 深度 | 6/10 | 有指标查询、索引和 Explain 文档 | 缺大数据量 Seeder、压测结果、慢 SQL、分页优化对比 |
+| MySQL 深度 | 7/10 | 有指标查询、索引、造数命令、Explain 命令和 seek pagination 示例 | 缺真实百万级压测结果、慢 SQL 日志样例和事务锁复现实验 |
 | Redis 深度 | 7/10 | 有空值缓存、随机 TTL、token lock、热点 ZSet、Lua 限流实验 | 缺 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标 |
 | Queue/MQ 深度 | 8/10 | Redis Queue 可靠性 + Kafka 事件流已完成闭环 | Outbox Pattern 仍是文档级，RabbitMQ 暂未落地代码 |
 | 安全能力 | 7/10 | 签名、反重放、越权、上传校验、审计日志 | SSRF、XSS、CSRF、反序列化、敏感数据脱敏缺专题实验 |
@@ -137,7 +137,7 @@
 
 当前缺口：
 
-- 缺批量造数、Explain 前后对比、慢 SQL 日志样例和分页优化实证。
+- 已补批量造数、Explain 命令和 seek pagination 示例；后续缺口是百万级真实压测结果、慢 SQL 日志样例、死锁和事务锁复现。
 
 ### 3.4 Redis 追问
 
@@ -305,6 +305,7 @@
 ### AIP-05 MySQL 大数据性能实证
 
 - 优先级：P1
+- 状态：已完成
 - 目标：让指标查询优化从说明变成证据。
 - 代码交付：
   - 新增大数据 Seeder 或 Artisan 命令生成 10 万到 100 万指标值。
@@ -317,6 +318,10 @@
   - 有 Explain 前后对比。
   - 有慢 SQL 或压测输出样例。
   - 能回答索引失效、回表、覆盖索引、分页优化。
+- 完成证据：
+  - 已新增 `metrics:seed-large-dataset`、`metrics:explain-query` 和 `metrics:seek-page`。
+  - 已更新 `docs/database/metric-query-explain.md` 并新增 `docs/database/large-pagination.md`。
+  - 已新增 `tests/Feature/PhaseNineDatabasePerformanceTest.php`。
 
 ### AIP-06 PHP-FPM、Worker、Octane 与多进程
 
@@ -401,13 +406,12 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
-| 2 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
-| 3 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
-| 4 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 5 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 6 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 7 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 1 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
+| 2 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
+| 3 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
+| 4 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 5 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 6 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -687,12 +691,12 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-05，对应 `docs/pending-development-tasks.md` 中的 P1-08。
+下一轮开发建议直接执行 AIP-06，对应 `docs/pending-development-tasks.md` 中的 P1-05。
 
-目标是让指标查询优化从说明推进到可复现证据：
+目标是补齐 PHP 运行机制、常驻进程和生产排障：
 
-- 新增 10 万到 100 万指标值造数命令。
-- 新增 Explain 捕获或文档化 SQL 输出。
-- 对比 offset pagination 和 seek pagination。
-- 记录索引、回表、覆盖索引和慢 SQL 分析。
-- 用测试或命令证明大数据查询优化路径。
+- 写清 FPM、CLI、Queue Worker、Scheduler、Octane 生命周期差异。
+- 增加长进程内存增长模拟命令。
+- 记录 `queue:restart`、Supervisor graceful stop 和部署平滑处理。
+- 补 FPM `pm` 模式、进程数估算、OPcache 生效机制。
+- 补 502/504、内存泄漏、Worker 旧代码和 Scheduler 多机重复执行排障表。

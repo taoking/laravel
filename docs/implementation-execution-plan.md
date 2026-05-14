@@ -199,6 +199,9 @@ docs/
 | `php artisan metrics:daily-summary` | 指标日常统计检查 |
 | `php artisan imports:compensate --dry-run` | 导入任务补偿预检查 |
 | `php artisan redis:cache-lab lua-rate-limit` | Redis Lua 限流实验 |
+| `php artisan metrics:seed-large-dataset` | 指标大数据造数 |
+| `php artisan metrics:explain-query` | 指标查询 Explain |
+| `php artisan metrics:seek-page` | 指标 seek pagination 示例 |
 | `php artisan kafka:topics --create` | 创建或查看 Kafka topic |
 | `php artisan kafka:produce metric.import.completed` | 生产导入完成事件 |
 | `php artisan kafka:consume audit-log-consumer` | 消费事件并执行业务 handler |
