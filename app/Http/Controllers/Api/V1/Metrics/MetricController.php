@@ -6,6 +6,7 @@ use App\Domains\Messaging\KafkaProducer;
 use App\Domains\Metrics\Models\Metric;
 use App\Domains\Metrics\Queries\MetricQuery;
 use App\Domains\Metrics\Services\HotMetricService;
+use App\Domains\Metrics\Services\MetricCacheService;
 use App\Events\AuditEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Metrics\MetricUpsertRequest;
@@ -13,7 +14,6 @@ use App\Http\Resources\MetricResource;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class MetricController extends Controller
 {
@@ -61,24 +61,20 @@ class MetricController extends Controller
         ], 'Created.', 201);
     }
 
-    public function show(Metric $metric, HotMetricService $hotMetrics): JsonResponse
+    public function show(Metric $metric, HotMetricService $hotMetrics, MetricCacheService $metricCache): JsonResponse
     {
         $hotMetrics->record($metric);
 
-        $metricData = Cache::remember("metrics:detail:{$metric->id}", 600, function () use ($metric) {
-            return MetricResource::make($metric->load(['category', 'latestValue.region', 'latestValue.frequency']))->resolve();
-        });
-
         return ApiResponse::success([
-            'metric' => $metricData,
+            'metric' => $metricCache->detail($metric),
         ]);
     }
 
-    public function update(MetricUpsertRequest $request, Metric $metric, KafkaProducer $producer): JsonResponse
+    public function update(MetricUpsertRequest $request, Metric $metric, KafkaProducer $producer, MetricCacheService $metricCache): JsonResponse
     {
         $validated = $request->validated();
         $metric->fill($validated)->save();
-        Cache::forget("metrics:detail:{$metric->id}");
+        $metricCache->forget((int) $metric->id);
         $this->publishMetricChanged($producer, $metric, 'updated', array_keys($validated), $request);
 
         AuditEvent::dispatch('metric.updated', Metric::class, $metric->id, [
@@ -90,13 +86,13 @@ class MetricController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, Metric $metric, KafkaProducer $producer): JsonResponse
+    public function destroy(Request $request, Metric $metric, KafkaProducer $producer, MetricCacheService $metricCache): JsonResponse
     {
         $metricId = $metric->id;
         $metricCode = $metric->code;
 
         $metric->delete();
-        Cache::forget("metrics:detail:{$metricId}");
+        $metricCache->forget((int) $metricId);
         $this->publishMetricChanged($producer, $metric, 'deleted', ['deleted_at'], $request);
 
         AuditEvent::dispatch('metric.deleted', Metric::class, $metricId, [

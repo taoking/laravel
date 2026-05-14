@@ -198,6 +198,7 @@ docs/
 | --- | --- |
 | `php artisan metrics:daily-summary` | 指标日常统计检查 |
 | `php artisan imports:compensate --dry-run` | 导入任务补偿预检查 |
+| `php artisan redis:cache-lab lua-rate-limit` | Redis Lua 限流实验 |
 | `php artisan kafka:topics --create` | 创建或查看 Kafka topic |
 | `php artisan kafka:produce metric.import.completed` | 生产导入完成事件 |
 | `php artisan kafka:consume audit-log-consumer` | 消费事件并执行业务 handler |
@@ -555,6 +556,9 @@ docs/
   - `app/Http/Middleware/RecordOperationLog.php`
   - `app/Domains/Operations/Models/OperationLog.php`
   - `app/Domains/Metrics/Services/HotMetricService.php`
+  - `app/Domains/Metrics/Services/MetricCacheService.php`
+  - `app/Domains/Metrics/Services/RedisRateLimiterService.php`
+  - `app/Console/Commands/RedisCacheLabCommand.php`
   - `app/Providers/AppServiceProvider.php`
   - `app/Http/Controllers/Api/V1/Audit/AuditLogController.php`
 - 文档入口：
@@ -563,8 +567,12 @@ docs/
   - `tests/Feature/PhaseFiveSecurityAuditTest.php`
 - 已覆盖场景：
   - 指标详情缓存命中。
+  - 空指标详情写入短 TTL 空值缓存，避免缓存穿透。
+  - 指标详情重建使用 token lock，避免击穿和误删锁。
   - 首页统计缓存命中。
   - 热点指标排行记录。
+  - 热点指标和详情缓存使用随机 TTL。
+  - Redis Lua 限流实验命令可执行。
   - 指标更新后缓存失效。
   - 指标更新写入审计日志，包含用户、动作、资源。
   - API 请求写入操作日志。

@@ -68,8 +68,8 @@
 | PHP 语言底层 | 4/10 | 知识地图中有规划 | 缺数组、COW、引用、Generator、Attribute、Enum 的可运行示例 |
 | PHP 运行机制 | 5/10 | 有 FPM/部署文档 | 缺 FPM 进程估算、Worker 内存泄漏、常驻进程、Octane 对比实验 |
 | MySQL 深度 | 6/10 | 有指标查询、索引和 Explain 文档 | 缺大数据量 Seeder、压测结果、慢 SQL、分页优化对比 |
-| Redis 深度 | 5/10 | 有缓存、限流、HotMetricService | 缺穿透/击穿/雪崩、大 Key、热点 Key、分布式锁误删、Lua 原子脚本实验 |
-| Queue/MQ 深度 | 7/10 | Redis Queue + Kafka 已完成最小闭环 | Redis Queue 可靠性、补偿命令、RabbitMQ 对比仍不足 |
+| Redis 深度 | 7/10 | 有空值缓存、随机 TTL、token lock、热点 ZSet、Lua 限流实验 | 缺 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标 |
+| Queue/MQ 深度 | 8/10 | Redis Queue 可靠性 + Kafka 事件流已完成闭环 | Outbox Pattern 仍是文档级，RabbitMQ 暂未落地代码 |
 | 安全能力 | 7/10 | 签名、反重放、越权、上传校验、审计日志 | SSRF、XSS、CSRF、反序列化、敏感数据脱敏缺专题实验 |
 | 架构设计 | 6/10 | Domains、Service、Query Object、Event-Driven 已出现 | DTO、Value Object、Repository 取舍、Outbox、模块边界还需成文 |
 | 性能优化 | 6/10 | 缓存、Explain、wrk 脚本、Runbook | 缺基准数据、前后对比、容量估算和 APM 式定位流程 |
@@ -157,7 +157,7 @@
 
 当前缺口：
 
-- 缺穿透、击穿、雪崩、锁 token、Lua 限流、大 Key/热点 Key 的代码实验和测试。
+- 已补穿透、击穿、雪崩、锁 token、Lua 限流和热点 ZSet 的代码实验；后续缺口转为 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标采集。
 
 ### 3.5 Queue / MQ / Kafka 追问
 
@@ -177,7 +177,7 @@
 
 当前缺口：
 
-- Kafka 已有最小闭环，但 Redis Queue 可靠性、补偿命令、Outbox 和 RabbitMQ 对比还要补齐。
+- Kafka 和 Redis Queue 可靠性已形成闭环；后续缺口是 Outbox Pattern 代码化和 RabbitMQ 真实连接实践。
 
 ### 3.6 安全追问
 
@@ -247,6 +247,7 @@
 ### AIP-02 Redis 深度实验
 
 - 优先级：P1
+- 状态：已完成
 - 对应待开发项：P1-01
 - 目标：补齐缓存三大问题、分布式锁、Lua、热点 Key 和大 Key。
 - 代码交付：
@@ -260,6 +261,12 @@
 - 验收：
   - 测试覆盖命中、空缓存、锁释放、Lua 限流。
   - 文档能解释 Laravel Cache 与 Redis 原生命令边界。
+- 完成证据：
+  - `MetricCacheService` 已覆盖空值缓存、随机 TTL、重建锁和 token lock。
+  - `HotMetricService` 已补热点 ZSet 随机 TTL 和 Cache fallback。
+  - `RedisRateLimiterService` 与 `redis:cache-lab` 已提供 Lua 限流实验入口。
+  - `tests/Feature/PhaseEightRedisCacheReliabilityTest.php` 已覆盖 Redis 缓存可靠性边界。
+  - `docs/redis/cache-reliability.md` 已记录缓存三大问题、锁、Lua、大 Key、热 Key 和一致性。
 
 ### AIP-03 Laravel 源码追问专题
 
@@ -390,15 +397,14 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-02 Redis 深度实验 | Redis 是 PHP 后端高频核心能力，当前深度不足 |
-| 2 | AIP-03 Laravel 源码追问专题 | 区分会用 Laravel 和理解 Laravel |
-| 3 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
-| 4 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
-| 5 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
-| 6 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 7 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 8 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 9 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 1 | AIP-03 Laravel 源码追问专题 | 区分会用 Laravel 和理解 Laravel |
+| 2 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
+| 3 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
+| 4 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
+| 5 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
+| 6 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 7 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 8 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -678,12 +684,12 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-02，对应 `docs/pending-development-tasks.md` 中的 P1-01。
+下一轮开发建议直接执行 AIP-03，对应 `docs/pending-development-tasks.md` 中的 P1-06。
 
-目标是把当前 Redis 使用从普通缓存提升到可追问的缓存可靠性案例：
+目标是把 Laravel 源码理解绑定到当前项目真实入口：
 
-- 指标详情空值缓存防穿透。
-- 热点指标缓存加随机 TTL 防雪崩。
-- 单指标缓存重建使用 token lock 防击穿和误删。
-- Lua 限流示例或命令。
-- 文档解释 Laravel Cache 与 Redis 原生命令边界、大 Key、热 Key 和一致性取舍。
+- 从 `MetricController@index` 串起路由、Middleware、Controller、Query Object 和 Resource。
+- 从 `PermissionService`、`MetricCacheService`、`KafkaProducer` 解释 Service Container。
+- 从 `EnsureUserHasPermission` 解释 Middleware Pipeline。
+- 从 `ProcessMetricImportJob` 解释 Queue Worker 生命周期。
+- 每篇源码专题都绑定项目入口、源码类、生产风险和资深追问。

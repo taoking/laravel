@@ -15,13 +15,14 @@ class HotMetricService
     {
         try {
             Redis::zincrby(self::KEY, 1, $metric->code);
+            Redis::expire(self::KEY, $this->hotTtlSeconds());
 
             return;
         } catch (Throwable) {
             $scores = Cache::get(self::KEY, []);
             $scores[$metric->code] = ($scores[$metric->code] ?? 0) + 1;
             arsort($scores);
-            Cache::put(self::KEY, $scores, 3600);
+            Cache::put(self::KEY, $scores, $this->hotTtlSeconds());
         }
     }
 
@@ -32,5 +33,10 @@ class HotMetricService
         } catch (Throwable) {
             return array_slice(Cache::get(self::KEY, []), 0, $limit, true);
         }
+    }
+
+    public function hotTtlSeconds(): int
+    {
+        return 3600 + random_int(0, 300);
     }
 }

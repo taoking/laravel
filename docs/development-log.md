@@ -312,3 +312,66 @@ git diff --check
 - 全量测试通过：40 个测试、254 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - `imports:compensate` 命令已注册，SQLite 演示库 dry-run 输出 `No import tasks matched compensation criteria.`。
+
+## 2026-05-15 P1-01 Redis 缓存专题实验
+
+目标：把项目里的 Redis 使用从普通缓存提升到可追问的缓存可靠性案例，覆盖缓存穿透、击穿、雪崩、热点 Key、分布式锁 token 和 Lua 原子限流。
+
+### 开发内容
+
+- 新增 `MetricCacheService`：
+  - 指标详情缓存统一入口。
+  - 不存在指标写入短 TTL 空值 payload，防缓存穿透。
+  - 正常详情缓存使用随机 TTL，降低雪崩风险。
+  - 缓存重建使用 `Cache::lock()`，降低击穿风险。
+  - 提供 token lock 获取和释放方法，演示避免误删锁。
+- 增强 `MetricController`：
+  - 指标详情读取改为走 `MetricCacheService`。
+  - 指标更新和删除改为调用缓存服务清理详情缓存。
+- 增强 `HotMetricService`：
+  - Redis ZSet 热点指标记录后设置随机 TTL。
+  - Redis 不可用时继续降级为 Cache。
+- 新增 `RedisRateLimiterService`：
+  - Redis 可用时使用 Lua 脚本原子执行 `INCR + EXPIRE + 阈值判断`。
+  - Redis 不可用时降级为 Cache bucket；Cache store 也不可用时继续降级为进程内 memory bucket，保证本地测试和离线演示稳定。
+- 新增 `RedisCacheLabCommand`：
+  - 命令：`php artisan redis:cache-lab lua-rate-limit --key=metric-query-demo --limit=3 --decay=60`
+- 新增 `docs/redis/cache-reliability.md`：
+  - 缓存三大问题、Laravel Cache 与 Redis 原生命令边界、大 Key、热 Key、缓存一致性和面试追问。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 测试覆盖
+
+新增 `tests/Feature/PhaseEightRedisCacheReliabilityTest.php`：
+
+- 空值缓存防穿透。
+- token lock 避免错误 owner 释放锁。
+- 指标详情随机 TTL 和更新后缓存失效。
+- 热点指标随机 TTL 范围。
+- Lua 限流脚本内容、Redis 不可用 fallback 和 Artisan 命令。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan list redis --raw
+php artisan redis:cache-lab lua-rate-limit --key=metric-query-demo --limit=3 --decay=60
+php artisan test --filter=PhaseEightRedisCacheReliabilityTest
+php artisan test --filter=PhaseFiveSecurityAuditTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseEightRedisCacheReliabilityTest 通过：5 个测试、27 个断言。
+- PhaseFiveSecurityAuditTest 通过：6 个测试、31 个断言。
+- 全量测试通过：45 个测试、281 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- `redis:cache-lab` 命令已注册，默认 `.env` 下 Redis/MySQL 不可用时仍可通过 memory fallback 输出 `allowed`。
