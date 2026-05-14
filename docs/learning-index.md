@@ -29,6 +29,7 @@
 14. `docs/laravel-core/queue-worker.md`：Queue Worker 执行流程源码追问。
 15. `docs/database/large-pagination.md`：大数据分页、offset 与 seek pagination 优化。
 16. `docs/runtime/php-fpm-worker-octane.md`：PHP-FPM、Worker、Scheduler、Octane 和常驻进程专题。
+17. `docs/php-language/runtime-labs.md`：PHP 弱类型、COW、引用、对象、Generator 和 PHP 8.x 新特性实验。
 
 ## 已实现访问路径
 
@@ -108,6 +109,8 @@
 - Redis Lua 限流服务：`app/Domains/Metrics/Services/RedisRateLimiterService.php`
 - Redis 缓存实验命令：`app/Console/Commands/RedisCacheLabCommand.php`
 - 运行机制实验命令：`app/Console/Commands/RuntimeWorkerLabCommand.php`
+- PHP 语言底层实验命令：`app/Console/Commands/PhpLanguageLabCommand.php`
+- PHP 语言底层专题：`docs/php-language/runtime-labs.md`
 - 审计日志接口：`app/Http/Controllers/Api/V1/Audit/AuditLogController.php`
 - 性能 Runbook：`docs/performance/performance-runbook.md`
 - Docker 部署 Runbook：`docs/deploy/docker-deploy-runbook.md`
@@ -133,6 +136,7 @@
 - Phase 4 验收测试：`tests/Feature/PhaseFourImportQueueTest.php`
 - Phase 5 验收测试：`tests/Feature/PhaseFiveSecurityAuditTest.php`
 - Phase 9 数据库性能测试：`tests/Feature/PhaseNineDatabasePerformanceTest.php`
+- Phase 11 PHP 语言底层测试：`tests/Feature/PhaseElevenPhpLanguageLabTest.php`
 - RBAC 模型：`app/Domains/Access/Models/Role.php`、`Permission.php`、`Menu.php`
 - 权限服务：`app/Domains/Access/Services/PermissionService.php`
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
@@ -205,6 +209,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Laravel 源码专题：`docs/laravel-core/container.md`、`service-provider.md`、`facade.md`、`middleware-pipeline.md`、`router-model-binding.md`、`eloquent-query.md`、`queue-worker.md`
 - 数据库性能专题：`docs/database/metric-query-explain.md`、`docs/database/large-pagination.md`
 - PHP 运行机制专题：`docs/runtime/php-fpm-worker-octane.md`
+- PHP 语言底层专题：`docs/php-language/runtime-labs.md`
 - 知识地图：`docs/learning-knowledge-map.md`
 - Laravel 骨架学习：`docs/laravel-framework-study-guide.md`
 - Laravel 生命周期：`docs/laravel-startup-shutdown-flow.md`
@@ -229,8 +234,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证和 P1-05 运行机制专题已完成，后续优先进入 PHP 语言底层和更细粒度面试笔记。
-- 后续开发提交前必须保持 `composer analyse` 通过；P1-07 PHP 语言底层代码示例是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题和 P1-07 PHP 语言底层代码示例已完成，后续优先进入 CI/CD 和更细粒度面试笔记。
+- 后续开发提交前必须保持 `composer analyse` 通过；P2-03 GitHub Actions CI 是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

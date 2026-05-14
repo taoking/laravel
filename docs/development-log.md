@@ -503,3 +503,50 @@ git diff --check
 - 全量测试通过：49 个测试、291 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - `runtime:worker-lab` 命令已注册，可用于运行机制演示和面试追问复盘。
+
+## 2026-05-15 P1-07 PHP 语言底层代码示例
+
+目标：把 PHP 语言底层八股转成可运行实验，补齐弱类型、COW、引用、对象赋值、Generator 和 PHP 8.x 新特性的面试证据。
+
+### 开发内容
+
+- 新增 `PhpLanguageLabCommand`：
+  - `php artisan php:language-lab weak-types`
+  - `php artisan php:language-lab cow`
+  - `php artisan php:language-lab references`
+  - `php artisan php:language-lab objects`
+  - `php artisan php:language-lab generator`
+  - `php artisan php:language-lab modern`
+  - `php artisan php:language-lab all`
+- 新增 `docs/php-language/runtime-labs.md`：
+  - PHP 数组、HashTable、Copy-on-Write。
+  - 引用与对象赋值差异。
+  - Generator 与数组全量加载对比。
+  - Union Type、Enum、Readonly、Attribute、Closure、Arrow Function、`#[\Override]`。
+  - PHP 7.4 到 PHP 8.4 面试差异表。
+- 新增 `tests/Feature/PhaseElevenPhpLanguageLabTest.php`。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan php:language-lab all --rows=10
+php artisan php:language-lab cow --rows=10
+php artisan test --filter=PhaseElevenPhpLanguageLabTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseElevenPhpLanguageLabTest 通过：3 个测试、13 个断言。
+- 全量测试通过：52 个测试、304 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- `php:language-lab` 命令已注册，可用于语言底层演示和面试追问复盘。

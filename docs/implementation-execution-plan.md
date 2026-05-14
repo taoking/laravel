@@ -203,6 +203,7 @@ docs/
 | `php artisan metrics:explain-query` | 指标查询 Explain |
 | `php artisan metrics:seek-page` | 指标 seek pagination 示例 |
 | `php artisan runtime:worker-lab lifecycle` | PHP-FPM/Worker/Octane 生命周期实验 |
+| `php artisan php:language-lab all` | PHP 弱类型、COW、引用、对象、Generator 和现代特性实验 |
 | `php artisan kafka:topics --create` | 创建或查看 Kafka topic |
 | `php artisan kafka:produce metric.import.completed` | 生产导入完成事件 |
 | `php artisan kafka:consume audit-log-consumer` | 消费事件并执行业务 handler |

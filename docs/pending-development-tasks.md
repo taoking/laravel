@@ -170,7 +170,7 @@
 5. P1-06 Laravel 源码专题文档：已完成，Container、Provider、Facade、Middleware、Router、Eloquent、Queue Worker 均绑定项目入口。
 6. P1-08 MySQL 大数据性能实证：已完成，具备造数、Explain 和 seek pagination 命令。
 7. P1-05 多进程、Worker 与 Octane 专题：已完成，具备 runtime 实验命令和运行机制文档。
-8. P1-07 PHP 语言底层代码示例：下一项 P1 任务，补齐 COW、引用、Generator、Enum、Attribute 等可运行实验。
+8. P1-07 PHP 语言底层代码示例：已完成，具备 COW、引用、Generator、Enum、Attribute 等可运行实验。
 
 ### P1-01 Redis 缓存专题实验
 
@@ -345,7 +345,7 @@
 
 ### P1-07 PHP 语言底层代码示例
 
-- 状态：待开发
+- 状态：已完成
 - 目标：把 PHP 语言底层八股转成可运行实验，支撑资深 PHP 面试追问。
 - 执行计划：`docs/interview/architect-interview-coverage-plan.md` 中的 AIP-04。
 - 建议范围：
@@ -358,6 +358,10 @@
 - 验收标准：
   - 有可运行命令或测试。
   - 文档能回答 COW 什么时候触发、Generator 如何降低内存、PHP 8.x 特性解决什么问题。
+- 完成记录：
+  - 已新增 `php:language-lab` 命令，支持 `weak-types`、`cow`、`references`、`objects`、`generator`、`modern` 和 `all`。
+  - 已新增 `docs/php-language/runtime-labs.md`。
+  - 已新增 `tests/Feature/PhaseElevenPhpLanguageLabTest.php`。
 
 ### P1-08 MySQL 大数据性能实证
 
@@ -536,12 +540,12 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P1-07 PHP 语言底层代码示例。
-2. P2-03 GitHub Actions CI。
-3. P2-01 OpenAPI 中文化和示例补全。
-4. P2-04 安全攻防增强。
-5. P3-04 Docker 一键启动验收。
+1. P2-03 GitHub Actions CI。
+2. P2-01 OpenAPI 中文化和示例补全。
+3. P2-04 安全攻防增强。
+4. P3-04 Docker 一键启动验收。
+5. P2-02 Excel 导入解析。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证和 P1-05 运行机制专题均已完成。架构师面试评估显示，后续最需要补齐的是 PHP 语言底层。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题和 P1-07 PHP 语言底层实验均已完成。后续优先把本地质量门禁固化到 CI，再补接口契约、安全攻防和部署验收。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

@@ -23,7 +23,7 @@
 | Kafka 命令 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 | 能说明 Kafka 不只是文档概念，已有生产、消费、lag、topic、死信重放入口 |
 | 后台页面 | `resources/js/Pages/*` 覆盖登录、工作台、用户、角色、菜单、指标、导入、审计 | 能演示企业后台主流程和中文多语言界面 |
 | API 主线 | `routes/api.php` 覆盖健康检查、鉴权、权限、指标、导入导出、签名、审计 | 能串起 Auth、RBAC、业务 API、安全和审计 |
-| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7 | 能作为回归和面试证据，但还缺 Redis 深度、PHP 语言底层、MySQL 大数据性能和运行机制测试 |
+| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11 | 能作为回归和面试证据，后续重点是 CI 固化和浏览器端验收 |
 | 静态分析 | `composer.json` 已提供 `analyse`、`analyse:phpstan`、`analyse:psalm` | 已具备 P1 工程质量门禁 |
 | 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
 
@@ -65,7 +65,7 @@
 | 项目完整度 | 8/10 | 后台、API、导入、审计、Kafka、Docker 均有入口 | 业务闭环够讲，但部分功能仍是学习版 |
 | Laravel 使用广度 | 8/10 | Controller、Request、Resource、Model、Policy、Middleware、Job、Event、Command | 源码级解释还不够代码化 |
 | Laravel 源码深度 | 7/10 | 已有 Container、Provider、Facade、Pipeline、Router、Eloquent、Queue Worker 专题 | 后续可继续补源码行级阅读和 Octane 常驻容器案例 |
-| PHP 语言底层 | 4/10 | 知识地图中有规划 | 缺数组、COW、引用、Generator、Attribute、Enum 的可运行示例 |
+| PHP 语言底层 | 7/10 | 有 `php:language-lab`、COW/引用/对象/Generator/PHP 8.x 特性实验和专题文档 | 缺扩展到真实导入链路的内存曲线和更多 PHP 8.4 生产案例 |
 | PHP 运行机制 | 7/10 | 有 FPM/Worker/Octane 文档和 runtime 实验命令 | 缺真实 FPM 压测、Octane 实装和线上内存曲线 |
 | MySQL 深度 | 7/10 | 有指标查询、索引、造数命令、Explain 命令和 seek pagination 示例 | 缺真实百万级压测结果、慢 SQL 日志样例和事务锁复现实验 |
 | Redis 深度 | 7/10 | 有空值缓存、随机 TTL、token lock、热点 ZSet、Lua 限流实验 | 缺 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标 |
@@ -115,9 +115,10 @@
 - `readonly`、Enum、Attribute 在项目中分别解决什么问题？
 - `#[\Override]` 在静态分析中解决了什么问题？
 
-当前缺口：
+当前状态：
 
-- 缺一组 Artisan 命令或测试，用真实输出演示内存、引用、Generator、Attribute、Enum。
+- 已新增 `php:language-lab` 和 `docs/php-language/runtime-labs.md`，可用真实输出演示弱类型、COW、引用、对象赋值、Generator、Enum、Attribute、Readonly、Closure 和 `#[\Override]`。
+- 后续缺口是把 Generator 内存曲线进一步绑定到真实 CSV 导入和百万行文件压测。
 
 ### 3.3 MySQL 追问
 
@@ -292,6 +293,7 @@
 ### AIP-04 PHP 语言底层代码示例
 
 - 优先级：P1
+- 状态：已完成
 - 目标：补齐 PHP 语言底层的可运行证据。
 - 代码交付：
   - 新增 `app/Console/Commands/PhpLanguageLabCommand.php` 或 `tests/Unit/PhpLanguageFeatureTest.php`。
@@ -301,6 +303,10 @@
 - 验收：
   - 命令或测试输出能说明内存变化、引用行为和 Generator 优势。
   - 文档能回答 PHP 7.4 到 8.4 的关键差异。
+- 完成证据：
+  - 已新增 `app/Console/Commands/PhpLanguageLabCommand.php`。
+  - 已新增 `docs/php-language/runtime-labs.md`。
+  - 已新增 `tests/Feature/PhaseElevenPhpLanguageLabTest.php`。
 
 ### AIP-05 MySQL 大数据性能实证
 
@@ -411,11 +417,11 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
-| 2 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 3 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 4 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 5 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 1 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
+| 2 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 3 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 4 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 5 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -511,13 +517,15 @@
 
 ### 6.4 AIP-04 / P1-07：PHP 语言底层实验
 
+- 状态：已完成
+
 执行目标：用可运行命令或测试证明 PHP 语言机制，不停留在八股。
 
 代码路径：
 
-- 新增 `app/Console/Commands/PhpLanguageLabCommand.php`
-- 或新增 `tests/Unit/PhpLanguageFeatureTest.php`
-- 新增 `docs/php-language/runtime-labs.md`
+- `app/Console/Commands/PhpLanguageLabCommand.php`
+- `tests/Feature/PhaseElevenPhpLanguageLabTest.php`
+- `docs/php-language/runtime-labs.md`
 
 实施路径：
 
@@ -531,6 +539,12 @@
 
 - 命令或测试能输出内存变化、引用行为和 Generator 行为。
 - 文档能回答“PHP 数组为什么既能 list 又能 map”“COW 何时发生”“Generator 为什么省内存”。
+
+完成证据：
+
+- `php artisan php:language-lab all --rows=1000`
+- `php artisan test --filter=PhaseElevenPhpLanguageLabTest`
+- `docs/php-language/runtime-labs.md`
 
 ### 6.5 AIP-05 / P1-08：MySQL 大数据性能实证
 
@@ -695,12 +709,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-04，对应 `docs/pending-development-tasks.md` 中的 P1-07。
+下一轮开发建议直接执行 AIP-08，对应 `docs/pending-development-tasks.md` 中的 P2-03。
 
-目标是用可运行实验补齐 PHP 语言底层：
+目标是把本地质量门禁固化为 GitHub Actions：
 
-- 演示数组 copy-on-write 和引用打破 COW。
-- 演示对象赋值、clone 和引用赋值差异。
-- 演示 Generator 读取大文件相对数组加载的内存优势。
-- 演示 Enum、Attribute、Readonly、Closure、Arrow Function 的项目适用场景。
-- 文档补 PHP 7.4 到 PHP 8.4 的面试差异表。
+- 执行 Composer 校验、依赖安装、PHPStan/Larastan/Psalm。
+- 执行 PHPUnit、Pint、前端构建和 Docker Compose 配置校验。
+- 文档说明 CI 失败项如何映射到本地修复命令。
