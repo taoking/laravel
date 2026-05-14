@@ -375,3 +375,38 @@ git diff --check
 - 全量测试通过：45 个测试、281 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - `redis:cache-lab` 命令已注册，默认 `.env` 下 Redis/MySQL 不可用时仍可通过 memory fallback 输出 `allowed`。
+
+## 2026-05-15 P1-06 Laravel 源码专题文档
+
+目标：把 Laravel 源码理解绑定到当前项目真实入口，让面试表达从“知道概念”提升到“能从项目代码讲到框架核心类和执行链”。
+
+### 文档内容
+
+新增 `docs/laravel-core` 专题目录：
+
+- `container.md`：服务容器、依赖解析、控制器和命令参数注入。
+- `service-provider.md`：`register()`、`boot()`、Kafka driver 绑定和 RateLimiter 注册。
+- `facade.md`：Facade 静态外观、容器转发、Cache/Redis/Route 使用边界。
+- `middleware-pipeline.md`：Middleware 洋葱模型、权限、签名、操作日志和异常返回。
+- `router-model-binding.md`：Router、ControllerDispatcher、隐式模型绑定和 route cache。
+- `eloquent-query.md`：Eloquent Builder、Query Builder、关系加载、`MetricQuery` 和 N+1 风险。
+- `queue-worker.md`：Queue Worker、Job payload、`ProcessMetricImportJob`、重试、timeout 和补偿。
+
+### 验收方式
+
+- 每篇文档都包含：
+  - 项目入口。
+  - Laravel 源码类。
+  - 执行链。
+  - 生产风险。
+  - 基础问题。
+  - 资深追问。
+- 已更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md` 和 `docs/development-completion-review.md`。
+
+### 验收记录
+
+本任务只新增文档，不修改业务代码。提交前需要执行：
+
+```bash
+git diff --check
+```

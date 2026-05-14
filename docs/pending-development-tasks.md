@@ -167,7 +167,7 @@
 2. P1-04 Kafka 使用专题实验：已完成，提供 Kafka 事件流最小闭环。
 3. P1-03 MQ 与队列可靠性专题：已完成，导入队列具备失败分类、尝试次数、终态幂等和补偿命令。
 4. P1-01 Redis 缓存专题实验：已完成，指标缓存具备空值缓存、随机 TTL、token lock 和 Lua 限流实验。
-5. P1-06 Laravel 源码专题文档：下一项高优先级开发任务，绑定项目代码入口，补齐源码级追问。
+5. P1-06 Laravel 源码专题文档：已完成，Container、Provider、Facade、Middleware、Router、Eloquent、Queue Worker 均绑定项目入口。
 6. P1-07 PHP 语言底层代码示例：补齐 COW、引用、Generator、Enum、Attribute 等可运行实验。
 7. P1-08 MySQL 大数据性能实证：补齐 Explain、慢 SQL、分页优化和容量评估证据。
 
@@ -313,7 +313,7 @@
 
 ### P1-06 Laravel 源码专题文档
 
-- 状态：待开发
+- 状态：已完成
 - 目标：围绕当前项目补齐 Laravel 核心源码学习材料。
 - 建议范围：
   - `docs/laravel-framework-study-guide.md`
@@ -329,6 +329,14 @@
 - 验收标准：
   - 每篇文档绑定一个项目代码入口。
   - 每篇文档包含基础问题和资深追问。
+- 完成记录：
+  - 已新增 `docs/laravel-core/container.md`。
+  - 已新增 `docs/laravel-core/service-provider.md`。
+  - 已新增 `docs/laravel-core/facade.md`。
+  - 已新增 `docs/laravel-core/middleware-pipeline.md`。
+  - 已新增 `docs/laravel-core/router-model-binding.md`。
+  - 已新增 `docs/laravel-core/eloquent-query.md`。
+  - 已新增 `docs/laravel-core/queue-worker.md`。
 
 ### P1-07 PHP 语言底层代码示例
 
@@ -516,15 +524,14 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P1-06 Laravel 源码专题文档。
-2. P1-08 MySQL 大数据性能实证。
-3. P1-05 多进程、Worker 与 Octane 专题。
-4. P1-07 PHP 语言底层代码示例。
-5. P2-03 GitHub Actions CI。
-6. P2-01 OpenAPI 中文化和示例补全。
-7. P2-04 安全攻防增强。
-8. P3-04 Docker 一键启动验收。
+1. P1-08 MySQL 大数据性能实证。
+2. P1-05 多进程、Worker 与 Octane 专题。
+3. P1-07 PHP 语言底层代码示例。
+4. P2-03 GitHub Actions CI。
+5. P2-01 OpenAPI 中文化和示例补全。
+6. P2-04 安全攻防增强。
+7. P3-04 Docker 一键启动验收。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性和 P1-01 Redis 缓存专题均已完成。架构师面试评估显示，后续最需要补齐的是 Laravel 源码、MySQL 性能实证、PHP 运行机制和 PHP 语言底层。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题和 P1-06 Laravel 源码专题均已完成。架构师面试评估显示，后续最需要补齐的是 MySQL 性能实证、PHP 运行机制和 PHP 语言底层。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

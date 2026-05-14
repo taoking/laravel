@@ -7,7 +7,7 @@
 当前本地仓库状态：
 
 - 当前分支：`13.x`
-- 当前提交：`15bd0b19`
+- 当前提交：`c7a62977`
 - `composer.json` 依赖：`laravel/framework:^13.0`
 - 远端存在：`origin/10.x`
 
@@ -18,6 +18,16 @@ vendor/laravel/framework/src/Illuminate/
 ```
 
 因此本仓库能直接阅读和注释的是 Laravel 应用启动入口、配置、路由、默认模型、迁移、测试等骨架代码。要深入框架核心类，需要安装依赖后阅读 `vendor/laravel/framework`，或单独 clone `laravel/framework`。
+
+当前项目已补充按项目入口组织的源码专题：
+
+- `docs/laravel-core/container.md`
+- `docs/laravel-core/service-provider.md`
+- `docs/laravel-core/facade.md`
+- `docs/laravel-core/middleware-pipeline.md`
+- `docs/laravel-core/router-model-binding.md`
+- `docs/laravel-core/eloquent-query.md`
+- `docs/laravel-core/queue-worker.md`
 
 ## 10.x 与当前本地 13.x 骨架差异
 

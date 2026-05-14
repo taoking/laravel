@@ -64,7 +64,7 @@
 | --- | ---: | --- | --- |
 | 项目完整度 | 8/10 | 后台、API、导入、审计、Kafka、Docker 均有入口 | 业务闭环够讲，但部分功能仍是学习版 |
 | Laravel 使用广度 | 8/10 | Controller、Request、Resource、Model、Policy、Middleware、Job、Event、Command | 源码级解释还不够代码化 |
-| Laravel 源码深度 | 5/10 | 有生命周期和框架学习文档 | Container、Facade、Pipeline、Eloquent、Queue Worker 缺逐类源码阅读笔记 |
+| Laravel 源码深度 | 7/10 | 已有 Container、Provider、Facade、Pipeline、Router、Eloquent、Queue Worker 专题 | 后续可继续补源码行级阅读和 Octane 常驻容器案例 |
 | PHP 语言底层 | 4/10 | 知识地图中有规划 | 缺数组、COW、引用、Generator、Attribute、Enum 的可运行示例 |
 | PHP 运行机制 | 5/10 | 有 FPM/部署文档 | 缺 FPM 进程估算、Worker 内存泄漏、常驻进程、Octane 对比实验 |
 | MySQL 深度 | 6/10 | 有指标查询、索引和 Explain 文档 | 缺大数据量 Seeder、压测结果、慢 SQL、分页优化对比 |
@@ -96,7 +96,7 @@
 
 当前缺口：
 
-- 需要把源码阅读绑定到项目代码，例如 `MetricController@index`、`EnsureUserHasPermission`、`AppServiceProvider`、`KafkaConsumerService`。
+- 已完成项目入口绑定源码专题；后续缺口是更细的源码行级阅读、Octane 常驻容器案例和复杂包发现机制。
 
 ### 3.2 PHP 底层追问
 
@@ -271,6 +271,7 @@
 ### AIP-03 Laravel 源码追问专题
 
 - 优先级：P1
+- 状态：已完成
 - 对应待开发项：P1-06
 - 目标：把框架源码解释绑定到项目代码，不只写概念。
 - 文档交付：
@@ -284,6 +285,9 @@
 - 验收：
   - 每篇至少绑定一个项目入口、一个源码类、三道追问。
   - 能从 `MetricController@index` 讲到容器、路由、Middleware、Query Object 和 Resource。
+- 完成证据：
+  - 已新增 `docs/laravel-core/container.md`、`service-provider.md`、`facade.md`、`middleware-pipeline.md`、`router-model-binding.md`、`eloquent-query.md`、`queue-worker.md`。
+  - 每篇均包含项目入口、Laravel 源码类、执行链、生产风险、基础问题和资深追问。
 
 ### AIP-04 PHP 语言底层代码示例
 
@@ -397,14 +401,13 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-03 Laravel 源码追问专题 | 区分会用 Laravel 和理解 Laravel |
-| 2 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
-| 3 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
-| 4 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
-| 5 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 6 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 7 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 8 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 1 | AIP-05 MySQL 大数据性能实证 | 指标分析平台必须能证明查询优化 |
+| 2 | AIP-06 PHP-FPM、Worker、Octane 与多进程 | 补齐 PHP 运行机制和生产排障能力 |
+| 3 | AIP-04 PHP 语言底层代码示例 | 让语言基础从八股变成可运行实验 |
+| 4 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
+| 5 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 6 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 7 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -684,12 +687,12 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-03，对应 `docs/pending-development-tasks.md` 中的 P1-06。
+下一轮开发建议直接执行 AIP-05，对应 `docs/pending-development-tasks.md` 中的 P1-08。
 
-目标是把 Laravel 源码理解绑定到当前项目真实入口：
+目标是让指标查询优化从说明推进到可复现证据：
 
-- 从 `MetricController@index` 串起路由、Middleware、Controller、Query Object 和 Resource。
-- 从 `PermissionService`、`MetricCacheService`、`KafkaProducer` 解释 Service Container。
-- 从 `EnsureUserHasPermission` 解释 Middleware Pipeline。
-- 从 `ProcessMetricImportJob` 解释 Queue Worker 生命周期。
-- 每篇源码专题都绑定项目入口、源码类、生产风险和资深追问。
+- 新增 10 万到 100 万指标值造数命令。
+- 新增 Explain 捕获或文档化 SQL 输出。
+- 对比 offset pagination 和 seek pagination。
+- 记录索引、回表、覆盖索引和慢 SQL 分析。
+- 用测试或命令证明大数据查询优化路径。

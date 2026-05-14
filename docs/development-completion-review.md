@@ -21,6 +21,7 @@
 | P1-04 | Kafka 消息事件流实践模块 | 已完成 | `php artisan kafka:produce`、`php artisan kafka:consume`、`docs/queue/kafka-practice.md` |
 | P1-03 | MQ 与队列可靠性专题 | 已完成 | `php artisan imports:compensate --dry-run`、`docs/queue/import-export-worker.md` |
 | P1-01 | Redis 缓存专题实验 | 已完成 | `php artisan redis:cache-lab lua-rate-limit`、`docs/redis/cache-reliability.md` |
+| P1-06 | Laravel 源码专题文档 | 已完成 | `docs/laravel-core/container.md`、`docs/laravel-core/queue-worker.md` |
 
 ## 2. 多语言实现说明
 
@@ -142,7 +143,8 @@ php artisan test --filter=PhaseEightRedisCacheReliabilityTest
 - Docker 配置已可静态校验，后续可补充完整容器启动截图、日志样例和线上排障案例。
 - PHPStan/Larastan/Psalm 静态分析已完成并提升为后续开发准入门禁；Kafka 使用专题已完成最小事件流闭环，详细说明见 `docs/queue/kafka-practice.md`。
 - P1-03 MQ 与队列可靠性专题已完成，导入队列已补充失败分类、尝试次数、终态幂等和 `imports:compensate` 补偿命令。
-- P1-01 Redis 缓存专题实验已完成，指标缓存已补空值缓存、随机 TTL、token lock、热点 ZSet 和 Lua 限流实验。下一项高优先级任务为 P1-06 Laravel 源码专题文档。
+- P1-01 Redis 缓存专题实验已完成，指标缓存已补空值缓存、随机 TTL、token lock、热点 ZSet 和 Lua 限流实验。
+- P1-06 Laravel 源码专题文档已完成，Container、Provider、Facade、Middleware、Router、Eloquent 和 Queue Worker 均已绑定项目代码入口。下一项高优先级任务为 P1-08 MySQL 大数据性能实证。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
