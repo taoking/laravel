@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -17,13 +16,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 可以批量生成随机用户：
-        // User::factory(10)->create();
-
-        // 默认骨架创建一个固定测试用户，便于本地登录或调试认证流程。
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(AccessControlSeeder::class);
+        $this->call(MetricSeeder::class);
     }
 }

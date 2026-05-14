@@ -1,0 +1,1277 @@
+openapi: 3.1.0
+info:
+  title: Laravel 13 Senior PHP Learning API
+  version: 0.2.0
+  description: API contract for the Laravel 13 senior PHP learning and interview preparation project.
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local artisan server
+tags:
+  - name: Auth
+    description: Session authentication
+  - name: System
+    description: Health and runtime checks
+  - name: Access
+    description: Current user, permissions, menus, users, and roles
+  - name: Metrics
+    description: Metric library, categories, dimensions, and query APIs
+  - name: Async
+    description: Import, export, queue, and scheduled task APIs
+  - name: Security
+    description: Signature, replay protection, and security examples
+security:
+  - sessionCookie: []
+paths:
+  /login:
+    post:
+      tags: [Auth]
+      summary: Authenticate a user with the web session guard
+      operationId: postLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserEnvelope'
+        '302':
+          description: Browser form login redirects to /admin
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/Error'
+  /logout:
+    post:
+      tags: [Auth]
+      summary: Logout the current session
+      operationId: postLogout
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '302':
+          description: Browser logout redirects to /login
+        '401':
+          $ref: '#/components/responses/Error'
+  /api/v1/health:
+    get:
+      tags: [System]
+      summary: API health check
+      operationId: getApiHealth
+      security: []
+      responses:
+        '200':
+          description: API is available
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Health'
+  /api/v1/security/signed-echo:
+    post:
+      tags: [Security]
+      summary: Verify HMAC signature and replay nonce
+      operationId: postSignedEcho
+      security: []
+      parameters:
+        - in: header
+          name: X-Timestamp
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Nonce
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Signature
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /api/v1/me:
+    get:
+      tags: [Access]
+      summary: Get the current authenticated user
+      operationId: getMe
+      responses:
+        '200':
+          $ref: '#/components/responses/UserEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+  /api/v1/permissions:
+    get:
+      tags: [Access]
+      summary: Get current permission codes and menu tree
+      operationId: getCurrentPermissions
+      responses:
+        '200':
+          description: Current permissions and menus
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [permissions, menus]
+                        properties:
+                          permissions:
+                            type: array
+                            items:
+                              type: string
+                            example: ['*']
+                          menus:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Menu'
+        '401':
+          $ref: '#/components/responses/Error'
+  /api/v1/permissions/catalog:
+    get:
+      tags: [Access]
+      summary: List permission and menu catalog for access management pages
+      operationId: getPermissionCatalog
+      responses:
+        '200':
+          description: Permission and menu catalog
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [permissions, menus]
+                        properties:
+                          permissions:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Permission'
+                          menus:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Menu'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/users:
+    get:
+      tags: [Access]
+      summary: List users
+      operationId: getUsers
+      parameters:
+        - in: query
+          name: keyword
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, disabled]
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated user list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Access]
+      summary: Create a user
+      operationId: postUsers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpsertRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/UserEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/users/{id}:
+    get:
+      tags: [Access]
+      summary: Get a user detail
+      operationId: getUser
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Access]
+      summary: Update a user
+      operationId: putUser
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpsertRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Access]
+      summary: Delete a user
+      operationId: deleteUser
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/roles:
+    get:
+      tags: [Access]
+      summary: List roles
+      operationId: getRoles
+      responses:
+        '200':
+          description: Role list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Access]
+      summary: Create a role
+      operationId: postRoles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpsertRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/RoleEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/roles/{id}:
+    put:
+      tags: [Access]
+      summary: Update a role
+      operationId: putRole
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpsertRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/RoleEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Access]
+      summary: Delete a non-system role
+      operationId: deleteRole
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/roles/{id}/permissions:
+    put:
+      tags: [Access]
+      summary: Replace role permissions and refresh affected user permission cache
+      operationId: putRolePermissions
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permission_ids]
+              properties:
+                permission_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          $ref: '#/components/responses/RoleEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/menus/{id}:
+    put:
+      tags: [Access]
+      summary: Update menu title, path, sort order, and visibility
+      operationId: putMenu
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                path:
+                  type: string
+                sort_order:
+                  type: integer
+                is_visible:
+                  type: boolean
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/metrics:
+    get:
+      tags: [Metrics]
+      summary: List metrics with filters, sorting, and pagination
+      operationId: getMetrics
+      parameters:
+        - in: query
+          name: keyword
+          schema:
+            type: string
+        - in: query
+          name: category_id
+          schema:
+            type: integer
+        - in: query
+          name: category_code
+          schema:
+            type: string
+        - in: query
+          name: region_id
+          schema:
+            type: integer
+        - in: query
+          name: frequency_code
+          schema:
+            type: string
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [id, name, code, status, created_at, updated_at]
+        - in: query
+          name: direction
+          schema:
+            type: string
+            enum: [asc, desc]
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated metric list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Metric'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Metrics]
+      summary: Create a metric
+      operationId: postMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricUpsertRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/MetricEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/metrics/{id}:
+    get:
+      tags: [Metrics]
+      summary: Get a metric detail
+      operationId: getMetric
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/MetricEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+    put:
+      tags: [Metrics]
+      summary: Update a metric
+      operationId: putMetric
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricUpsertRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MetricEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Metrics]
+      summary: Delete a metric
+      operationId: deleteMetric
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/metric-categories:
+    get:
+      tags: [Metrics]
+      summary: List active metric categories
+      operationId: getMetricCategories
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MetricCategory'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/dimensions/regions:
+    get:
+      tags: [Metrics]
+      summary: List active regions
+      operationId: getRegions
+      responses:
+        '200':
+          description: Region list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Region'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/dimensions/frequencies:
+    get:
+      tags: [Metrics]
+      summary: List active frequencies
+      operationId: getFrequencies
+      responses:
+        '200':
+          description: Frequency list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Frequency'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/imports:
+    get:
+      tags: [Async]
+      summary: List import tasks
+      operationId: getImports
+      responses:
+        '200':
+          description: Paginated import tasks
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ImportTask'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Async]
+      summary: Create a CSV metric import task
+      operationId: postImports
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                idempotency_key:
+                  type: string
+      responses:
+        '202':
+          $ref: '#/components/responses/ImportTaskEnvelope'
+        '200':
+          $ref: '#/components/responses/ImportTaskEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/imports/{id}:
+    get:
+      tags: [Async]
+      summary: Get an import task detail
+      operationId: getImport
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/ImportTaskEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/imports/{id}/retry:
+    post:
+      tags: [Async]
+      summary: Retry an import task
+      operationId: postImportRetry
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          $ref: '#/components/responses/ImportTaskEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/exports:
+    post:
+      tags: [Async]
+      summary: Create a metric export task
+      operationId: postExports
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [metrics]
+                filters:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '202':
+          $ref: '#/components/responses/ExportTaskEnvelope'
+        '200':
+          $ref: '#/components/responses/ExportTaskEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /api/v1/audit-logs:
+    get:
+      tags: [Security]
+      summary: List audit logs
+      operationId: getAuditLogs
+      parameters:
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Paginated audit logs
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AuditLog'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: laravel-session
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+  responses:
+    Success:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiSuccess'
+    UserEnvelope:
+      description: User envelope
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiSuccess'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [user]
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+    RoleEnvelope:
+      description: Role envelope
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiSuccess'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [role]
+                    properties:
+                      role:
+                        $ref: '#/components/schemas/Role'
+    MetricEnvelope:
+      description: Metric envelope
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiSuccess'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [metric]
+                    properties:
+                      metric:
+                        $ref: '#/components/schemas/Metric'
+    ImportTaskEnvelope:
+      description: Import task envelope
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiSuccess'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [import_task]
+                    properties:
+                      import_task:
+                        $ref: '#/components/schemas/ImportTask'
+    ExportTaskEnvelope:
+      description: Export task envelope
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiSuccess'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    required: [export_task]
+                    properties:
+                      export_task:
+                        $ref: '#/components/schemas/ExportTask'
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ValidationError:
+      description: Validation error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiSuccess:
+      type: object
+      required: [success, message, data, trace_id]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: OK
+        data:
+          type: object
+        trace_id:
+          type: [string, 'null']
+          example: 0196f0f1-0000-7000-8000-000000000000
+    ApiError:
+      type: object
+      required: [success, message, errors, trace_id]
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Forbidden.
+        errors:
+          type: object
+          additionalProperties: true
+        trace_id:
+          type: [string, 'null']
+    Health:
+      type: object
+      required: [status, service, version, timestamp]
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: metrics-platform-api
+        version:
+          type: string
+          example: v1
+        timestamp:
+          type: string
+          format: date-time
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        password:
+          type: string
+          format: password
+          example: password
+        remember:
+          type: boolean
+          default: false
+    UserUpsertRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Analyst User
+        email:
+          type: string
+          format: email
+          example: analyst@example.com
+        password:
+          type: string
+          minLength: 8
+        status:
+          type: string
+          enum: [active, disabled]
+        role_ids:
+          type: array
+          items:
+            type: integer
+    RoleUpsertRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Analyst
+        code:
+          type: string
+          example: analyst
+        data_scope:
+          type: string
+          enum: [all, department, self]
+        description:
+          type: string
+        permission_ids:
+          type: array
+          items:
+            type: integer
+    User:
+      type: object
+      required: [id, name, email, status]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [active, disabled]
+        last_login_at:
+          type: [string, 'null']
+          format: date-time
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleSummary'
+        created_at:
+          type: [string, 'null']
+          format: date-time
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+    RoleSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        data_scope:
+          type: string
+    Role:
+      allOf:
+        - $ref: '#/components/schemas/RoleSummary'
+        - type: object
+          properties:
+            description:
+              type: [string, 'null']
+            is_system:
+              type: boolean
+            permissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Permission'
+            created_at:
+              type: [string, 'null']
+              format: date-time
+            updated_at:
+              type: [string, 'null']
+              format: date-time
+    Permission:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+          enum: [menu, button, api]
+    Menu:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        path:
+          type: string
+        route_name:
+          type: [string, 'null']
+        icon:
+          type: [string, 'null']
+        permission:
+          type: [string, 'null']
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Menu'
+    MetricUpsertRequest:
+      type: object
+      required: [metric_category_id, name, code]
+      properties:
+        metric_category_id:
+          type: integer
+        name:
+          type: string
+          example: Revenue Amount
+        code:
+          type: string
+          example: revenue_amount
+        unit:
+          type: [string, 'null']
+          example: CNY
+        status:
+          type: string
+          enum: [active, disabled]
+        description:
+          type: [string, 'null']
+        sort_order:
+          type: integer
+    Metric:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        unit:
+          type: [string, 'null']
+        status:
+          type: string
+        description:
+          type: [string, 'null']
+        category:
+          $ref: '#/components/schemas/MetricCategory'
+        latest_value:
+          type: [object, 'null']
+          properties:
+            id:
+              type: integer
+            value:
+              type: string
+            period_date:
+              type: string
+              format: date
+            period_label:
+              type: string
+            region:
+              $ref: '#/components/schemas/Region'
+            frequency:
+              $ref: '#/components/schemas/Frequency'
+        created_at:
+          type: [string, 'null']
+          format: date-time
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+    MetricCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        parent_id:
+          type: [integer, 'null']
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: [string, 'null']
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+    Region:
+      type: object
+      properties:
+        id:
+          type: integer
+        parent_id:
+          type: [integer, 'null']
+        name:
+          type: string
+        code:
+          type: string
+        level:
+          type: string
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+    Frequency:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+    ImportTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        idempotency_key:
+          type: string
+        original_name:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, completed_with_errors, failed]
+        total_rows:
+          type: integer
+        success_rows:
+          type: integer
+        failed_rows:
+          type: integer
+        failures:
+          type: array
+          items:
+            type: object
+            properties:
+              row_number:
+                type: integer
+              payload:
+                type: object
+              errors:
+                type: object
+    ExportTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        idempotency_key:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        filters:
+          type: object
+        path:
+          type: [string, 'null']
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: [integer, 'null']
+        action:
+          type: string
+        resource_type:
+          type: [string, 'null']
+        resource_id:
+          type: [integer, 'null']
+        ip_address:
+          type: [string, 'null']
+        trace_id:
+          type: [string, 'null']
+        metadata:
+          type: [object, 'null']
+        created_at:
+          type: [string, 'null']
+          format: date-time
+    PaginationMeta:
+      type: object
+      required: [current_page, per_page, total]
+      properties:
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer

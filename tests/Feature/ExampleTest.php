@@ -17,7 +17,7 @@ class ExampleTest extends TestCase
         // 这里请求 routes/web.php 中定义的根路径 `/`。
         $response = $this->get('/');
 
-        // 断言 HTTP 状态码为 200，说明路由匹配、视图渲染和响应发送成功。
-        $response->assertStatus(200);
+        // 当前根路径会按登录状态跳转。未登录用户进入登录页。
+        $response->assertRedirect('/login');
     }
 }

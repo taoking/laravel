@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'api_signature' => [
+        'secret' => env('API_SIGNATURE_SECRET', 'local-signature-secret'),
+    ],
+
 ];
