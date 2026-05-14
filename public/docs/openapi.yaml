@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Laravel 13 资深 PHP 学习项目 API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     多数据源指标分析与内容管理平台的 API 契约。
     本文档用于本地开发、接口联调、面试演示和后续 Codex agent 开发校验。
@@ -126,6 +126,53 @@ paths:
           $ref: '#/components/responses/Error'
         '409':
           $ref: '#/components/responses/Error'
+  /api/v1/security/url-check:
+    post:
+      tags: [Security]
+      summary: SSRF URL 安全检查
+      description: 登录管理员用于验证远程数据源或 Webhook URL 是否安全。示例会阻断 localhost、私有网段、保留地址、带账号密码的 URL 和非标准端口。
+      operationId: postSecurityUrlCheck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  example: https://93.184.216.34/report.csv
+      responses:
+        '200':
+          description: URL 可以作为远程资源访问目标
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          allowed:
+                            type: boolean
+                            example: true
+                          url:
+                            type: string
+                          host:
+                            type: string
+                          resolved_ips:
+                            type: array
+                            items:
+                              type: string
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/me:
     get:
       tags: [Access]

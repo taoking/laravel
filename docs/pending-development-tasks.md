@@ -451,7 +451,7 @@
 
 ### P2-04 安全攻防增强
 
-- 状态：待开发
+- 状态：已完成
 - 目标：把安全从“防护说明”推进到“攻击样例 + 测试 + 生产风险说明”。
 - 执行计划：`docs/interview/architect-interview-coverage-plan.md` 中的 AIP-07。
 - 建议范围：
@@ -465,6 +465,11 @@
 - 验收标准：
   - 测试覆盖越权、签名、上传、SSRF/XSS 基础边界。
   - 文档包含攻击路径、防护方式、Laravel 相关机制和资深追问。
+- 完成记录：
+  - 已新增 SSRF URL 检查接口 `POST /api/v1/security/url-check`。
+  - 已新增 `UrlSafetyInspector`、`SensitiveDataMasker` 和审计 metadata 脱敏。
+  - 已新增 `docs/security/web-attack-labs.md`。
+  - 已新增 `tests/Feature/PhaseThirteenSecurityAttackLabTest.php`。
 
 ## 6. P3 产品增强和加分模块
 
@@ -549,12 +554,12 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P2-04 安全攻防增强。
-2. P3-04 Docker 一键启动验收。
-3. P2-02 Excel 导入解析。
-4. P3-02 大数据导出异步化。
-5. P3-01 Excel 导入。
+1. P3-04 Docker 一键启动验收。
+2. P2-02 Excel 导入解析。
+3. P3-02 大数据导出异步化。
+4. P3-01 Excel 导入。
+5. P3-05 语义搜索和 AI 加分模块。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI 和 P2-01 OpenAPI 均已完成。后续优先补安全攻防，再补部署验收和导入导出增强。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI 和 P2-04 安全攻防均已完成。后续优先补 Docker 一键启动和生产排障，再补导入导出增强。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

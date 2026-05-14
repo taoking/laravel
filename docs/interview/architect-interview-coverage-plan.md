@@ -352,6 +352,7 @@
 ### AIP-07 安全攻防增强
 
 - 优先级：P2
+- 状态：已完成
 - 目标：把安全从“防护说明”推进到“攻击样例 + 测试”。
 - 代码交付：
   - SSRF 防护示例。
@@ -363,6 +364,10 @@
   - 新增 `docs/security/web-attack-labs.md`。
 - 验收：
   - Feature Test 覆盖越权、签名、上传、SSRF/XSS 基础边界。
+- 完成证据：
+  - 已新增 SSRF URL 检查接口和测试。
+  - 已新增审计 metadata 脱敏。
+  - 已新增 `docs/security/web-attack-labs.md`。
 
 ### AIP-08 CI/CD 与质量门禁
 
@@ -426,11 +431,11 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 2 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
-| 3 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
-| 4 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
-| 5 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
+| 1 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 2 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
+| 3 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
+| 4 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
+| 5 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -668,6 +673,8 @@
 
 ### 6.9 AIP-07 / P2-04：安全攻防增强
 
+- 状态：已完成
+
 执行目标：把安全能力从常规防护推进到攻击样例、测试和审计证据。
 
 代码路径：
@@ -691,6 +698,14 @@
 
 - Feature Test 覆盖越权、签名、上传、SSRF/XSS 基础边界。
 - 文档能回答“只校验文件扩展名为什么不够”“审计日志如何避免泄露敏感数据”“反重放如何设计过期窗口”。
+
+完成证据：
+
+- `app/Support/Security/UrlSafetyInspector.php`
+- `app/Support/Security/SensitiveDataMasker.php`
+- `app/Http/Controllers/Api/V1/Security/UrlSafetyController.php`
+- `docs/security/web-attack-labs.md`
+- `tests/Feature/PhaseThirteenSecurityAttackLabTest.php`
 
 ### 6.10 AIP-10 / P3-04：Docker 一键运行与生产排障
 
@@ -734,10 +749,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-07，对应 `docs/pending-development-tasks.md` 中的 P2-04。
+下一轮开发建议直接执行 AIP-10，对应 `docs/pending-development-tasks.md` 中的 P3-04。
 
-目标是把安全能力从“已有基础防护”推进到“攻击样例 + 测试 + 生产风险说明”：
+目标是把 Docker 和部署文档从“配置存在”提升到“可一键验收、可排障复盘”：
 
-- 补 SSRF、XSS、CSRF、SQL 注入、反序列化和敏感字段脱敏说明。
-- 补文件上传仅校验扩展名的风险说明。
-- 补越权、签名、上传、SSRF/XSS 的测试或演示命令。
+- 记录完整 `docker compose up -d --build` 验收流程。
+- 补容器健康检查、日志查看和常见 502/504/权限/连接失败排障表。
+- 明确 Queue、Scheduler、Kafka 命令在容器中的执行方式。

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\Metrics\MetricCategoryController;
 use App\Http\Controllers\Api\V1\Metrics\MetricController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\Security\SignedEchoController;
+use App\Http\Controllers\Api\V1\Security\UrlSafetyController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
@@ -116,5 +117,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])
             ->middleware('permission:audit.view')
             ->name('audit-logs.index');
+
+        Route::post('/security/url-check', UrlSafetyController::class)
+            ->middleware('permission:audit.view')
+            ->name('security.url-check');
     });
 });

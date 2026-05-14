@@ -638,3 +638,51 @@ git diff --check
 - 全量测试通过：54 个测试、344 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - OpenAPI YAML 可被 Ruby YAML parser 解析。
+
+## 2026-05-15 P2-04 安全攻防增强
+
+目标：把安全从常规防护说明推进到攻击样例、测试证据和生产风险说明。
+
+### 开发内容
+
+- 新增 SSRF URL 检查：
+  - `app/Support/Security/UrlSafetyInspector.php`
+  - `app/Http/Controllers/Api/V1/Security/UrlSafetyController.php`
+  - `POST /api/v1/security/url-check`
+- 新增审计 metadata 脱敏：
+  - `app/Support/Security/SensitiveDataMasker.php`
+  - `App\Listeners\WriteAuditLog` 写入 metadata 前递归脱敏。
+- 新增 `docs/security/web-attack-labs.md`：
+  - SSRF、XSS、SQL 注入、CSRF、反序列化、文件上传、审计脱敏、签名反重放。
+  - 攻击路径、防护方式、生产补强和资深追问。
+- 更新 `docs/security/security-audit.md`。
+- 更新 `public/docs/openapi.yaml`，补 `POST /api/v1/security/url-check`。
+- 新增 `tests/Feature/PhaseThirteenSecurityAttackLabTest.php`：
+  - SSRF 本地和私有地址拦截。
+  - 公网 HTTP(S) 目标允许。
+  - SQL 注入样式 keyword 作为普通数据处理。
+  - XSS payload 在指标描述中被拦截。
+  - 审计 metadata 敏感字段脱敏。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseThirteenSecurityAttackLabTest
+php artisan test --filter=PhaseTwelveOpenApiContractTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+```
+
+验收结果：
+
+- PhaseThirteenSecurityAttackLabTest 通过：5 个测试、15 个断言。
+- PhaseTwelveOpenApiContractTest 通过：2 个测试、41 个断言。
+- 全量测试通过：59 个测试、360 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验和 Docker Compose 配置校验均通过。

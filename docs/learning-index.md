@@ -50,6 +50,7 @@
 - 导入任务接口：`http://127.0.0.1:8000/api/v1/imports`
 - 导出任务接口：`http://127.0.0.1:8000/api/v1/exports`
 - 签名反重放接口：`http://127.0.0.1:8000/api/v1/security/signed-echo`
+- SSRF URL 安全检查：`http://127.0.0.1:8000/api/v1/security/url-check`
 - 审计日志接口：`http://127.0.0.1:8000/api/v1/audit-logs`
 - 接口文档 Swagger UI：`http://127.0.0.1:8000/docs/api`
 - OpenAPI YAML：`http://127.0.0.1:8000/docs/openapi.yaml`
@@ -101,10 +102,14 @@
 - 导入任务补偿命令：`app/Console/Commands/ImportCompensateCommand.php`
 - 定时统计命令：`app/Console/Commands/ComputeMetricDailySummary.php`
 - 安全审计说明：`docs/security/security-audit.md`
+- Web 安全攻防实验：`docs/security/web-attack-labs.md`
 - 审计日志模型：`app/Domains/Audit/Models/AuditLog.php`
 - 操作日志模型：`app/Domains/Operations/Models/OperationLog.php`
 - 操作日志中间件：`app/Http/Middleware/RecordOperationLog.php`
 - 签名中间件：`app/Http/Middleware/VerifyApiSignature.php`
+- SSRF URL 检查控制器：`app/Http/Controllers/Api/V1/Security/UrlSafetyController.php`
+- SSRF URL 检查服务：`app/Support/Security/UrlSafetyInspector.php`
+- 审计敏感字段脱敏：`app/Support/Security/SensitiveDataMasker.php`
 - 热点指标服务：`app/Domains/Metrics/Services/HotMetricService.php`
 - 指标缓存可靠性服务：`app/Domains/Metrics/Services/MetricCacheService.php`
 - Redis Lua 限流服务：`app/Domains/Metrics/Services/RedisRateLimiterService.php`
@@ -140,6 +145,7 @@
 - Phase 9 数据库性能测试：`tests/Feature/PhaseNineDatabasePerformanceTest.php`
 - Phase 11 PHP 语言底层测试：`tests/Feature/PhaseElevenPhpLanguageLabTest.php`
 - Phase 12 OpenAPI 契约测试：`tests/Feature/PhaseTwelveOpenApiContractTest.php`
+- Phase 13 安全攻防测试：`tests/Feature/PhaseThirteenSecurityAttackLabTest.php`
 - RBAC 模型：`app/Domains/Access/Models/Role.php`、`Permission.php`、`Menu.php`
 - 权限服务：`app/Domains/Access/Services/PermissionService.php`
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
@@ -240,8 +246,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI 和 P2-01 OpenAPI 中文化已完成，后续优先进入安全攻防增强和更细粒度面试笔记。
-- 后续开发提交前必须保持 `composer analyse` 通过；P2-04 安全攻防增强是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化和 P2-04 安全攻防增强已完成，后续优先进入 Docker 一键启动和生产排障。
+- 后续开发提交前必须保持 `composer analyse` 通过；P3-04 Docker 一键启动验收是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

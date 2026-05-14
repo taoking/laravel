@@ -190,6 +190,7 @@ docs/
 | GET | `/api/v1/imports/{id}` | 导入任务详情 |
 | POST | `/api/v1/imports/{id}/retry` | 重试导入任务 |
 | POST | `/api/v1/exports` | 创建导出任务 |
+| POST | `/api/v1/security/url-check` | SSRF URL 安全检查 |
 | GET | `/api/v1/audit-logs` | 审计日志列表 |
 
 ### 4.3 Artisan 命令入口
