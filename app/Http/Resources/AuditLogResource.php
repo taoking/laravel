@@ -2,11 +2,16 @@
 
 namespace App\Http\Resources;
 
+use App\Domains\Audit\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin AuditLog
+ */
 class AuditLogResource extends JsonResource
 {
+    #[\Override]
     public function toArray(Request $request): array
     {
         return [

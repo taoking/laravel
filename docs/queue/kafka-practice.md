@@ -3,9 +3,33 @@
 更新日期：2026-05-14  
 任务编号：P1-04  
 状态：待开发  
+当前优先级：P1 高，P1-02 静态分析基线完成后的下一项核心开发任务
+
 适用项目：Laravel 13 指标分析平台
 
 本文是 Kafka 专题的执行计划。目标不是只实现一个生产者和消费者，而是在 Laravel 13 项目中建设一个“学习 + 实战 + 面试”一体化的消息事件流实践模块。
+
+## 0. 执行优先级和准入门禁
+
+Kafka 专题已提升为当前 P1 最高优先级开发项。后续 agent 领取任务时，先读本文，再读 `docs/testing-ci/static-analysis.md`，并保持以下质量门禁通过：
+
+```bash
+composer analyse
+php artisan test
+./vendor/bin/pint --test
+docker compose config
+```
+
+开发顺序建议：
+
+1. Docker 单节点 Kafka 环境和配置文件。
+2. 消息协议、Topic 配置、Producer/Consumer 抽象和 fake 实现。
+3. `metric.import.completed` 事件打通：生产、消费、审计日志副作用和幂等表。
+4. `metric.data.changed` 事件打通：message key、partition 局部顺序、缓存刷新说明。
+5. dead letter topic、失败补偿命令和 lag 观察命令。
+6. Feature Test、集成测试说明、OpenAPI 或命令文档补充。
+
+本任务完成前，不建议优先开发普通产品增强项；Kafka 要挂在导入、审计、指标变更这些真实业务事件上，不做孤立 Demo。
 
 ## 1. 开发目标
 

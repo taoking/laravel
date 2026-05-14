@@ -35,6 +35,7 @@ class MetricCategory extends Model
         return $this->hasMany(Metric::class);
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [

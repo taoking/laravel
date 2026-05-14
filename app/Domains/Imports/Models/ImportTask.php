@@ -34,6 +34,7 @@ class ImportTask extends Model
         return $this->hasMany(ImportFailure::class);
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [

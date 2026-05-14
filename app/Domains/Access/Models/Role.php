@@ -29,6 +29,7 @@ class Role extends Model
         return $this->belongsToMany(Permission::class, 'permission_role')->withTimestamps();
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [

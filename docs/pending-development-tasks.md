@@ -7,6 +7,11 @@
 
 本文档记录首轮 Phase 1 到 Phase 6 完成后的后续开发任务。后续 Codex agent 可以按优先级领取任务，每个任务完成后必须同步更新本文档状态、相关接口文档和验收记录。
 
+当前优先级调整：
+
+- PHPStan/Larastan/Psalm 已提升为 P1 工程质量基线，后续每个开发任务都要先保证 `composer analyse` 可通过。
+- Kafka 使用专题已提升为 P1 下一核心开发项，优先级高于普通 MQ 对比、Redis 扩展和产品增强模块。
+
 ## 1. 优先级定义
 
 | 优先级 | 定义 | 处理顺序 |
@@ -152,6 +157,13 @@
 
 ## 4. P1 资深面试实验模块
 
+当前 P1 执行顺序：
+
+1. P1-02 静态分析基线：已完成，作为后续开发准入门禁。
+2. P1-04 Kafka 使用专题实验：下一项高优先级开发任务。
+3. P1-03 MQ 与队列可靠性专题：与 Kafka 实现联动补强。
+4. P1-01 Redis 缓存专题实验：在 Kafka 主链路完成后继续增强缓存面试场景。
+
 ### P1-01 Redis 缓存专题实验
 
 - 状态：待开发
@@ -173,7 +185,7 @@
 
 ### P1-02 静态分析基线：PHPStan、Larastan、Psalm
 
-- 状态：待开发
+- 状态：已完成
 - 目标：把 PHPStan/Larastan/Psalm 提升为高优先级工程质量任务，为后续模块开发提供类型和静态规则约束。
 - 建议范围：
   - `composer.json`
@@ -194,6 +206,11 @@
   - 本地可执行 Psalm 分析命令。
   - 新增文档解释规则级别、已知忽略项、后续提升路径和面试表达。
   - 不允许为了通过检查而大面积降低类型约束或屏蔽真实问题。
+- 完成记录：
+  - 已安装 `larastan/larastan` 和 `vimeo/psalm`。
+  - 已新增 `phpstan.neon`、`psalm.xml` 和 `docs/testing-ci/static-analysis.md`。
+  - 已新增 Composer scripts：`analyse`、`analyse:phpstan`、`analyse:psalm`。
+  - 已通过 `composer analyse:phpstan` 和 `composer analyse:psalm`。
 
 ### P1-03 MQ 与队列可靠性专题
 
@@ -215,6 +232,7 @@
 ### P1-04 Kafka 使用专题实验
 
 - 状态：待开发
+- 当前优先级：P1 高，P1-02 静态分析基线完成后的下一项核心开发任务。
 - 目标：把 Kafka 从概念对比提升为 Laravel 13 项目中的消息事件流实践模块，既能本地运行，又能覆盖事件驱动、幂等、顺序性、消费者组、offset、失败补偿、死信和面试表达。
 - 执行计划：`docs/queue/kafka-practice.md`。
 - 建议范围：
@@ -419,13 +437,12 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P1-02 静态分析基线：PHPStan、Larastan、Psalm。
+1. P1-04 Kafka 使用专题实验。
 2. P1-03 MQ 与队列可靠性专题。
-3. P1-04 Kafka 使用专题实验。
-4. P2-01 OpenAPI 中文化和示例补全。
-5. P1-01 Redis 缓存专题实验。
-6. P3-04 Docker 一键启动验收。
-7. P3-01 Excel 导入。
-8. P3-02 大数据导出异步化。
+3. P2-01 OpenAPI 中文化和示例补全。
+4. P1-01 Redis 缓存专题实验。
+5. P3-04 Docker 一键启动验收。
+6. P3-01 Excel 导入。
+7. P3-02 大数据导出异步化。
 
-原因：P0 后台真实数据联动已完成，项目已经具备基础可演示后台。下一轮应尽早接入静态分析，避免后续模块越写越难治理；Kafka 应挂在导入、审计或指标变更的真实业务事件上实现，而不是只做孤立 Demo。
+原因：P0 后台真实数据联动已完成，P1-02 静态分析基线也已完成，后续开发必须保持 `composer analyse` 通过。下一轮应直接推进 Kafka，把它挂在导入、审计或指标变更的真实业务事件上实现，而不是只做孤立 Demo；P1-03 的 MQ 可靠性专题应围绕 Kafka 和现有 Redis Queue 做对比补强。

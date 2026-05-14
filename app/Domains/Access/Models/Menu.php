@@ -34,6 +34,7 @@ class Menu extends Model
         return $this->belongsTo(Permission::class);
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [

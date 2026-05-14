@@ -17,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      */
+    #[\Override]
     public function register(): void
     {
         // register() 只负责“登记服务”，例如：

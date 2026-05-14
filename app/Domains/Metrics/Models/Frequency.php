@@ -19,6 +19,7 @@ class Frequency extends Model
         return $this->hasMany(MetricValue::class);
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [

@@ -33,6 +33,7 @@ class MetricValue extends Model
         return $this->belongsTo(Frequency::class);
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [

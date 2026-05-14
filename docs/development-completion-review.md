@@ -17,6 +17,7 @@
 | Phase 5 | 缓存、限流、签名反重放、文件上传安全、审计日志页面联动 | 已完成 | `/api/v1/security/signed-echo`、`/api/v1/audit-logs` |
 | Phase 6 | Docker、Nginx、PHP-FPM、Supervisor、压测、发布回滚、面试包装 | 已完成 | `docker-compose.yml`、`docs/deploy/docker-deploy-runbook.md` |
 | UI i18n | 中文默认显示、英文切换、持久化语言偏好 | 已完成 | `/login`、`/admin` 页面右上角语言选择 |
+| P1-02 | PHPStan/Larastan/Psalm 静态分析基线 | 已完成 | `composer analyse`、`docs/testing-ci/static-analysis.md` |
 
 ## 2. 多语言实现说明
 
@@ -99,6 +100,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 
 ```bash
 composer validate --strict
+composer analyse
 npm run build
 php artisan test
 ./vendor/bin/pint --test
@@ -131,7 +133,7 @@ docker compose config
 - OpenAPI YAML 需要补充中文摘要、请求示例和错误响应示例。
 - CSV 导入已具备闭环，Excel 导入可在后续接入专用解析库。
 - Docker 配置已可静态校验，后续可补充完整容器启动截图、日志样例和线上排障案例。
-- Kafka 使用专题和 PHPStan/Larastan/Psalm 静态分析已提升到 P1，高于普通扩展模块优先级；Kafka 详细执行计划见 `docs/queue/kafka-practice.md`。
+- PHPStan/Larastan/Psalm 静态分析已完成并提升为后续开发准入门禁；Kafka 使用专题已提升为当前下一项 P1 高优先级任务，详细执行计划见 `docs/queue/kafka-practice.md`。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -143,11 +145,12 @@ docker compose config
 | 检查项 | 结果 |
 | --- | --- |
 | 前端生产构建 | `npm run build` 通过 |
-| PHP 测试 | `php artisan test` 通过，31 个测试、172 个断言 |
+| PHP 测试 | `php artisan test` 通过，34 个测试、213 个断言 |
+| 静态分析 | `composer analyse:phpstan`、`composer analyse:psalm` 通过 |
 | PHP 代码格式 | `./vendor/bin/pint --test` 通过 |
 | Composer 配置 | `composer validate --strict` 通过 |
 | Docker Compose 配置 | `docker compose config` 通过 |
-| 路由注册 | `php artisan route:list --except-vendor` 显示 40 条项目路由 |
+| 路由注册 | `php artisan route:list --except-vendor` 显示 43 条项目路由 |
 | 登录页中文基准 | `/login` 输出 `<html lang="zh-CN">` 和 `<title inertia>指标分析平台</title>` |
 | 接口文档中文基准 | `/docs/api` 输出 `<html lang="zh-CN">` 和 `<title>接口文档 - 指标分析平台</title>` |
 

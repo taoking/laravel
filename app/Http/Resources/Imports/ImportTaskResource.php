@@ -2,11 +2,16 @@
 
 namespace App\Http\Resources\Imports;
 
+use App\Domains\Imports\Models\ImportTask;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin ImportTask
+ */
 class ImportTaskResource extends JsonResource
 {
+    #[\Override]
     public function toArray(Request $request): array
     {
         return [

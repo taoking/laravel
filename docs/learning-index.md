@@ -17,10 +17,11 @@
 2. `docs/implementation-execution-plan.md`：可交给 Codex agent 执行的开发计划、访问路径、接口路径和验收标准。
 3. `docs/development-completion-review.md`：当前开发完成度、访问路径、验收命令和后续执行规则。
 4. `docs/pending-development-tasks.md`：后续待开发任务清单、优先级、交付物和验收标准。
-5. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块计划。
-6. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
-7. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
-8. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
+5. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
+6. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块计划，当前下一项高优先级开发任务。
+7. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
+8. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
+9. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
 
 ## 已实现访问路径
 
@@ -107,12 +108,15 @@
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
 - 用户 Policy：`app/Policies/UserPolicy.php`
 - 菜单管理接口：`app/Http/Controllers/Api/V1/MenuController.php`
+- 静态分析配置：`phpstan.neon`、`psalm.xml`
+- 静态分析说明：`docs/testing-ci/static-analysis.md`
 
 ## 本地启动和验收命令
 
 ```bash
 composer install
 npm install
+composer analyse
 npm run build
 php artisan test
 php artisan serve --host=127.0.0.1 --port=8000
@@ -163,6 +167,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - 完成度审计：`docs/development-completion-review.md`
 - 开发日志：`docs/development-log.md`
 - 待开发任务：`docs/pending-development-tasks.md`
+- 静态分析基线：`docs/testing-ci/static-analysis.md`
 - Kafka 专题计划：`docs/queue/kafka-practice.md`
 - 知识地图：`docs/learning-knowledge-map.md`
 - Laravel 骨架学习：`docs/laravel-framework-study-guide.md`
@@ -188,6 +193,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动已完成，后续进入静态分析、MQ/Kafka、OpenAPI 中文化和更细粒度面试笔记。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动已完成，P1-02 静态分析基线已完成，后续优先进入 Kafka 使用专题、MQ 可靠性、OpenAPI 中文化和更细粒度面试笔记。
+- 后续开发提交前必须保持 `composer analyse` 通过；Kafka 专题是当前下一项高优先级任务。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

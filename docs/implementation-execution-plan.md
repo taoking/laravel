@@ -35,6 +35,7 @@
 - 指标管理闭环：指标库、分类、维度、查询、分页、筛选、排序。
 - 异步任务闭环：CSV/Excel 导入、失败记录、重试、幂等、定时统计。
 - 缓存与限流闭环：权限缓存、指标缓存、首页统计缓存、接口限流、分布式锁。
+- 静态分析闭环：PHPStan/Larastan/Psalm、`composer analyse`、规则级别说明和后续提升路径。
 - Kafka 事件流专题闭环：Topic、Producer、Consumer、message key、partition 顺序性、consumer group、offset、幂等表、失败重试、dead letter topic、lag 观察和 Redis Queue 边界说明。
 - 安全闭环：CSRF、XSS、SQL 注入防护、越权测试、接口签名、文件上传安全。
 - 性能闭环：慢 SQL、慢接口、Explain 案例、压测入口、OPcache/FPM 调优说明。
@@ -660,15 +661,17 @@ OpenAPI 必须覆盖：
 每个开发阶段都必须满足：
 
 ```bash
+composer analyse
 php artisan test
 ./vendor/bin/pint --test
 npm run build
 ```
 
-引入静态分析后增加：
+静态分析可拆分执行：
 
 ```bash
-./vendor/bin/phpstan analyse
+composer analyse:phpstan
+composer analyse:psalm
 ```
 
 测试覆盖最低要求：

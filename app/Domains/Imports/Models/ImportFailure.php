@@ -19,6 +19,7 @@ class ImportFailure extends Model
         return $this->belongsTo(ImportTask::class, 'import_task_id');
     }
 
+    #[\Override]
     protected function casts(): array
     {
         return [
