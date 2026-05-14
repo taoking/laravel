@@ -164,6 +164,7 @@ docs/
 | GET | `/api/v1/health` | API 健康检查 |
 | GET | `/api/v1/me` | 当前用户信息 |
 | GET | `/api/v1/permissions` | 当前用户权限和菜单 |
+| GET | `/api/v1/permissions/catalog` | 权限和菜单目录 |
 | GET | `/api/v1/users` | 用户列表 |
 | POST | `/api/v1/users` | 创建用户 |
 | GET | `/api/v1/users/{id}` | 用户详情 |
@@ -172,7 +173,9 @@ docs/
 | GET | `/api/v1/roles` | 角色列表 |
 | POST | `/api/v1/roles` | 创建角色 |
 | PUT | `/api/v1/roles/{id}` | 更新角色 |
+| DELETE | `/api/v1/roles/{id}` | 删除非系统角色 |
 | PUT | `/api/v1/roles/{id}/permissions` | 分配权限 |
+| PUT | `/api/v1/menus/{id}` | 更新菜单排序和可见性 |
 | GET | `/api/v1/metrics` | 指标列表，支持筛选排序分页 |
 | POST | `/api/v1/metrics` | 创建指标 |
 | GET | `/api/v1/metrics/{id}` | 指标详情 |
