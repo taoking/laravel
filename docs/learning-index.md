@@ -30,6 +30,7 @@
 15. `docs/database/large-pagination.md`：大数据分页、offset 与 seek pagination 优化。
 16. `docs/runtime/php-fpm-worker-octane.md`：PHP-FPM、Worker、Scheduler、Octane 和常驻进程专题。
 17. `docs/php-language/runtime-labs.md`：PHP 弱类型、COW、引用、对象、Generator 和 PHP 8.x 新特性实验。
+18. `docs/testing-ci/github-actions.md`：GitHub Actions CI、质量门禁和失败本地复现。
 
 ## 已实现访问路径
 
@@ -144,6 +145,8 @@
 - 菜单管理接口：`app/Http/Controllers/Api/V1/MenuController.php`
 - 静态分析配置：`phpstan.neon`、`psalm.xml`
 - 静态分析说明：`docs/testing-ci/static-analysis.md`
+- GitHub Actions CI：`.github/workflows/ci.yml`、`.github/workflows/tests.yml`
+- CI 说明：`docs/testing-ci/github-actions.md`
 
 ## 本地启动和验收命令
 
@@ -204,6 +207,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - 待开发任务：`docs/pending-development-tasks.md`
 - 架构师面试覆盖度计划：`docs/interview/architect-interview-coverage-plan.md`
 - 静态分析基线：`docs/testing-ci/static-analysis.md`
+- GitHub Actions CI：`docs/testing-ci/github-actions.md`
 - Kafka 专题计划：`docs/queue/kafka-practice.md`
 - Redis 缓存可靠性专题：`docs/redis/cache-reliability.md`
 - Laravel 源码专题：`docs/laravel-core/container.md`、`service-provider.md`、`facade.md`、`middleware-pipeline.md`、`router-model-binding.md`、`eloquent-query.md`、`queue-worker.md`
@@ -234,8 +238,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题和 P1-07 PHP 语言底层代码示例已完成，后续优先进入 CI/CD 和更细粒度面试笔记。
-- 后续开发提交前必须保持 `composer analyse` 通过；P2-03 GitHub Actions CI 是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例和 P2-03 CI 已完成，后续优先进入 OpenAPI 中文化和更细粒度面试笔记。
+- 后续开发提交前必须保持 `composer analyse` 通过；P2-01 OpenAPI 中文化和示例补全是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

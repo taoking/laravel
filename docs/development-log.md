@@ -550,3 +550,48 @@ git diff --check
 - 全量测试通过：52 个测试、304 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - `php:language-lab` 命令已注册，可用于语言底层演示和面试追问复盘。
+
+## 2026-05-15 P2-03 GitHub Actions CI
+
+目标：把本地质量门禁固化到 GitHub Actions，避免后续 OpenAPI、安全、Docker 和导入导出增强破坏项目基线。
+
+### 开发内容
+
+- 新增 `.github/workflows/ci.yml`：
+  - `composer validate --strict`
+  - `composer install`
+  - `npm ci`
+  - 应用初始化：复制 `.env`、生成 key、创建 SQLite 文件。
+  - `composer analyse`
+  - `./vendor/bin/pint --test`
+  - `php artisan test`
+  - `npm run build`
+  - `docker compose config`
+- 更新 `.github/workflows/tests.yml`：
+  - PHP matrix 从 `8.3, 8.4, 8.5` 收敛为 `8.4`，与 `composer.json` 的 `^8.4` 基线一致。
+  - 增加 SQLite 数据库文件创建。
+- 新增 `docs/testing-ci/github-actions.md`：
+  - CI 触发方式。
+  - 执行步骤和本地复现命令。
+  - 版本基线和失败处理表。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/testing-ci/static-analysis.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- 全量测试通过：52 个测试、304 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- CI YAML 已覆盖当前本地质量门禁，旧测试 workflow 已对齐 PHP 8.4 项目基线。

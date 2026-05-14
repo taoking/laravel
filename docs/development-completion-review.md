@@ -25,6 +25,7 @@
 | P1-08 | MySQL 大数据性能实证 | 已完成 | `php artisan metrics:explain-query`、`docs/database/large-pagination.md` |
 | P1-05 | 多进程、Worker 与 Octane 专题 | 已完成 | `php artisan runtime:worker-lab lifecycle`、`docs/runtime/php-fpm-worker-octane.md` |
 | P1-07 | PHP 语言底层代码示例 | 已完成 | `php artisan php:language-lab all`、`docs/php-language/runtime-labs.md` |
+| P2-03 | GitHub Actions CI | 已完成 | `.github/workflows/ci.yml`、`docs/testing-ci/github-actions.md` |
 
 ## 2. 多语言实现说明
 
@@ -151,7 +152,7 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 - P1-01 Redis 缓存专题实验已完成，指标缓存已补空值缓存、随机 TTL、token lock、热点 ZSet 和 Lua 限流实验。
 - P1-06 Laravel 源码专题文档已完成，Container、Provider、Facade、Middleware、Router、Eloquent 和 Queue Worker 均已绑定项目代码入口。
 - P1-08 MySQL 大数据性能实证已完成，具备造数、Explain 和 seek pagination 命令。
-- P1-07 PHP 语言底层代码示例已完成，具备 COW、引用、对象赋值、Generator、Enum、Attribute、Readonly、Closure 和弱类型实验。下一项高优先级任务为 P2-03 GitHub Actions CI。
+- P2-03 GitHub Actions CI 已完成，已把 Composer、静态分析、Pint、PHPUnit、前端构建和 Docker Compose 校验固化到 CI。下一项高优先级任务为 P2-01 OpenAPI 中文化和示例补全。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -176,6 +177,7 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 | PHP 代码格式 | `./vendor/bin/pint --test` 通过 |
 | Composer 配置 | `composer validate --strict` 通过 |
 | Docker Compose 配置 | `docker compose config` 通过 |
+| GitHub Actions CI 配置 | `.github/workflows/ci.yml` 覆盖 Composer、静态分析、Pint、PHPUnit、npm build 和 Docker Compose 校验 |
 | 路由注册 | `php artisan route:list --except-vendor` 显示 43 条项目路由 |
 | 登录页中文基准 | `/login` 输出 `<html lang="zh-CN">` 和 `<title inertia>指标分析平台</title>` |
 | 接口文档中文基准 | `/docs/api` 输出 `<html lang="zh-CN">` 和 `<title>接口文档 - 指标分析平台</title>` |

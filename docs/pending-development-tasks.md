@@ -425,7 +425,7 @@
 
 ### P2-03 GitHub Actions CI
 
-- 状态：待开发
+- 状态：已完成
 - 目标：补齐持续集成，避免后续任务破坏项目。
 - 建议范围：
   - `.github/workflows/ci.yml`
@@ -439,6 +439,10 @@
 - 验收标准：
   - 推送或 PR 时自动运行。
   - CI 文档写入 `docs/deploy/docker-deploy-runbook.md` 或新增 CI 文档。
+- 完成记录：
+  - 已新增 `.github/workflows/ci.yml`。
+  - 已更新 `.github/workflows/tests.yml`，PHP matrix 与当前 `composer.json` 的 `^8.4` 基线一致。
+  - 已新增 `docs/testing-ci/github-actions.md`。
 
 ### P2-04 安全攻防增强
 
@@ -540,12 +544,12 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P2-03 GitHub Actions CI。
-2. P2-01 OpenAPI 中文化和示例补全。
-3. P2-04 安全攻防增强。
-4. P3-04 Docker 一键启动验收。
-5. P2-02 Excel 导入解析。
+1. P2-01 OpenAPI 中文化和示例补全。
+2. P2-04 安全攻防增强。
+3. P3-04 Docker 一键启动验收。
+4. P2-02 Excel 导入解析。
+5. P3-02 大数据导出异步化。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题和 P1-07 PHP 语言底层实验均已完成。后续优先把本地质量门禁固化到 CI，再补接口契约、安全攻防和部署验收。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验和 P2-03 CI 均已完成。后续优先补接口契约，再补安全攻防和部署验收。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

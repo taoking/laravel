@@ -66,7 +66,7 @@ npm run build
 2. 为 Eloquent Collection 和 Resource 输出补充 PHPDoc 泛型。
 3. 将 PHPStan 提升到 level 2-4。
 4. 收紧 Psalm errorLevel，逐步启用 unused code 和 dead code 检查。
-5. 在 GitHub Actions 中加入 `composer analyse`。
+5. GitHub Actions 已加入 `composer analyse`，后续可继续提高 PHPStan/Psalm 等级。
 6. Kafka 模块开发时，Producer、Consumer、Message DTO、Handler、幂等模型和 Artisan 命令都必须补充明确参数、返回值和数组结构 PHPDoc。
 
 ## 面试表达

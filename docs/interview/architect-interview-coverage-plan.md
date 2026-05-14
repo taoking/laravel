@@ -73,7 +73,7 @@
 | 安全能力 | 7/10 | 签名、反重放、越权、上传校验、审计日志 | SSRF、XSS、CSRF、反序列化、敏感数据脱敏缺专题实验 |
 | 架构设计 | 6/10 | Domains、Service、Query Object、Event-Driven 已出现 | DTO、Value Object、Repository 取舍、Outbox、模块边界还需成文 |
 | 性能优化 | 6/10 | 缓存、Explain、wrk 脚本、Runbook | 缺基准数据、前后对比、容量估算和 APM 式定位流程 |
-| 测试与质量 | 7/10 | Feature Test、Pint、PHPStan、Psalm | 缺 CI、浏览器自动化、覆盖率策略 |
+| 测试与质量 | 8/10 | Feature Test、Pint、PHPStan、Psalm、GitHub Actions CI | 缺浏览器自动化和覆盖率策略 |
 | 部署运维 | 6/10 | Docker Compose、Nginx、FPM、Supervisor | 缺一键启动完整验收、日志样例、502/504 实战复盘 |
 
 ## 3. 面试追问地图
@@ -367,6 +367,7 @@
 ### AIP-08 CI/CD 与质量门禁
 
 - 优先级：P2
+- 状态：已完成
 - 对应待开发项：P2-03
 - 目标：把本地质量门禁搬到 CI。
 - 代码交付：
@@ -384,6 +385,10 @@
   - 新增 `docs/testing-ci/github-actions.md`。
 - 验收：
   - Push 或 PR 自动运行。
+- 完成证据：
+  - 已新增 `.github/workflows/ci.yml`。
+  - 已新增 `docs/testing-ci/github-actions.md`。
+  - 已调整 `.github/workflows/tests.yml` 到 PHP 8.4 基线。
   - CI 失败能阻止合并或在文档中标明处理方式。
 
 ### AIP-09 OpenAPI 中文化和接口示例
@@ -417,11 +422,11 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-08 CI/CD 与质量门禁 | 保护后续开发质量 |
-| 2 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 3 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 4 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
-| 5 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
+| 1 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
+| 2 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 3 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 4 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
+| 5 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -596,6 +601,8 @@
 
 ### 6.7 AIP-08 / P2-03：CI/CD 与质量门禁
 
+- 状态：已完成
+
 执行目标：把本地质量检查固化为 CI。
 
 代码路径：
@@ -615,6 +622,12 @@
 
 - GitHub Actions YAML 可被 `act` 或 GitHub PR 运行。
 - CI 失败项能映射到本地修复命令。
+
+完成证据：
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/tests.yml`
+- `docs/testing-ci/github-actions.md`
 
 ### 6.8 AIP-09 / P2-01：OpenAPI 中文化和接口示例
 
@@ -709,10 +722,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-08，对应 `docs/pending-development-tasks.md` 中的 P2-03。
+下一轮开发建议直接执行 AIP-09，对应 `docs/pending-development-tasks.md` 中的 P2-01。
 
-目标是把本地质量门禁固化为 GitHub Actions：
+目标是把接口文档补齐到可演示、可协作和可追问：
 
-- 执行 Composer 校验、依赖安装、PHPStan/Larastan/Psalm。
-- 执行 PHPUnit、Pint、前端构建和 Docker Compose 配置校验。
-- 文档说明 CI 失败项如何映射到本地修复命令。
+- 对所有 API 补中文 `summary`、`description`、标签和请求/响应示例。
+- 为鉴权、权限、验证失败、签名和限流补错误响应。
+- 对照 `php artisan route:list --except-vendor`，确认 OpenAPI 与实际路由一致。
