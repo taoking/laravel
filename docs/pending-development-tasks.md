@@ -1,16 +1,18 @@
 # 待开发任务清单
 
-更新日期：2026-05-14  
+更新日期：2026-05-15
 适用分支：`13.x`  
 执行基线：`docs/development-completion-review.md`  
 主计划：`docs/implementation-execution-plan.md`
+架构师面试补齐计划：`docs/interview/architect-interview-coverage-plan.md`
 
 本文档记录首轮 Phase 1 到 Phase 6 完成后的后续开发任务。后续 Codex agent 可以按优先级领取任务，每个任务完成后必须同步更新本文档状态、相关接口文档和验收记录。
 
 当前优先级调整：
 
 - PHPStan/Larastan/Psalm 已提升为 P1 工程质量基线，后续每个开发任务都要先保证 `composer analyse` 可通过。
-- Kafka 使用专题已提升为 P1 下一核心开发项，优先级高于普通 MQ 对比、Redis 扩展和产品增强模块。
+- Kafka 使用专题已完成 P1 最小事件流闭环。
+- 资深架构师/面试官覆盖度评估已写入 `docs/interview/architect-interview-coverage-plan.md`，后续补齐重点转为 MQ 可靠性、Redis 深度、Laravel 源码、MySQL 性能实证、PHP 运行机制和 CI/CD。
 
 ## 1. 优先级定义
 
@@ -28,6 +30,8 @@
 - 有明确代码入口：页面、API、Artisan 命令、Job、测试或脚本。
 - 有中文说明：记录核心概念、业务场景、生产风险和面试表达。
 - 有验收方式：自动化测试、命令输出、接口响应、日志、截图或文档。
+- 有资深追问：至少 5 个基础问题和 5 个资深追问，写入对应专题文档。
+- 有架构边界：说明为什么这样设计、替代方案是什么、生产风险在哪里。
 - 前端页面必须接入 `resources/js/i18n.js`，默认中文显示。
 - 新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 新增页面必须同步更新 `docs/learning-index.md` 和本文档。
@@ -163,6 +167,9 @@
 2. P1-04 Kafka 使用专题实验：已完成，提供 Kafka 事件流最小闭环。
 3. P1-03 MQ 与队列可靠性专题：下一项高优先级开发任务，与 Kafka 实现联动补强。
 4. P1-01 Redis 缓存专题实验：在 Kafka 主链路完成后继续增强缓存面试场景。
+5. P1-06 Laravel 源码专题文档：绑定项目代码入口，补齐源码级追问。
+6. P1-07 PHP 语言底层代码示例：补齐 COW、引用、Generator、Enum、Attribute 等可运行实验。
+7. P1-08 MySQL 大数据性能实证：补齐 Explain、慢 SQL、分页优化和容量评估证据。
 
 ### P1-01 Redis 缓存专题实验
 
@@ -311,6 +318,41 @@
   - 每篇文档绑定一个项目代码入口。
   - 每篇文档包含基础问题和资深追问。
 
+### P1-07 PHP 语言底层代码示例
+
+- 状态：待开发
+- 目标：把 PHP 语言底层八股转成可运行实验，支撑资深 PHP 面试追问。
+- 执行计划：`docs/interview/architect-interview-coverage-plan.md` 中的 AIP-04。
+- 建议范围：
+  - 新增 `app/Console/Commands/PhpLanguageLabCommand.php` 或 `tests/Unit/PhpLanguageFeatureTest.php`
+  - 新增 `docs/php-language/runtime-labs.md`
+- 功能要求：
+  - 演示 PHP 数组、弱类型、引用、写时复制、对象赋值、闭包、Generator。
+  - 演示 PHP 8.x 关键特性：Union Type、Enum、Readonly、Attribute、`#[\Override]`。
+  - 记录内存变化、输出结果和面试表达。
+- 验收标准：
+  - 有可运行命令或测试。
+  - 文档能回答 COW 什么时候触发、Generator 如何降低内存、PHP 8.x 特性解决什么问题。
+
+### P1-08 MySQL 大数据性能实证
+
+- 状态：待开发
+- 目标：把指标查询优化从说明推进到可验证的 Explain、慢 SQL 和分页优化证据。
+- 执行计划：`docs/interview/architect-interview-coverage-plan.md` 中的 AIP-05。
+- 建议范围：
+  - 新增大数据 Seeder 或 Artisan 造数命令。
+  - 更新 `docs/database/metric-query-explain.md`。
+  - 新增 `docs/database/large-pagination.md`。
+- 功能要求：
+  - 支持生成 10 万到 100 万条指标值测试数据。
+  - 记录关键查询的 Explain 前后对比。
+  - 演示普通分页、游标分页、ID seek pagination 或覆盖索引优化。
+  - 记录慢 SQL、索引失效和排序优化案例。
+- 验收标准：
+  - 有造数命令或 Seeder。
+  - 有 Explain 输出样例。
+  - 文档能回答最左前缀、覆盖索引、回表、索引下推、千万级分页优化。
+
 ## 5. P2 工程质量、接口文档和 CI/CD
 
 ### P2-01 OpenAPI 中文化和示例补全
@@ -361,6 +403,23 @@
 - 验收标准：
   - 推送或 PR 时自动运行。
   - CI 文档写入 `docs/deploy/docker-deploy-runbook.md` 或新增 CI 文档。
+
+### P2-04 安全攻防增强
+
+- 状态：待开发
+- 目标：把安全从“防护说明”推进到“攻击样例 + 测试 + 生产风险说明”。
+- 执行计划：`docs/interview/architect-interview-coverage-plan.md` 中的 AIP-07。
+- 建议范围：
+  - `docs/security/security-audit.md`
+  - 新增 `docs/security/web-attack-labs.md`
+  - 对应 Feature Test
+- 功能要求：
+  - 补充 SSRF、XSS、CSRF、SQL 注入、反序列化、敏感字段脱敏说明。
+  - 补充文件上传仅校验扩展名的风险说明。
+  - 补充敏感操作二次确认或签名增强方案。
+- 验收标准：
+  - 测试覆盖越权、签名、上传、SSRF/XSS 基础边界。
+  - 文档包含攻击路径、防护方式、Laravel 相关机制和资深追问。
 
 ## 6. P3 产品增强和加分模块
 
@@ -446,10 +505,14 @@
 ## 7. 推荐下一轮开发顺序
 
 1. P1-03 MQ 与队列可靠性专题。
-2. P2-01 OpenAPI 中文化和示例补全。
-3. P1-01 Redis 缓存专题实验。
-4. P3-04 Docker 一键启动验收。
-5. P3-01 Excel 导入。
-6. P3-02 大数据导出异步化。
+2. P1-01 Redis 缓存专题实验。
+3. P1-06 Laravel 源码专题文档。
+4. P1-08 MySQL 大数据性能实证。
+5. P1-05 多进程、Worker 与 Octane 专题。
+6. P1-07 PHP 语言底层代码示例。
+7. P2-03 GitHub Actions CI。
+8. P2-01 OpenAPI 中文化和示例补全。
+9. P2-04 安全攻防增强。
+10. P3-04 Docker 一键启动验收。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线和 P1-04 Kafka 事件流闭环均已完成，后续开发必须保持 `composer analyse` 通过。下一轮应围绕现有 Redis Queue 和 Kafka 实现补强 P1-03，覆盖消息丢失、重复消费、顺序性、死信、补偿和 Redis Queue/RabbitMQ/Kafka 取舍。
+原因：P0 后台真实数据联动、P1-02 静态分析基线和 P1-04 Kafka 事件流闭环均已完成。架构师面试评估显示，后续最需要补齐的是可靠性、缓存、源码、性能和运行机制。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。

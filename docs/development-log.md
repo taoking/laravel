@@ -153,3 +153,49 @@ git diff --check
 - 本地 driver 可创建 6 个 topic / dead letter topic。
 - 本地 lag 命令可输出 `audit-log-consumer` 的 topic lag。
 - Docker Kafka 容器启动成功，`KAFKA_DRIVER=docker` 可创建 topic、生产消息并消费写入审计日志。
+
+## 2026-05-15 架构师面试覆盖度评估与补齐计划
+
+目标：以资深架构师/面试官视角检查当前 Laravel 13 学习项目的知识覆盖度、使用深度和追问风险，并将需要补齐的内容写入文档作为后续执行计划。
+
+### 执行过程
+
+- 检查当前工作区状态：`git status --short --branch`。
+- 阅读并抽查：
+  - `docs/learning-index.md`
+  - `docs/pending-development-tasks.md`
+  - `docs/development-completion-review.md`
+  - `docs/interview/senior-questions.md`
+  - `docs/interview/project-story.md`
+  - `docs/laravel-framework-study-guide.md`
+  - `docs/laravel-startup-shutdown-flow.md`
+- 抽查代码入口：
+  - `app/Domains/*`
+  - `app/Console/Commands/*`
+  - `tests/Feature/*`
+- 从面试追问角度评估 PHP 语言、Laravel 源码、MySQL、Redis、Queue/MQ、Kafka、安全、性能、测试、部署等维度。
+
+### 文档变更
+
+- 新增 `docs/interview/architect-interview-coverage-plan.md`：
+  - 记录覆盖度评分。
+  - 记录面试追问地图。
+  - 记录 AIP-01 到 AIP-10 补齐任务。
+  - 明确推荐执行顺序和面试通过标准。
+- 更新 `docs/learning-index.md`：
+  - 增加架构师面试覆盖度计划入口。
+- 更新 `docs/pending-development-tasks.md`：
+  - 补充架构师面试计划引用。
+  - 新增 P1-07 PHP 语言底层代码示例。
+  - 新增 P1-08 MySQL 大数据性能实证。
+  - 新增 P2-04 安全攻防增强。
+  - 调整下一轮推荐执行顺序。
+
+### 验收计划
+
+本次只做计划文档落地，不进行功能代码开发。提交前需要执行：
+
+```bash
+git diff --check
+git status --short
+```

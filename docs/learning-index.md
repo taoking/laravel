@@ -17,11 +17,12 @@
 2. `docs/implementation-execution-plan.md`：可交给 Codex agent 执行的开发计划、访问路径、接口路径和验收标准。
 3. `docs/development-completion-review.md`：当前开发完成度、访问路径、验收命令和后续执行规则。
 4. `docs/pending-development-tasks.md`：后续待开发任务清单、优先级、交付物和验收标准。
-5. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
-6. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块说明，已完成 P1-04 最小事件流闭环。
-7. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
-8. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
-9. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
+5. `docs/interview/architect-interview-coverage-plan.md`：资深架构师/面试官视角的覆盖度评估和补齐计划。
+6. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
+7. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块说明，已完成 P1-04 最小事件流闭环。
+8. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
+9. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
+10. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
 
 ## 已实现访问路径
 
@@ -95,6 +96,7 @@
 - 审计日志接口：`app/Http/Controllers/Api/V1/Audit/AuditLogController.php`
 - 性能 Runbook：`docs/performance/performance-runbook.md`
 - Docker 部署 Runbook：`docs/deploy/docker-deploy-runbook.md`
+- 架构师面试覆盖度计划：`docs/interview/architect-interview-coverage-plan.md`
 - 面试项目包装：`docs/interview/project-story.md`
 - 资深面试题入口：`docs/interview/senior-questions.md`
 - Docker Compose：`docker-compose.yml`
@@ -173,6 +175,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - 完成度审计：`docs/development-completion-review.md`
 - 开发日志：`docs/development-log.md`
 - 待开发任务：`docs/pending-development-tasks.md`
+- 架构师面试覆盖度计划：`docs/interview/architect-interview-coverage-plan.md`
 - 静态分析基线：`docs/testing-ci/static-analysis.md`
 - Kafka 专题计划：`docs/queue/kafka-practice.md`
 - 知识地图：`docs/learning-knowledge-map.md`
@@ -201,5 +204,6 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
 - 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线和 P1-04 Kafka 使用专题已完成，后续优先进入 MQ 可靠性、OpenAPI 中文化和更细粒度面试笔记。
 - 后续开发提交前必须保持 `composer analyse` 通过；P1-03 MQ 与队列可靠性专题是当前下一项高优先级任务。
+- 架构师面试补齐计划已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。
