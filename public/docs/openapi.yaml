@@ -1,31 +1,35 @@
 openapi: 3.1.0
 info:
-  title: Laravel 13 Senior PHP Learning API
-  version: 0.2.0
-  description: API contract for the Laravel 13 senior PHP learning and interview preparation project.
+  title: Laravel 13 资深 PHP 学习项目 API
+  version: 0.3.0
+  description: |
+    多数据源指标分析与内容管理平台的 API 契约。
+    本文档用于本地开发、接口联调、面试演示和后续 Codex agent 开发校验。
+    默认鉴权方式是 Laravel Web Session Cookie；签名接口单独使用 HMAC 请求头。
 servers:
   - url: http://127.0.0.1:8000
-    description: Local artisan server
+    description: 本地 artisan server
 tags:
   - name: Auth
-    description: Session authentication
+    description: 登录、退出和 Web Session 鉴权
   - name: System
-    description: Health and runtime checks
+    description: 健康检查和运行状态
   - name: Access
-    description: Current user, permissions, menus, users, and roles
+    description: 当前用户、权限、菜单、用户和角色管理
   - name: Metrics
-    description: Metric library, categories, dimensions, and query APIs
+    description: 指标库、指标分类、地区和频率维度
   - name: Async
-    description: Import, export, queue, and scheduled task APIs
+    description: 导入、导出、队列任务和异步处理
   - name: Security
-    description: Signature, replay protection, and security examples
+    description: 签名、反重放、限流和审计日志
 security:
   - sessionCookie: []
 paths:
   /login:
     post:
       tags: [Auth]
-      summary: Authenticate a user with the web session guard
+      summary: 用户登录
+      description: 使用 Laravel Web Session Guard 登录后台。JSON 请求返回统一响应，浏览器表单登录成功后跳转到后台首页。
       operationId: postLogin
       security: []
       requestBody:
@@ -38,32 +42,32 @@ paths:
         '200':
           $ref: '#/components/responses/UserEnvelope'
         '302':
-          description: Browser form login redirects to /admin
+          description: 浏览器表单登录成功后跳转到 `/admin`
         '422':
           $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/Error'
   /logout:
     post:
       tags: [Auth]
-      summary: Logout the current session
+      summary: 退出登录
+      description: 注销当前 Web Session，并重新生成 CSRF Token。JSON 请求返回成功响应，浏览器请求跳转到登录页。
       operationId: postLogout
       responses:
         '200':
           $ref: '#/components/responses/Success'
         '302':
-          description: Browser logout redirects to /login
+          description: 浏览器退出后跳转到 `/login`
         '401':
           $ref: '#/components/responses/Error'
   /api/v1/health:
     get:
       tags: [System]
-      summary: API health check
+      summary: API 健康检查
+      description: 不需要登录，用于本地启动、Docker 健康检查和部署验收。
       operationId: getApiHealth
       security: []
       responses:
         '200':
-          description: API is available
+          description: API 服务可用
           content:
             application/json:
               schema:
@@ -76,25 +80,32 @@ paths:
   /api/v1/security/signed-echo:
     post:
       tags: [Security]
-      summary: Verify HMAC signature and replay nonce
+      summary: 签名反重放校验示例
+      description: 使用 `X-Timestamp`、`X-Nonce` 和 `X-Signature` 校验 HMAC 签名；同一 nonce 重放会返回冲突错误。
       operationId: postSignedEcho
       security: []
       parameters:
         - in: header
           name: X-Timestamp
           required: true
+          description: Unix 秒级时间戳，默认有效窗口 5 分钟
           schema:
             type: string
+          example: '1760000000'
         - in: header
           name: X-Nonce
           required: true
+          description: 每次请求唯一随机串，用于反重放
           schema:
             type: string
+          example: nonce-20260515-0001
         - in: header
           name: X-Signature
           required: true
+          description: HMAC SHA256 签名结果
           schema:
             type: string
+          example: 64位十六进制签名
       requestBody:
         required: false
         content:
@@ -102,6 +113,12 @@ paths:
             schema:
               type: object
               additionalProperties: true
+            examples:
+              echo:
+                summary: 签名请求体示例
+                value:
+                  message: ping
+                  metric_id: 1
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -112,7 +129,8 @@ paths:
   /api/v1/me:
     get:
       tags: [Access]
-      summary: Get the current authenticated user
+      summary: 获取当前登录用户
+      description: 返回当前 Session 用户、角色摘要和基础状态，用于后台初始化。
       operationId: getMe
       responses:
         '200':
@@ -122,11 +140,12 @@ paths:
   /api/v1/permissions:
     get:
       tags: [Access]
-      summary: Get current permission codes and menu tree
+      summary: 获取当前权限和菜单
+      description: 返回当前用户拥有的权限编码和可见菜单树，前端用于导航、按钮权限和页面守卫。
       operationId: getCurrentPermissions
       responses:
         '200':
-          description: Current permissions and menus
+          description: 当前用户权限和菜单
           content:
             application/json:
               schema:
@@ -152,11 +171,12 @@ paths:
   /api/v1/permissions/catalog:
     get:
       tags: [Access]
-      summary: List permission and menu catalog for access management pages
+      summary: 获取权限和菜单目录
+      description: 管理员维护角色权限时使用，返回系统权限点和菜单目录。
       operationId: getPermissionCatalog
       responses:
         '200':
-          description: Permission and menu catalog
+          description: 权限和菜单目录
           content:
             application/json:
               schema:
@@ -183,7 +203,8 @@ paths:
   /api/v1/users:
     get:
       tags: [Access]
-      summary: List users
+      summary: 用户列表
+      description: 支持关键字、状态和分页筛选；需要用户查看权限。
       operationId: getUsers
       parameters:
         - in: query
@@ -202,7 +223,7 @@ paths:
             default: 20
       responses:
         '200':
-          description: Paginated user list
+          description: 用户分页列表
           content:
             application/json:
               schema:
@@ -222,7 +243,8 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       tags: [Access]
-      summary: Create a user
+      summary: 创建用户
+      description: 创建后台用户并同步角色。成功后会清理该用户权限缓存。
       operationId: postUsers
       requestBody:
         required: true
@@ -239,13 +261,14 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/users/{id}:
+  /api/v1/users/{user}:
     get:
       tags: [Access]
-      summary: Get a user detail
+      summary: 用户详情
+      description: 查看指定用户和角色信息；Policy 会控制是否允许访问。
       operationId: getUser
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/UserId'
       responses:
         '200':
           $ref: '#/components/responses/UserEnvelope'
@@ -257,10 +280,11 @@ paths:
           $ref: '#/components/responses/Error'
     put:
       tags: [Access]
-      summary: Update a user
+      summary: 更新用户
+      description: 更新用户资料、状态、密码或角色，并刷新权限缓存。
       operationId: putUser
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/UserId'
       requestBody:
         required: true
         content:
@@ -278,10 +302,11 @@ paths:
           $ref: '#/components/responses/ValidationError'
     delete:
       tags: [Access]
-      summary: Delete a user
+      summary: 删除用户
+      description: 删除用户前会解除角色关系，并清理权限缓存。
       operationId: deleteUser
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/UserId'
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -292,11 +317,12 @@ paths:
   /api/v1/roles:
     get:
       tags: [Access]
-      summary: List roles
+      summary: 角色列表
+      description: 返回角色及其权限，用于角色管理页面。
       operationId: getRoles
       responses:
         '200':
-          description: Role list
+          description: 角色列表
           content:
             application/json:
               schema:
@@ -314,7 +340,8 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       tags: [Access]
-      summary: Create a role
+      summary: 创建角色
+      description: 创建角色并可同时绑定权限。
       operationId: postRoles
       requestBody:
         required: true
@@ -331,13 +358,14 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/roles/{id}:
+  /api/v1/roles/{role}:
     put:
       tags: [Access]
-      summary: Update a role
+      summary: 更新角色
+      description: 更新非系统角色的名称、编码、数据范围和描述。
       operationId: putRole
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/RoleId'
       requestBody:
         required: true
         content:
@@ -355,10 +383,11 @@ paths:
           $ref: '#/components/responses/ValidationError'
     delete:
       tags: [Access]
-      summary: Delete a non-system role
+      summary: 删除角色
+      description: 删除非系统角色，并解除用户和权限关系。
       operationId: deleteRole
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/RoleId'
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -366,13 +395,14 @@ paths:
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
-  /api/v1/roles/{id}/permissions:
+  /api/v1/roles/{role}/permissions:
     put:
       tags: [Access]
-      summary: Replace role permissions and refresh affected user permission cache
+      summary: 替换角色权限
+      description: 全量替换角色权限，并刷新受影响用户的权限缓存。超级管理员角色不可修改。
       operationId: putRolePermissions
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/RoleId'
       requestBody:
         required: true
         content:
@@ -385,6 +415,8 @@ paths:
                   type: array
                   items:
                     type: integer
+              example:
+                permission_ids: [1, 2, 3]
       responses:
         '200':
           $ref: '#/components/responses/RoleEnvelope'
@@ -394,13 +426,14 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/menus/{id}:
+  /api/v1/menus/{menu}:
     put:
       tags: [Access]
-      summary: Update menu title, path, sort order, and visibility
+      summary: 更新菜单
+      description: 更新菜单标题、路径、排序和可见状态。
       operationId: putMenu
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/MenuId'
       requestBody:
         required: true
         content:
@@ -416,6 +449,11 @@ paths:
                   type: integer
                 is_visible:
                   type: boolean
+              example:
+                title: 指标管理
+                path: /admin/metrics
+                sort_order: 30
+                is_visible: true
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -428,7 +466,8 @@ paths:
   /api/v1/metrics:
     get:
       tags: [Metrics]
-      summary: List metrics with filters, sorting, and pagination
+      summary: 指标列表
+      description: 支持关键字、状态、分类、地区、频率、日期、排序和分页筛选；排序字段由后端白名单控制。
       operationId: getMetrics
       parameters:
         - in: query
@@ -479,7 +518,7 @@ paths:
             maximum: 100
       responses:
         '200':
-          description: Paginated metric list
+          description: 指标分页列表
           content:
             application/json:
               schema:
@@ -499,9 +538,12 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/Error'
     post:
       tags: [Metrics]
-      summary: Create a metric
+      summary: 创建指标
+      description: 创建指标并发布 `metric.data.changed` 事件，同时记录审计日志。
       operationId: postMetrics
       requestBody:
         required: true
@@ -518,13 +560,14 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/metrics/{id}:
+  /api/v1/metrics/{metric}:
     get:
       tags: [Metrics]
-      summary: Get a metric detail
+      summary: 指标详情
+      description: 返回指标详情和最新值，同时记录热点指标访问并使用指标详情缓存。
       operationId: getMetric
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/MetricId'
       responses:
         '200':
           $ref: '#/components/responses/MetricEnvelope'
@@ -536,10 +579,11 @@ paths:
           $ref: '#/components/responses/Error'
     put:
       tags: [Metrics]
-      summary: Update a metric
+      summary: 更新指标
+      description: 更新指标后会清理指标详情缓存，发布 Kafka 事件并记录审计日志。
       operationId: putMetric
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/MetricId'
       requestBody:
         required: true
         content:
@@ -557,10 +601,11 @@ paths:
           $ref: '#/components/responses/ValidationError'
     delete:
       tags: [Metrics]
-      summary: Delete a metric
+      summary: 删除指标
+      description: 软删除指标，清理缓存，发布事件并记录审计日志。
       operationId: deleteMetric
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/MetricId'
       responses:
         '200':
           $ref: '#/components/responses/Success'
@@ -571,11 +616,12 @@ paths:
   /api/v1/metric-categories:
     get:
       tags: [Metrics]
-      summary: List active metric categories
+      summary: 指标分类列表
+      description: 返回启用状态的指标分类，用于筛选和创建指标。
       operationId: getMetricCategories
       responses:
         '200':
-          description: Category list
+          description: 指标分类列表
           content:
             application/json:
               schema:
@@ -594,11 +640,12 @@ paths:
   /api/v1/dimensions/regions:
     get:
       tags: [Metrics]
-      summary: List active regions
+      summary: 地区维度列表
+      description: 返回启用状态的地区维度。
       operationId: getRegions
       responses:
         '200':
-          description: Region list
+          description: 地区列表
           content:
             application/json:
               schema:
@@ -617,11 +664,12 @@ paths:
   /api/v1/dimensions/frequencies:
     get:
       tags: [Metrics]
-      summary: List active frequencies
+      summary: 频率维度列表
+      description: 返回启用状态的频率维度。
       operationId: getFrequencies
       responses:
         '200':
-          description: Frequency list
+          description: 频率列表
           content:
             application/json:
               schema:
@@ -640,11 +688,12 @@ paths:
   /api/v1/imports:
     get:
       tags: [Async]
-      summary: List import tasks
+      summary: 导入任务列表
+      description: 返回 CSV 导入任务、状态、行数统计、失败分类和补偿信息。
       operationId: getImports
       responses:
         '200':
-          description: Paginated import tasks
+          description: 导入任务分页列表
           content:
             application/json:
               schema:
@@ -664,13 +713,16 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       tags: [Async]
-      summary: Create a CSV metric import task
+      summary: 创建 CSV 导入任务
+      description: 上传 CSV/TXT 文件并创建异步导入任务。支持 `Idempotency-Key`，重复提交会返回已有任务。
       operationId: postImports
       parameters:
         - in: header
           name: Idempotency-Key
+          description: 幂等键；重复提交同一键返回已有导入任务
           schema:
             type: string
+          example: import-20260515-0001
       requestBody:
         required: true
         content:
@@ -684,6 +736,9 @@ paths:
                   format: binary
                 idempotency_key:
                   type: string
+            encoding:
+              file:
+                contentType: text/csv
       responses:
         '202':
           $ref: '#/components/responses/ImportTaskEnvelope'
@@ -695,13 +750,14 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
-  /api/v1/imports/{id}:
+  /api/v1/imports/{import}:
     get:
       tags: [Async]
-      summary: Get an import task detail
+      summary: 导入任务详情
+      description: 查看导入任务状态、统计和失败明细。
       operationId: getImport
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/ImportId'
       responses:
         '200':
           $ref: '#/components/responses/ImportTaskEnvelope'
@@ -711,13 +767,14 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
-  /api/v1/imports/{id}/retry:
+  /api/v1/imports/{import}/retry:
     post:
       tags: [Async]
-      summary: Retry an import task
+      summary: 重试导入任务
+      description: 清理旧失败记录，将任务重置为 pending 并重新派发导入 Job。
       operationId: postImportRetry
       parameters:
-        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/ImportId'
       responses:
         '200':
           $ref: '#/components/responses/ImportTaskEnvelope'
@@ -728,13 +785,16 @@ paths:
   /api/v1/exports:
     post:
       tags: [Async]
-      summary: Create a metric export task
+      summary: 创建导出任务
+      description: 创建异步导出任务。支持 `Idempotency-Key`，重复提交返回已有导出任务。
       operationId: postExports
       parameters:
         - in: header
           name: Idempotency-Key
+          description: 幂等键；重复提交同一键返回已有导出任务
           schema:
             type: string
+          example: export-20260515-0001
       requestBody:
         required: false
         content:
@@ -748,6 +808,11 @@ paths:
                 filters:
                   type: object
                   additionalProperties: true
+              example:
+                type: metrics
+                filters:
+                  status: active
+                  category_code: finance
       responses:
         '202':
           $ref: '#/components/responses/ExportTaskEnvelope'
@@ -760,7 +825,8 @@ paths:
   /api/v1/audit-logs:
     get:
       tags: [Security]
-      summary: List audit logs
+      summary: 审计日志列表
+      description: 管理员查看操作审计日志，支持按动作、用户和分页筛选，并返回 `trace_id` 方便排查。
       operationId: getAuditLogs
       parameters:
         - in: query
@@ -778,7 +844,7 @@ paths:
             default: 20
       responses:
         '200':
-          description: Paginated audit logs
+          description: 审计日志分页列表
           content:
             application/json:
               schema:
@@ -803,21 +869,55 @@ components:
       in: cookie
       name: laravel-session
   parameters:
-    Id:
+    UserId:
       in: path
-      name: id
+      name: user
+      description: 用户 ID
       required: true
       schema:
         type: integer
+      example: 1
+    RoleId:
+      in: path
+      name: role
+      description: 角色 ID
+      required: true
+      schema:
+        type: integer
+      example: 1
+    MenuId:
+      in: path
+      name: menu
+      description: 菜单 ID
+      required: true
+      schema:
+        type: integer
+      example: 1
+    MetricId:
+      in: path
+      name: metric
+      description: 指标 ID
+      required: true
+      schema:
+        type: integer
+      example: 1
+    ImportId:
+      in: path
+      name: import
+      description: 导入任务 ID
+      required: true
+      schema:
+        type: integer
+      example: 1
   responses:
     Success:
-      description: Successful operation
+      description: 操作成功
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiSuccess'
     UserEnvelope:
-      description: User envelope
+      description: 用户响应 envelope
       content:
         application/json:
           schema:
@@ -832,7 +932,7 @@ components:
                       user:
                         $ref: '#/components/schemas/User'
     RoleEnvelope:
-      description: Role envelope
+      description: 角色响应 envelope
       content:
         application/json:
           schema:
@@ -847,7 +947,7 @@ components:
                       role:
                         $ref: '#/components/schemas/Role'
     MetricEnvelope:
-      description: Metric envelope
+      description: 指标响应 envelope
       content:
         application/json:
           schema:
@@ -862,7 +962,7 @@ components:
                       metric:
                         $ref: '#/components/schemas/Metric'
     ImportTaskEnvelope:
-      description: Import task envelope
+      description: 导入任务响应 envelope
       content:
         application/json:
           schema:
@@ -877,7 +977,7 @@ components:
                       import_task:
                         $ref: '#/components/schemas/ImportTask'
     ExportTaskEnvelope:
-      description: Export task envelope
+      description: 导出任务响应 envelope
       content:
         application/json:
           schema:
@@ -892,17 +992,56 @@ components:
                       export_task:
                         $ref: '#/components/schemas/ExportTask'
     Error:
-      description: Error response
+      description: 通用错误响应
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiError'
+          examples:
+            unauthenticated:
+              summary: 未登录
+              value:
+                success: false
+                message: Unauthenticated.
+                errors: {}
+                trace_id: 0196f0f1-0000-7000-8000-000000000000
+            forbidden:
+              summary: 无权限
+              value:
+                success: false
+                message: Forbidden.
+                errors: {}
+                trace_id: 0196f0f1-0000-7000-8000-000000000000
+            not_found:
+              summary: 资源不存在
+              value:
+                success: false
+                message: Not Found.
+                errors: {}
+                trace_id: 0196f0f1-0000-7000-8000-000000000000
+            rate_limited:
+              summary: 请求过于频繁
+              value:
+                success: false
+                message: Too Many Attempts.
+                errors: {}
+                trace_id: 0196f0f1-0000-7000-8000-000000000000
     ValidationError:
-      description: Validation error response
+      description: 参数验证失败响应
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiError'
+          examples:
+            validation_failed:
+              summary: 字段验证失败
+              value:
+                success: false
+                message: The given data was invalid.
+                errors:
+                  email:
+                    - The email field is required.
+                trace_id: 0196f0f1-0000-7000-8000-000000000000
   schemas:
     ApiSuccess:
       type: object
@@ -953,6 +1092,10 @@ components:
     LoginRequest:
       type: object
       required: [email, password]
+      example:
+        email: admin@example.com
+        password: password
+        remember: true
       properties:
         email:
           type: string
@@ -967,6 +1110,12 @@ components:
           default: false
     UserUpsertRequest:
       type: object
+      example:
+        name: Analyst User
+        email: analyst@example.com
+        password: password
+        status: active
+        role_ids: [2]
       properties:
         name:
           type: string
@@ -987,6 +1136,12 @@ components:
             type: integer
     RoleUpsertRequest:
       type: object
+      example:
+        name: Analyst
+        code: analyst
+        data_scope: self
+        description: 指标分析师
+        permission_ids: [1, 2, 3]
       properties:
         name:
           type: string
@@ -1094,6 +1249,14 @@ components:
     MetricUpsertRequest:
       type: object
       required: [metric_category_id, name, code]
+      example:
+        metric_category_id: 1
+        name: Revenue Amount
+        code: revenue_amount
+        unit: CNY
+        status: active
+        description: 月度收入金额
+        sort_order: 10
       properties:
         metric_category_id:
           type: integer

@@ -394,6 +394,7 @@
 ### AIP-09 OpenAPI 中文化和接口示例
 
 - 优先级：P2
+- 状态：已完成
 - 对应待开发项：P2-01
 - 目标：接口文档达到调试和面试演示标准。
 - 交付：
@@ -403,6 +404,9 @@
 - 验收：
   - `/docs/api` 可直接按中文说明调试接口。
   - YAML 与 `php artisan route:list --except-vendor` 对齐。
+- 完成证据：
+  - `public/docs/openapi.yaml` 已中文化并补请求/错误示例。
+  - 已新增 `tests/Feature/PhaseTwelveOpenApiContractTest.php`。
 
 ### AIP-10 Docker 一键运行与生产排障
 
@@ -422,11 +426,11 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | AIP-09 OpenAPI 中文化和接口示例 | 提升演示与协作体验 |
-| 2 | AIP-07 安全攻防增强 | 强化安全专题深度 |
-| 3 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
-| 4 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
-| 5 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
+| 1 | AIP-07 安全攻防增强 | 强化安全专题深度 |
+| 2 | AIP-10 Docker 一键运行与生产排障 | 补齐生产部署证据 |
+| 3 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
+| 4 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
+| 5 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -631,6 +635,8 @@
 
 ### 6.8 AIP-09 / P2-01：OpenAPI 中文化和接口示例
 
+- 状态：已完成
+
 执行目标：让接口文档达到面试演示和后续协作可直接调试的标准。
 
 代码路径：
@@ -653,6 +659,12 @@
 - `/docs/api` 能按中文说明理解主要接口。
 - OpenAPI 覆盖当前 43 条项目路由中的 API 路由。
 - 文档能回答“接口契约如何维护”“鉴权失败和权限失败如何区分”。
+
+完成证据：
+
+- `public/docs/openapi.yaml`
+- `tests/Feature/PhaseTwelveOpenApiContractTest.php`
+- `php artisan test --filter=PhaseTwelveOpenApiContractTest`
 
 ### 6.9 AIP-07 / P2-04：安全攻防增强
 
@@ -722,10 +734,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 AIP-09，对应 `docs/pending-development-tasks.md` 中的 P2-01。
+下一轮开发建议直接执行 AIP-07，对应 `docs/pending-development-tasks.md` 中的 P2-04。
 
-目标是把接口文档补齐到可演示、可协作和可追问：
+目标是把安全能力从“已有基础防护”推进到“攻击样例 + 测试 + 生产风险说明”：
 
-- 对所有 API 补中文 `summary`、`description`、标签和请求/响应示例。
-- 为鉴权、权限、验证失败、签名和限流补错误响应。
-- 对照 `php artisan route:list --except-vendor`，确认 OpenAPI 与实际路由一致。
+- 补 SSRF、XSS、CSRF、SQL 注入、反序列化和敏感字段脱敏说明。
+- 补文件上传仅校验扩展名的风险说明。
+- 补越权、签名、上传、SSRF/XSS 的测试或演示命令。

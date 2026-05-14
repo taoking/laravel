@@ -595,3 +595,46 @@ git diff --check
 - 全量测试通过：52 个测试、304 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
 - CI YAML 已覆盖当前本地质量门禁，旧测试 workflow 已对齐 PHP 8.4 项目基线。
+
+## 2026-05-15 P2-01 OpenAPI 中文化和示例补全
+
+目标：让 `/docs/api` 达到中文演示、接口联调和后续 agent 协作可直接使用的标准。
+
+### 开发内容
+
+- 更新 `public/docs/openapi.yaml`：
+  - 顶层说明、tag、operation `summary` 和 `description` 改为中文。
+  - 修正路径参数：`{user}`、`{role}`、`{menu}`、`{metric}`、`{import}` 与 Laravel 路由保持一致。
+  - 补签名接口 header 说明和请求体示例。
+  - 补用户、角色、菜单、指标、导入、导出请求示例。
+  - 补 401、403、404、429 和 422 通用错误示例。
+  - 补导入、导出幂等键说明。
+- 新增 `tests/Feature/PhaseTwelveOpenApiContractTest.php`：
+  - 对照 Laravel 路由表校验 `/api/v1` 路径都出现在 OpenAPI。
+  - 校验中文说明、错误示例、幂等键和 `trace_id`。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md` 和 `docs/development-completion-review.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan route:list --except-vendor --path=api/v1
+ruby -e "require 'yaml'; YAML.load_file('public/docs/openapi.yaml')"
+php artisan test --filter=PhaseTwelveOpenApiContractTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- API 路由检查显示 `/api/v1` 下 30 条路由。
+- PhaseTwelveOpenApiContractTest 通过：2 个测试、40 个断言。
+- 全量测试通过：54 个测试、344 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+- OpenAPI YAML 可被 Ruby YAML parser 解析。

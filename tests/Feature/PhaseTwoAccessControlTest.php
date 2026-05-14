@@ -267,8 +267,8 @@ class PhaseTwoAccessControlTest extends TestCase
             ->assertSee('/api/v1/permissions')
             ->assertSee('/api/v1/permissions/catalog')
             ->assertSee('/api/v1/users')
-            ->assertSee('/api/v1/roles/{id}')
-            ->assertSee('/api/v1/menus/{id}')
-            ->assertSee('/api/v1/roles/{id}/permissions');
+            ->assertSee('/api/v1/roles/{role}')
+            ->assertSee('/api/v1/menus/{menu}')
+            ->assertSee('/api/v1/roles/{role}/permissions');
     }
 }

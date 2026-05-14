@@ -131,6 +131,7 @@
 - Supervisor Worker：`docker/supervisor/worker.conf`
 - wrk 压测脚本：`scripts/bench/wrk-metrics.sh`
 - OpenAPI 文档：`public/docs/openapi.yaml`
+- OpenAPI 契约测试：`tests/Feature/PhaseTwelveOpenApiContractTest.php`
 - Phase 1 验收测试：`tests/Feature/PhaseOneScaffoldTest.php`
 - Phase 2 验收测试：`tests/Feature/PhaseTwoAccessControlTest.php`
 - Phase 3 验收测试：`tests/Feature/PhaseThreeMetricManagementTest.php`
@@ -138,6 +139,7 @@
 - Phase 5 验收测试：`tests/Feature/PhaseFiveSecurityAuditTest.php`
 - Phase 9 数据库性能测试：`tests/Feature/PhaseNineDatabasePerformanceTest.php`
 - Phase 11 PHP 语言底层测试：`tests/Feature/PhaseElevenPhpLanguageLabTest.php`
+- Phase 12 OpenAPI 契约测试：`tests/Feature/PhaseTwelveOpenApiContractTest.php`
 - RBAC 模型：`app/Domains/Access/Models/Role.php`、`Permission.php`、`Menu.php`
 - 权限服务：`app/Domains/Access/Services/PermissionService.php`
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
@@ -238,8 +240,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例和 P2-03 CI 已完成，后续优先进入 OpenAPI 中文化和更细粒度面试笔记。
-- 后续开发提交前必须保持 `composer analyse` 通过；P2-01 OpenAPI 中文化和示例补全是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI 和 P2-01 OpenAPI 中文化已完成，后续优先进入安全攻防增强和更细粒度面试笔记。
+- 后续开发提交前必须保持 `composer analyse` 通过；P2-04 安全攻防增强是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

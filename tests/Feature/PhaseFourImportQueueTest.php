@@ -246,7 +246,7 @@ class PhaseFourImportQueueTest extends TestCase
         $this->get('/docs/openapi.yaml')
             ->assertOk()
             ->assertSee('/api/v1/imports')
-            ->assertSee('/api/v1/imports/{id}/retry')
+            ->assertSee('/api/v1/imports/{import}/retry')
             ->assertSee('/api/v1/exports');
     }
 
