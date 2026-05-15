@@ -189,7 +189,10 @@ docs/
 | GET | `/api/v1/imports` | 导入任务列表 |
 | GET | `/api/v1/imports/{id}` | 导入任务详情 |
 | POST | `/api/v1/imports/{id}/retry` | 重试导入任务 |
+| GET | `/api/v1/exports` | 导出任务列表 |
 | POST | `/api/v1/exports` | 创建导出任务 |
+| GET | `/api/v1/exports/{id}` | 导出任务详情和进度 |
+| GET | `/api/v1/exports/{id}/download` | 下载已完成导出文件 |
 | POST | `/api/v1/security/url-check` | SSRF URL 安全检查 |
 | GET | `/api/v1/audit-logs` | 审计日志列表 |
 
@@ -501,6 +504,7 @@ docs/
   - `GET /admin/imports`
 - 代码入口：
   - `database/migrations/2026_05_14_000004_create_import_export_tables.php`
+  - `database/migrations/2026_05_15_000002_add_progress_fields_to_export_tasks_table.php`
   - `app/Domains/Imports/Models/ImportTask.php`
   - `app/Domains/Imports/Models/ImportFailure.php`
   - `app/Domains/Imports/Models/ExportTask.php`
@@ -508,6 +512,7 @@ docs/
   - `app/Http/Controllers/Api/V1/Imports/ImportTaskController.php`
   - `app/Http/Controllers/Api/V1/Imports/ExportTaskController.php`
   - `app/Jobs/ProcessMetricImportJob.php`
+  - `app/Jobs/ProcessMetricExportJob.php`
   - `app/Console/Commands/ImportCompensateCommand.php`
   - `app/Console/Commands/ComputeMetricDailySummary.php`
   - `routes/console.php`
@@ -515,6 +520,7 @@ docs/
   - `docs/queue/import-export-worker.md`
 - 测试入口：
   - `tests/Feature/PhaseFourImportQueueTest.php`
+  - `tests/Feature/PhaseSixteenAsyncExportTest.php`
 - 已覆盖场景：
   - CSV 导入创建任务并写入指标值。
   - 错误行写入 `import_failures`。
@@ -522,6 +528,10 @@ docs/
   - 导入任务可重试。
   - 无导入/导出权限用户被拒绝。
   - 导出任务幂等创建。
+  - 导出 Job 分批生成 CSV，并记录总行数、已处理行数、进度和文件大小。
+  - 导出详情接口返回下载地址。
+  - 下载接口校验任务创建者、任务完成状态和文件存在性。
+  - 目标磁盘异常记录 `failure_type=storage`、`attempts` 和失败时间。
   - 导入 Job 记录尝试次数、失败分类和最近失败时间。
   - `imports:compensate` 支持 dry-run 和补偿 failed 任务。
   - `metrics:daily-summary` 命令可执行。

@@ -8,7 +8,10 @@
 - 导入任务列表：`GET /api/v1/imports`
 - 导入任务详情：`GET /api/v1/imports/{id}`
 - 重试导入任务：`POST /api/v1/imports/{id}/retry`
+- 导出任务列表：`GET /api/v1/exports`
 - 创建导出任务：`POST /api/v1/exports`
+- 导出任务详情：`GET /api/v1/exports/{id}`
+- 下载导出文件：`GET /api/v1/exports/{id}/download`
 
 接口文档入口：
 
@@ -33,7 +36,17 @@ revenue_amount,CN-SH,monthly,2026-05-01,2026-05,1300000,test
 
 导入 Job 会按 `metric_code`、`region_code`、`frequency_code`、`period_date` 定位指标值，存在则更新，不存在则创建。因此重复执行不会产生重复指标值。
 
-## 3. 状态机
+## 3. 导出 CSV 格式
+
+`ProcessMetricExportJob` 会生成指标 CSV，当前字段：
+
+```csv
+id,code,name,unit,status,category_code,category_name,latest_value,latest_period_date,latest_period_label,latest_region_code,latest_frequency_code,created_at
+```
+
+导出使用 `chunkById(500)` 分批读取指标，先写入本机临时文件，再用 Storage stream 写入目标磁盘。这样不会把完整结果集一次性加载进 PHP 内存，也能兼容本地磁盘、MinIO/S3 等私有文件存储。
+
+## 4. 状态机
 
 `import_tasks.status` 当前使用以下状态：
 
@@ -51,7 +64,27 @@ revenue_amount,CN-SH,monthly,2026-05-01,2026-05,1300000,test
 - 如果 Redis Queue 因 ack/delete 失败导致同一个 Job 再次投递，Job 会检查终态并跳过。
 - 如果任务还处于 `failed`，表示前一次执行没有完成，可以重新执行。
 
-## 4. 幂等策略
+`export_tasks.status` 当前使用以下状态：
+
+| 状态 | 含义 | 是否终态 | 后续动作 |
+| --- | --- | --- | --- |
+| `pending` | 已创建任务，等待 Worker 生成文件 | 否 | Job 可以执行 |
+| `processing` | Job 正在分批写入 CSV | 否 | 重复 Job 直接跳过 |
+| `completed` | CSV 已生成，可下载 | 是 | 下载接口校验创建者和文件存在性 |
+| `failed` | Job 级异常，例如磁盘不可用、临时文件不可写 | 否 | 记录失败分类，后续可人工重新创建任务 |
+
+导出进度字段：
+
+| 字段 | 用途 |
+| --- | --- |
+| `total_rows` | 导出查询命中的指标数量 |
+| `processed_rows` | 已写入 CSV 的指标数量 |
+| `progress_percentage` | API Resource 根据状态和行数计算 |
+| `file_size` | 生成文件大小 |
+| `attempts` | Job 实际开始处理次数 |
+| `downloaded_at` | 最近一次成功下载时间 |
+
+## 5. 幂等策略
 
 HTTP 创建层：
 
@@ -65,6 +98,7 @@ Job 执行层：
 - 终态任务跳过，防止重复消费造成重复写入。
 - 指标值写入使用业务唯一维度查找后更新或创建，避免重复插入。
 - 业务行失败写入 `import_failures`，Job 级异常写入 `import_tasks.error_message` 和 `failure_type`。
+- 导出 Job 使用固定任务 ID 生成私有 CSV 路径，失败时删除可能存在的半成品文件，避免下载到不完整结果。
 
 Kafka 事件层：
 
@@ -72,7 +106,7 @@ Kafka 事件层：
 - Kafka 消费侧通过 `consumed_messages` 表实现 `consumer_group + idempotency_key` 幂等。
 - Kafka 专题见 `docs/queue/kafka-practice.md`。
 
-## 5. 失败分类
+## 6. 失败分类
 
 `import_tasks` 新增可靠性字段：
 
@@ -94,7 +128,15 @@ Kafka 事件层：
 
 业务行失败不会让 Job 失败，而是进入 `completed_with_errors`，并写入 `import_failures`。这类失败通常属于数据质量问题，不应该让整个文件反复重试。
 
-## 6. 重试和补偿命令
+`export_tasks` 失败分类：
+
+| failure_type | 场景 | 处理建议 |
+| --- | --- | --- |
+| `storage` | 目标磁盘未配置、临时文件不可读、Storage 写入失败 | 检查 `FILESYSTEM_DISK`、目录权限、MinIO/S3 连接 |
+| `runtime` | 内存、超时等运行时问题 | 降低 chunk、拆分导出范围、调整 Worker timeout |
+| `unexpected` | 未知异常 | 查看 Worker 日志和任务错误信息 |
+
+## 7. 重试和补偿命令
 
 接口重试：
 
@@ -127,7 +169,7 @@ CLI 补偿适用于生产排障：
 - `--limit=20`：限制单次补偿数量。
 - `--clear-failures`：重新派发前删除历史行失败记录。
 
-## 7. Worker 命令
+## 8. Worker 命令
 
 本地：
 
@@ -157,14 +199,14 @@ stdout_logfile=/var/www/html/storage/logs/worker.log
 stopwaitsecs=3600
 ```
 
-## 8. 定时任务
+## 9. 定时任务
 
 - 命令：`php artisan metrics:daily-summary`
 - 调度：`routes/console.php` 中每日 `01:00` 执行，并启用 `withoutOverlapping()`。
 
 多机部署时，Scheduler 还应使用共享缓存锁或单独的调度节点，避免多台机器重复执行同一个定时任务。
 
-## 9. Redis Queue、RabbitMQ、Kafka 选型
+## 10. Redis Queue、RabbitMQ、Kafka 选型
 
 | 维度 | Redis Queue | RabbitMQ | Kafka |
 | --- | --- | --- | --- |
@@ -183,7 +225,7 @@ stopwaitsecs=3600
 - `metric.import.completed`、`metric.data.changed`、`audit.event.created` 使用 Kafka，因为它们是业务事实，需要分发、消费幂等、lag 观察和死信重放。
 - RabbitMQ 暂不落地代码，作为面试选型对比：当系统需要强路由能力、ack/nack、死信交换机和较传统的业务消息队列语义时，可以优先考虑 RabbitMQ。
 
-## 10. 常见追问
+## 11. 常见追问
 
 基础问题：
 
@@ -192,6 +234,7 @@ stopwaitsecs=3600
 3. Worker 更新代码后为什么要执行 `queue:restart`？
 4. `completed_with_errors` 为什么也要作为终态？
 5. 业务行失败和 Job 级失败为什么要分开记录？
+6. 大数据导出为什么不能在 Controller 里直接生成并返回？
 
 资深追问：
 
@@ -205,13 +248,18 @@ stopwaitsecs=3600
    - Redis Queue 处理“要做的任务”，Kafka 分发“已经发生的业务事实”。
 5. 如果数据库写入成功但 Kafka 事件发布失败怎么办？
    - 当前项目是学习版，Job 完成后直接发布事件；生产级方案应引入 Outbox Pattern，把业务写入和待发送事件放在同一数据库事务中，再由独立进程可靠投递。
+6. 如何避免大文件导出把内存打爆？
+   - Controller 只创建任务，Worker 使用 `chunkById` 分批查库，CSV 写入临时文件句柄，再通过 Storage stream 保存，避免把完整数组或字符串常驻内存。
+7. 下载接口为什么还要校验任务创建者？
+   - 导出文件通常包含筛选后的业务数据，只校验“有导出权限”不够；本项目还校验 `export_tasks.user_id`，防止同权限用户互相下载文件。
 
-## 11. 验收命令
+## 12. 验收命令
 
 ```bash
 php artisan list imports --raw
 php artisan imports:compensate --dry-run
 php artisan test --filter=PhaseFourImportQueueTest
+php artisan test --filter=PhaseSixteenAsyncExportTest
 composer analyse
 php artisan test
 ./vendor/bin/pint --test
@@ -225,3 +273,6 @@ php artisan test
 - 重试接口重新派发任务。
 - `imports:compensate` 可补偿 failed 任务。
 - `imports:compensate --dry-run` 不修改任务。
+- 导出 Job 生成 CSV、记录进度和文件大小。
+- 导出下载校验任务创建者和任务完成状态。
+- 目标磁盘异常会记录 `failure_type=storage` 和 `attempts`。

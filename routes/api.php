@@ -110,9 +110,18 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('permission:imports.manage')
             ->name('imports.retry');
 
+        Route::get('/exports', [ExportTaskController::class, 'index'])
+            ->middleware('permission:exports.manage')
+            ->name('exports.index');
         Route::post('/exports', [ExportTaskController::class, 'store'])
             ->middleware('permission:exports.manage')
             ->name('exports.store');
+        Route::get('/exports/{export}', [ExportTaskController::class, 'show'])
+            ->middleware('permission:exports.manage')
+            ->name('exports.show');
+        Route::get('/exports/{export}/download', [ExportTaskController::class, 'download'])
+            ->middleware('permission:exports.manage')
+            ->name('exports.download');
 
         Route::get('/audit-logs', [AuditLogController::class, 'index'])
             ->middleware('permission:audit.view')

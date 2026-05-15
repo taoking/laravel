@@ -23,7 +23,7 @@
 | Kafka 命令 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 | 能说明 Kafka 不只是文档概念，已有生产、消费、lag、topic、死信重放入口 |
 | 后台页面 | `resources/js/Pages/*` 覆盖登录、工作台、用户、角色、菜单、指标、导入、审计 | 能演示企业后台主流程和中文多语言界面 |
 | API 主线 | `routes/api.php` 覆盖健康检查、鉴权、权限、指标、导入导出、签名、审计 | 能串起 Auth、RBAC、业务 API、安全和审计 |
-| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15 | 能作为回归和面试证据，后续重点是浏览器端验收 |
+| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15/16 | 能作为回归和面试证据，后续重点是浏览器端验收 |
 | 静态分析 | `composer.json` 已提供 `analyse`、`analyse:phpstan`、`analyse:psalm` | 已具备 P1 工程质量门禁 |
 | 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/testing-ci/regression-coverage.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
 
@@ -438,9 +438,8 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
-| 2 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
-| 3 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
+| 1 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
+| 2 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -779,6 +778,49 @@
 - `composer analyse` 通过。
 - `docs/testing-ci/regression-coverage.md` 已写入后续新增 API、权限、异步和缓存测试规则。
 
+### 6.12 AIP-12 / P3-02：大数据导出异步化
+
+状态：已完成。
+
+执行目标：把导出从“创建任务”推进到“后台生成文件、可查询进度、可鉴权下载”的完整闭环。
+
+代码路径：
+
+- `app/Jobs/ProcessMetricExportJob.php`
+- `app/Http/Controllers/Api/V1/Imports/ExportTaskController.php`
+- `app/Domains/Imports/Models/ExportTask.php`
+- `database/migrations/2026_05_15_000002_add_progress_fields_to_export_tasks_table.php`
+- `tests/Feature/PhaseSixteenAsyncExportTest.php`
+- `docs/queue/import-export-worker.md`
+
+接口路径：
+
+- `GET /api/v1/exports`
+- `POST /api/v1/exports`
+- `GET /api/v1/exports/{export}`
+- `GET /api/v1/exports/{export}/download`
+
+实施路径：
+
+1. `POST /api/v1/exports` 创建任务并派发 `ProcessMetricExportJob`，保持 `Idempotency-Key` 防重复创建。
+2. Job 使用 `chunkById(500)` 分批读取指标并写入临时 CSV 文件，再通过 Storage stream 写入私有磁盘。
+3. `export_tasks` 记录 `total_rows`、`processed_rows`、`file_size`、`attempts`、`failure_type` 和 `downloaded_at`。
+4. 详情接口返回进度百分比、状态、错误原因和下载地址。
+5. 下载接口校验任务创建者、完成状态和文件存在性。
+
+验收标准：
+
+- `php artisan test --filter=PhaseSixteenAsyncExportTest` 稳定通过。
+- OpenAPI 覆盖新增导出列表、详情和下载接口。
+- 文档能回答“大数据导出为什么不能在 Controller 里直接生成”“如何避免内存爆掉”“为什么下载要校验任务创建者”。
+
+完成证据：
+
+- `php artisan test --filter=PhaseSixteenAsyncExportTest` 通过：4 个测试、33 个断言。
+- `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过：2 个测试、44 个断言。
+- `php artisan test` 通过：73 个测试、534 个断言。
+- `composer analyse` 通过。
+
 ## 7. 面试通过标准
 
 一个专题补齐后，必须同时满足：
@@ -796,10 +838,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 P3-02 大数据导出异步化。
+下一轮开发建议直接执行 P3-01 Excel 导入。
 
-目标是把导出从“创建任务”推进到“异步生成文件、可查询进度、可鉴权下载”的完整闭环：
+目标是把当前 CSV 导入闭环扩展为更贴近企业后台的 Excel 文件导入能力：
 
-- 创建导出任务后不阻塞 HTTP 请求。
-- 后台 Job 分批写入 CSV，避免一次性加载大数据。
-- 下载接口校验任务归属、权限和任务状态。
+- 支持 `.xlsx` 示例文件导入。
+- 复用导入任务、失败记录、幂等和重试能力。
+- 文档说明 CSV 与 Excel 解析的内存风险和库选型边界。

@@ -830,10 +830,41 @@ paths:
         '403':
           $ref: '#/components/responses/Error'
   /api/v1/exports:
+    get:
+      tags: [Async]
+      summary: 导出任务列表
+      description: 查看当前用户创建的导出任务，返回进度、状态、文件大小和下载地址。
+      operationId: getExports
+      parameters:
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 导出任务分页列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExportTask'
+                      meta:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
     post:
       tags: [Async]
       summary: 创建导出任务
-      description: 创建异步导出任务。支持 `Idempotency-Key`，重复提交返回已有导出任务。
+      description: 创建异步导出任务。HTTP 请求只创建任务并派发 Job，后台分批写入 CSV；支持 `Idempotency-Key`，重复提交返回已有导出任务。
       operationId: postExports
       parameters:
         - in: header
@@ -868,6 +899,49 @@ paths:
         '401':
           $ref: '#/components/responses/Error'
         '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/v1/exports/{export}:
+    get:
+      tags: [Async]
+      summary: 导出任务详情
+      description: 查看导出任务状态、进度、文件大小、失败原因和下载地址。只能查看自己创建的导出任务。
+      operationId: getExport
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExportTaskEnvelope'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /api/v1/exports/{export}/download:
+    get:
+      tags: [Async]
+      summary: 下载导出文件
+      description: 仅任务创建者可下载已完成的 CSV 文件；任务未完成时返回 409。
+      operationId: downloadExport
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: CSV 文件流
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
           $ref: '#/components/responses/Error'
   /api/v1/audit-logs:
     get:
@@ -952,6 +1026,14 @@ components:
       in: path
       name: import
       description: 导入任务 ID
+      required: true
+      schema:
+        type: integer
+      example: 1
+    ExportId:
+      in: path
+      name: export
+      description: 导出任务 ID
       required: true
       schema:
         type: integer
@@ -1464,10 +1546,49 @@ components:
           type: string
         status:
           type: string
+          enum: [pending, processing, completed, failed]
         filters:
           type: object
         path:
           type: [string, 'null']
+        total_rows:
+          type: integer
+        processed_rows:
+          type: integer
+        progress_percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+        file_size:
+          type: integer
+        attempts:
+          type: integer
+        error_message:
+          type: [string, 'null']
+        failure_type:
+          type: [string, 'null']
+          enum: [storage, runtime, unexpected, null]
+        last_failed_at:
+          type: [string, 'null']
+          format: date-time
+        download_url:
+          type: [string, 'null']
+          example: /api/v1/exports/1/download
+        started_at:
+          type: [string, 'null']
+          format: date-time
+        finished_at:
+          type: [string, 'null']
+          format: date-time
+        downloaded_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: [string, 'null']
+          format: date-time
+        updated_at:
+          type: [string, 'null']
+          format: date-time
     AuditLog:
       type: object
       properties:

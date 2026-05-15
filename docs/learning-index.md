@@ -49,6 +49,8 @@
 - 频率维度接口：`http://127.0.0.1:8000/api/v1/dimensions/frequencies`
 - 导入任务接口：`http://127.0.0.1:8000/api/v1/imports`
 - 导出任务接口：`http://127.0.0.1:8000/api/v1/exports`
+- 导出任务详情：`http://127.0.0.1:8000/api/v1/exports/{export}`
+- 导出文件下载：`http://127.0.0.1:8000/api/v1/exports/{export}/download`
 - 签名反重放接口：`http://127.0.0.1:8000/api/v1/security/signed-echo`
 - SSRF URL 安全检查：`http://127.0.0.1:8000/api/v1/security/url-check`
 - 审计日志接口：`http://127.0.0.1:8000/api/v1/audit-logs`
@@ -99,6 +101,7 @@
 - 上传文件模型：`app/Domains/Files/Models/UploadedFile.php`
 - 导出任务模型：`app/Domains/Imports/Models/ExportTask.php`
 - CSV 导入 Job：`app/Jobs/ProcessMetricImportJob.php`
+- CSV 导出 Job：`app/Jobs/ProcessMetricExportJob.php`
 - 导入任务补偿命令：`app/Console/Commands/ImportCompensateCommand.php`
 - 定时统计命令：`app/Console/Commands/ComputeMetricDailySummary.php`
 - 安全审计说明：`docs/security/security-audit.md`
@@ -151,6 +154,7 @@
 - Phase 12 OpenAPI 契约测试：`tests/Feature/PhaseTwelveOpenApiContractTest.php`
 - Phase 13 安全攻防测试：`tests/Feature/PhaseThirteenSecurityAttackLabTest.php`
 - Phase 15 模块级回归测试：`tests/Feature/PhaseFifteenRegressionCoverageTest.php`
+- Phase 16 异步导出测试：`tests/Feature/PhaseSixteenAsyncExportTest.php`
 - RBAC 模型：`app/Domains/Access/Models/Role.php`、`Permission.php`、`Menu.php`
 - 权限服务：`app/Domains/Access/Services/PermissionService.php`
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
@@ -248,12 +252,12 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 1 已实现。
 - Phase 2 已实现认证、RBAC 数据结构、权限菜单 API、权限中间件、用户 Policy 和越权测试。
 - Phase 3 已实现指标库、维度、查询 API、排序白名单、分页和 Explain 示例。
-- Phase 4 已实现 CSV 导入、失败记录、幂等提交、重试、导出任务入口和定时统计命令。
+- Phase 4 已实现 CSV 导入、失败记录、幂等提交、重试、导出任务异步生成、进度查询、下载鉴权和定时统计命令。
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-02 测试覆盖增强、P2-04 安全攻防增强和 P3-04 Docker 一键启动验收已完成，后续优先进入大数据导出增强。
-- 后续开发提交前必须保持 `composer analyse` 通过；P3-02 大数据导出异步化是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-02 测试覆盖增强、P2-04 安全攻防增强、P3-02 大数据导出异步化和 P3-04 Docker 一键启动验收已完成，后续优先进入 Excel 导入。
+- 后续开发提交前必须保持 `composer analyse` 通过；P3-01 Excel 导入是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

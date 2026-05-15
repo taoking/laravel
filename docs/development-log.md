@@ -774,3 +774,55 @@ git diff --check
 - PhaseFifteenRegressionCoverageTest 通过：5 个测试、99 个断言。
 - 全量测试通过：69 个测试、498 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+
+## 2026-05-15 P3-02 大数据导出异步化
+
+目标：把导出任务从“只创建记录”补齐为后台生成 CSV、可查询进度、可鉴权下载的完整闭环。
+
+### 开发内容
+
+- 新增 `database/migrations/2026_05_15_000002_add_progress_fields_to_export_tasks_table.php`：
+  - 为 `export_tasks` 增加 `total_rows`、`processed_rows`、`file_size`、`attempts`、`failure_type`、`last_failed_at` 和 `downloaded_at`。
+- 新增 `app/Jobs/ProcessMetricExportJob.php`：
+  - 使用 `chunkById(500)` 分批读取指标。
+  - 将 CSV 写入临时文件，再通过 Storage stream 保存到私有磁盘。
+  - 记录总行数、已处理行数、文件大小、尝试次数和失败分类。
+  - 失败时删除可能存在的半成品文件。
+- 更新 `app/Http/Controllers/Api/V1/Imports/ExportTaskController.php`：
+  - `GET /api/v1/exports` 返回当前用户导出任务列表。
+  - `POST /api/v1/exports` 创建任务并派发导出 Job，继续支持 `Idempotency-Key`。
+  - `GET /api/v1/exports/{export}` 返回状态、进度、文件大小、错误原因和下载地址。
+  - `GET /api/v1/exports/{export}/download` 校验任务创建者、完成状态和文件存在性后下载 CSV。
+- 更新 `app/Http/Resources/Imports/ExportTaskResource.php`：
+  - 输出 `progress_percentage`、`download_url`、`file_size`、`failure_type` 和时间字段。
+- 更新 `public/docs/openapi.yaml`：
+  - 补导出列表、详情、下载接口，新增 `ExportId` 参数和导出进度字段。
+- 更新 `docs/queue/import-export-worker.md`：
+  - 补导出状态机、进度字段、内存控制策略、下载鉴权和资深追问。
+- 新增 `tests/Feature/PhaseSixteenAsyncExportTest.php`：
+  - 覆盖 CSV 生成、进度、文件大小、详情查询、下载、幂等、非创建者禁止下载、未完成下载 409 和磁盘异常失败分类。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseSixteenAsyncExportTest
+php artisan test --filter=PhaseTwelveOpenApiContractTest
+ruby -e "require 'yaml'; YAML.load_file('public/docs/openapi.yaml')"
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseSixteenAsyncExportTest 通过：4 个测试、33 个断言。
+- PhaseTwelveOpenApiContractTest 通过：2 个测试、44 个断言。
+- 全量测试通过：73 个测试、534 个断言。
+- `composer analyse`、OpenAPI YAML 解析、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。

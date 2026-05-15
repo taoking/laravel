@@ -15,9 +15,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'filters',
     'disk',
     'path',
+    'total_rows',
+    'processed_rows',
+    'file_size',
+    'attempts',
     'error_message',
+    'failure_type',
+    'last_failed_at',
     'started_at',
     'finished_at',
+    'downloaded_at',
 ])]
 class ExportTask extends Model
 {
@@ -31,8 +38,14 @@ class ExportTask extends Model
     {
         return [
             'filters' => 'array',
+            'total_rows' => 'integer',
+            'processed_rows' => 'integer',
+            'file_size' => 'integer',
+            'attempts' => 'integer',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'last_failed_at' => 'datetime',
+            'downloaded_at' => 'datetime',
         ];
     }
 }
