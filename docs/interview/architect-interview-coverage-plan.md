@@ -23,9 +23,9 @@
 | Kafka 命令 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 | 能说明 Kafka 不只是文档概念，已有生产、消费、lag、topic、死信重放入口 |
 | 后台页面 | `resources/js/Pages/*` 覆盖登录、工作台、用户、角色、菜单、指标、导入、审计 | 能演示企业后台主流程和中文多语言界面 |
 | API 主线 | `routes/api.php` 覆盖健康检查、鉴权、权限、指标、导入导出、签名、审计 | 能串起 Auth、RBAC、业务 API、安全和审计 |
-| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11 | 能作为回归和面试证据，后续重点是 CI 固化和浏览器端验收 |
+| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15 | 能作为回归和面试证据，后续重点是浏览器端验收 |
 | 静态分析 | `composer.json` 已提供 `analyse`、`analyse:phpstan`、`analyse:psalm` | 已具备 P1 工程质量门禁 |
-| 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
+| 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/testing-ci/regression-coverage.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
 
 面试官结论：
 
@@ -438,10 +438,9 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | P2-02 Excel 导入解析 | 补齐真实企业导入场景 |
-| 2 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
-| 3 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
-| 4 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
+| 1 | P3-02 大数据导出异步化 | 补齐大文件导出与下载鉴权 |
+| 2 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
+| 3 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -748,6 +747,38 @@
 - `docker/nginx/default.conf` 已补 Docker DNS 动态解析，解决 app 重建后的 Nginx 上游旧 IP 问题。
 - 真实 smoke 结果：`/up`、`/login`、`/docs/api`、`/api/v1/health` 通过，最终 `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均运行。
 
+### 6.11 AIP-11 / P2-02：模块级回归测试覆盖
+
+状态：已完成。
+
+执行目标：把阶段验收测试提升为后续重构保护网，避免统一响应、权限矩阵、验证合同或关键数据副作用被破坏。
+
+代码路径：
+
+- `tests/Feature/PhaseFifteenRegressionCoverageTest.php`
+- `docs/testing-ci/regression-coverage.md`
+
+实施路径：
+
+1. 未登录访问用户、指标、导入、导出、审计等关键 API，统一返回 401 JSON 合同。
+2. 管理员创建用户和指标时覆盖重复邮箱、非法分类、XSS payload、重复编码和非法状态的 422 合同。
+3. 分析师角色只允许读取指标，不允许写用户、角色、指标、导入、导出或审计。
+4. 无效导出类型返回 422，且不创建 `export_tasks`，验证失败路径没有副作用。
+5. 不存在资源返回统一 404 JSON 合同。
+
+验收标准：
+
+- `php artisan test --filter=PhaseFifteenRegressionCoverageTest` 稳定通过。
+- `composer analyse` 通过，新增测试不降低 PHPStan/Larastan/Psalm 基线。
+- 文档能回答 Feature Test 与 Unit Test 边界、权限测试角色覆盖、422 合同固定、队列失败重试测试和 Mock/Fake/集成测试取舍。
+
+完成证据：
+
+- `php artisan test --filter=PhaseFifteenRegressionCoverageTest` 通过：5 个测试、99 个断言。
+- `php artisan test` 通过：69 个测试、498 个断言。
+- `composer analyse` 通过。
+- `docs/testing-ci/regression-coverage.md` 已写入后续新增 API、权限、异步和缓存测试规则。
+
 ## 7. 面试通过标准
 
 一个专题补齐后，必须同时满足：
@@ -765,10 +796,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 P2-02 Excel 导入解析。
+下一轮开发建议直接执行 P3-02 大数据导出异步化。
 
-目标是把当前 CSV 导入闭环提升为更贴近企业后台的文件导入能力：
+目标是把导出从“创建任务”推进到“异步生成文件、可查询进度、可鉴权下载”的完整闭环：
 
-- 引入或封装 Excel 解析流程，明确 CSV/XLSX 的差异和内存风险。
-- 补导入模板、列映射、格式校验、失败行定位和批量入库策略。
-- 补大文件处理边界：分片、队列、重试、幂等、进度、失败补偿。
+- 创建导出任务后不阻塞 HTTP 请求。
+- 后台 Job 分批写入 CSV，避免一次性加载大数据。
+- 下载接口校验任务归属、权限和任务状态。

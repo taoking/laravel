@@ -724,6 +724,12 @@ composer analyse:psalm
 - 安全：越权、限流、签名、上传测试。
 - 缓存：命中、未命中、刷新测试。
 - API 文档：文档路径访问测试。
+- 模块级回归：认证、授权、验证错误、404 和关键副作用测试。
+
+当前回归保障入口：
+
+- `tests/Feature/PhaseFifteenRegressionCoverageTest.php`：覆盖关键 API 统一 401、422、403、404 合同和无效导出不落库副作用。
+- `docs/testing-ci/regression-coverage.md`：记录后续新增 API、权限、异步任务和缓存测试的最低规则。
 
 ## 9. 完成定义
 

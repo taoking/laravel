@@ -413,7 +413,7 @@
 
 ### P2-02 测试覆盖增强
 
-- 状态：待开发
+- 状态：已完成
 - 目标：把当前测试从阶段验收扩展为模块级回归保障。
 - 建议范围：
   - `tests/Feature`
@@ -427,6 +427,13 @@
 - 验收标准：
   - `php artisan test` 稳定通过。
   - 测试名称能体现业务行为，而不是只验证状态码。
+- 完成记录：
+  - 已新增 `tests/Feature/PhaseFifteenRegressionCoverageTest.php`。
+  - 覆盖未登录关键 API 统一 401 JSON、管理员 422 验证合同、分析师只读权限矩阵、无效导出不落库和 404 统一错误结构。
+  - 已新增 `docs/testing-ci/regression-coverage.md`，说明后续新增 API、权限、队列、缓存测试规则和面试表达。
+  - 已通过 `php artisan test --filter=PhaseFifteenRegressionCoverageTest`，5 个测试、99 个断言。
+  - 已通过全量 `php artisan test`，69 个测试、498 个断言。
+  - 已通过 `composer analyse`，保持 PHPStan/Larastan/Psalm 基线。
 
 ### P2-03 GitHub Actions CI
 
@@ -563,11 +570,10 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P2-02 Excel 导入解析。
-2. P3-02 大数据导出异步化。
-3. P3-01 Excel 导入。
-4. P3-05 语义搜索和 AI 加分模块。
+1. P3-02 大数据导出异步化。
+2. P3-01 Excel 导入。
+3. P3-05 语义搜索和 AI 加分模块。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-04 安全攻防和 P3-04 Docker 一键启动验收均已完成。后续优先补企业导入导出增强，尤其是 Excel 解析、大文件异步导出和下载鉴权。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-02 测试覆盖增强、P2-04 安全攻防和 P3-04 Docker 一键启动验收均已完成。后续补企业导入导出增强，尤其是大文件异步导出、Excel 文件导入和下载鉴权。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

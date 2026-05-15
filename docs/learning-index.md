@@ -122,6 +122,8 @@
 - Docker 部署 Runbook：`docs/deploy/docker-deploy-runbook.md`
 - Docker 一键 smoke 脚本：`scripts/deploy/docker-smoke.sh`
 - Docker Runbook 验收测试：`tests/Feature/PhaseFourteenDockerRunbookTest.php`
+- 模块级回归测试专题：`docs/testing-ci/regression-coverage.md`
+- 模块级回归验收测试：`tests/Feature/PhaseFifteenRegressionCoverageTest.php`
 - 架构师面试覆盖度计划和任务卡：`docs/interview/architect-interview-coverage-plan.md`
 - Laravel Container 专题：`docs/laravel-core/container.md`
 - Laravel ServiceProvider 专题：`docs/laravel-core/service-provider.md`
@@ -148,6 +150,7 @@
 - Phase 11 PHP 语言底层测试：`tests/Feature/PhaseElevenPhpLanguageLabTest.php`
 - Phase 12 OpenAPI 契约测试：`tests/Feature/PhaseTwelveOpenApiContractTest.php`
 - Phase 13 安全攻防测试：`tests/Feature/PhaseThirteenSecurityAttackLabTest.php`
+- Phase 15 模块级回归测试：`tests/Feature/PhaseFifteenRegressionCoverageTest.php`
 - RBAC 模型：`app/Domains/Access/Models/Role.php`、`Permission.php`、`Menu.php`
 - 权限服务：`app/Domains/Access/Services/PermissionService.php`
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
@@ -224,6 +227,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - 数据库性能专题：`docs/database/metric-query-explain.md`、`docs/database/large-pagination.md`
 - PHP 运行机制专题：`docs/runtime/php-fpm-worker-octane.md`
 - PHP 语言底层专题：`docs/php-language/runtime-labs.md`
+- 模块级回归测试专题：`docs/testing-ci/regression-coverage.md`
 - 知识地图：`docs/learning-knowledge-map.md`
 - Laravel 骨架学习：`docs/laravel-framework-study-guide.md`
 - Laravel 生命周期：`docs/laravel-startup-shutdown-flow.md`
@@ -248,8 +252,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
 - P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-04 安全攻防增强和 P3-04 Docker 一键启动验收已完成，后续优先进入 Excel 导入解析和大数据导出增强。
-- 后续开发提交前必须保持 `composer analyse` 通过；P2-02 Excel 导入解析是当前下一项高优先级任务。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-02 测试覆盖增强、P2-04 安全攻防增强和 P3-04 Docker 一键启动验收已完成，后续优先进入大数据导出增强。
+- 后续开发提交前必须保持 `composer analyse` 通过；P3-02 大数据导出异步化是当前下一项高优先级任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

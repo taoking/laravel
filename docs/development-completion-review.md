@@ -27,6 +27,7 @@
 | P1-07 | PHP 语言底层代码示例 | 已完成 | `php artisan php:language-lab all`、`docs/php-language/runtime-labs.md` |
 | P2-03 | GitHub Actions CI | 已完成 | `.github/workflows/ci.yml`、`docs/testing-ci/github-actions.md` |
 | P2-01 | OpenAPI 中文化和示例补全 | 已完成 | `/docs/api`、`tests/Feature/PhaseTwelveOpenApiContractTest.php` |
+| P2-02 | 测试覆盖增强 | 已完成 | `tests/Feature/PhaseFifteenRegressionCoverageTest.php`、`docs/testing-ci/regression-coverage.md` |
 | P2-04 | 安全攻防增强 | 已完成 | `/api/v1/security/url-check`、`docs/security/web-attack-labs.md` |
 | P3-04 | Docker 一键启动验收 | 已完成 | `scripts/deploy/docker-smoke.sh`、`docs/deploy/docker-deploy-runbook.md` |
 
@@ -123,6 +124,7 @@ php artisan test --filter=PhaseFourImportQueueTest
 php artisan test --filter=PhaseEightRedisCacheReliabilityTest
 php artisan test --filter=PhaseNineDatabasePerformanceTest
 php artisan test --filter=PhaseTenRuntimeProcessTest
+php artisan test --filter=PhaseFifteenRegressionCoverageTest
 ```
 
 验收账号：
@@ -157,7 +159,8 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 - P1-06 Laravel 源码专题文档已完成，Container、Provider、Facade、Middleware、Router、Eloquent 和 Queue Worker 均已绑定项目代码入口。
 - P1-08 MySQL 大数据性能实证已完成，具备造数、Explain 和 seek pagination 命令。
 - P2-04 安全攻防增强已完成，具备 SSRF 检查接口、审计脱敏、XSS/SQL 注入/上传/签名攻防测试和专题文档。
-- P3-04 Docker 一键启动验收已完成，补齐生产部署证据、运行态健康检查和排障 Runbook。下一项高优先级任务为 P2-02 Excel 导入解析。
+- P2-02 测试覆盖增强已完成，新增模块级回归测试，覆盖统一 401、422、403、404 合同和关键副作用。
+- P3-04 Docker 一键启动验收已完成，补齐生产部署证据、运行态健康检查和排障 Runbook。下一项高优先级任务为 P3-02 大数据导出异步化。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -169,7 +172,7 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 | 检查项 | 结果 |
 | --- | --- |
 | 前端生产构建 | `npm run build` 通过 |
-| PHP 测试 | `php artisan test` 通过，64 个测试、399 个断言 |
+| PHP 测试 | `php artisan test` 通过，69 个测试、498 个断言 |
 | 静态分析 | `composer analyse:phpstan`、`composer analyse:psalm` 通过 |
 | 导入队列可靠性专项测试 | `php artisan test --filter=PhaseFourImportQueueTest` 通过，8 个测试、45 个断言 |
 | Redis 缓存可靠性专项测试 | `php artisan test --filter=PhaseEightRedisCacheReliabilityTest` 通过，5 个测试、27 个断言 |
@@ -179,6 +182,7 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 | OpenAPI 契约专项测试 | `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过，2 个测试、41 个断言 |
 | 安全攻防专项测试 | `php artisan test --filter=PhaseThirteenSecurityAttackLabTest` 通过，5 个测试、15 个断言 |
 | Docker Runbook 专项测试 | `php artisan test --filter=PhaseFourteenDockerRunbookTest` 通过，5 个测试、39 个断言 |
+| 模块级回归专项测试 | `php artisan test --filter=PhaseFifteenRegressionCoverageTest` 通过，5 个测试、99 个断言 |
 | Kafka 专项测试 | `php artisan test --filter=PhaseSevenKafkaMessagingTest` 通过，3 个测试、19 个断言 |
 | Kafka 命令注册 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 |
 | Docker Kafka 集成 | `docker compose up -d kafka`、`KAFKA_DRIVER=docker php artisan kafka:topics --create`、生产和消费命令通过 |

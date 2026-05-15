@@ -734,3 +734,43 @@ docker compose config
 - `/login`、`/docs/api`、`/api/v1/health` 均可访问。
 - 最终 `docker compose ps` 显示 `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均为运行态，其中 `app`、`nginx`、`mysql`、`redis` 为 healthy。
 - 全量测试通过：64 个测试、399 个断言。
+
+## 2026-05-15 P2-02 测试覆盖增强
+
+目标：把阶段验收测试补强为模块级回归保护网，覆盖认证、授权、验证错误、资源不存在和关键失败路径副作用。
+
+### 开发内容
+
+- 新增 `tests/Feature/PhaseFifteenRegressionCoverageTest.php`：
+  - 未登录访问用户、指标、导入、导出、审计等关键 API，统一返回 401 JSON。
+  - 管理员创建用户和指标时覆盖重复邮箱、非法分类、XSS payload、重复编码和非法状态的 422 合同。
+  - 分析师角色只允许读取指标，不允许写用户、角色、指标、导入、导出或审计。
+  - 无效导出类型返回 422，且不会创建 `export_tasks`。
+  - 不存在指标资源返回统一 404 JSON。
+- 新增 `docs/testing-ci/regression-coverage.md`：
+  - 记录后续新增 API、权限、异步任务和缓存测试的最低规则。
+  - 补 Feature Test 与 Unit Test 边界、权限角色覆盖、422 合同固定和 Mock/Fake/集成测试取舍。
+- 更新 `docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`：
+  - 将 P2-02 标记为已完成。
+  - 将下一优先级统一调整为 P3-02 大数据导出异步化。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseFifteenRegressionCoverageTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+git diff --check
+```
+
+验收结果：
+
+- PhaseFifteenRegressionCoverageTest 通过：5 个测试、99 个断言。
+- 全量测试通过：69 个测试、498 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
