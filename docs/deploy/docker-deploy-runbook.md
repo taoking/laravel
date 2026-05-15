@@ -72,7 +72,7 @@ kafka       Up
 
 - `app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均配置 `restart: unless-stopped`。
 - `queue:restart` 会让 Laravel Worker 正常退出，Compose 重启策略会重新拉起 `queue` 容器。
-- PHP 镜像已安装 Node/npm 和 `phpredis` 扩展，支持容器内 `npm run build` 与 Redis Cache/Queue。
+- PHP 镜像已安装 Node/npm、`phpredis`、`dom`、`xmlreader`、`xmlwriter` 和 `zip` 扩展，支持容器内 `npm run build`、Redis Cache/Queue 和 OpenSpout XLSX 解析。
 - `app` 服务使用 `node-modules` 命名卷挂载 `/var/www/html/node_modules`，避免容器内 `npm ci` 覆盖宿主机 macOS/Windows 的原生依赖。
 - Nginx 使用 Docker DNS `127.0.0.11` 动态解析 `app:9000`，避免 app 容器重建后 FastCGI 指向旧 IP。
 

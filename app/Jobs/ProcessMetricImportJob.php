@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domains\Imports\Models\ImportFailure;
 use App\Domains\Imports\Models\ImportTask;
+use App\Domains\Imports\Readers\MetricImportReader;
 use App\Domains\Messaging\KafkaProducer;
 use App\Domains\Metrics\Models\Frequency;
 use App\Domains\Metrics\Models\Metric;
@@ -12,9 +13,6 @@ use App\Domains\Metrics\Models\Region;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\LazyCollection;
-use RuntimeException;
 use Throwable;
 
 class ProcessMetricImportJob implements ShouldQueue
@@ -27,9 +25,10 @@ class ProcessMetricImportJob implements ShouldQueue
 
     public function __construct(public int $importTaskId) {}
 
-    public function handle(KafkaProducer $producer): void
+    public function handle(KafkaProducer $producer, ?MetricImportReader $reader = null): void
     {
         $task = ImportTask::query()->findOrFail($this->importTaskId);
+        $reader ??= app(MetricImportReader::class);
 
         if (in_array($task->status, ['processing', 'completed', 'completed_with_errors'], true)) {
             return;
@@ -52,7 +51,7 @@ class ProcessMetricImportJob implements ShouldQueue
         ])->save();
 
         try {
-            $this->process($task);
+            $this->process($task, $reader);
             $this->publishCompletedEvent($producer, $task->refresh());
         } catch (Throwable $exception) {
             $task->forceFill([
@@ -67,15 +66,14 @@ class ProcessMetricImportJob implements ShouldQueue
         }
     }
 
-    private function process(ImportTask $task): void
+    private function process(ImportTask $task, MetricImportReader $reader): void
     {
-        $path = Storage::disk($task->disk)->path($task->path);
         $headers = [];
         $total = 0;
         $success = 0;
         $failed = 0;
 
-        foreach ($this->csvRows($path) as $index => $row) {
+        foreach ($reader->rows($task) as $index => $row) {
             if ($index === 0) {
                 $headers = $this->normalizeHeaders($row);
 
@@ -147,25 +145,6 @@ class ProcessMetricImportJob implements ShouldQueue
             'failed_rows' => $failed,
             'finished_at' => now(),
         ])->save();
-    }
-
-    private function csvRows(string $path): LazyCollection
-    {
-        return LazyCollection::make(function () use ($path) {
-            $handle = @fopen($path, 'rb');
-
-            if (! is_resource($handle)) {
-                throw new RuntimeException("Unable to open import file [{$path}].");
-            }
-
-            try {
-                while (($row = fgetcsv($handle)) !== false) {
-                    yield $row;
-                }
-            } finally {
-                fclose($handle);
-            }
-        });
     }
 
     private function normalizeHeaders(array $headers): array

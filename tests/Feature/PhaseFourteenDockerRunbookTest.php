@@ -59,8 +59,10 @@ class PhaseFourteenDockerRunbookTest extends TestCase
         $dockerfile = (string) file_get_contents(base_path('docker/php/Dockerfile'));
 
         $this->assertStringContainsString('nodejs npm', $dockerfile);
+        $this->assertStringContainsString('libxml2-dev', $dockerfile);
         $this->assertStringContainsString('pecl install redis', $dockerfile);
         $this->assertStringContainsString('docker-php-ext-enable redis', $dockerfile);
+        $this->assertStringContainsString('dom intl mbstring opcache pdo_mysql xml xmlreader xmlwriter zip', $dockerfile);
     }
 
     public function test_nginx_resolves_recreated_app_container(): void

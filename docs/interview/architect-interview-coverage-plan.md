@@ -23,7 +23,7 @@
 | Kafka 命令 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 | 能说明 Kafka 不只是文档概念，已有生产、消费、lag、topic、死信重放入口 |
 | 后台页面 | `resources/js/Pages/*` 覆盖登录、工作台、用户、角色、菜单、指标、导入、审计 | 能演示企业后台主流程和中文多语言界面 |
 | API 主线 | `routes/api.php` 覆盖健康检查、鉴权、权限、指标、导入导出、签名、审计 | 能串起 Auth、RBAC、业务 API、安全和审计 |
-| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15/16 | 能作为回归和面试证据，后续重点是浏览器端验收 |
+| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15/16/17 | 能作为回归和面试证据，后续重点是浏览器端验收 |
 | 静态分析 | `composer.json` 已提供 `analyse`、`analyse:phpstan`、`analyse:psalm` | 已具备 P1 工程质量门禁 |
 | 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/testing-ci/regression-coverage.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
 
@@ -438,8 +438,7 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | P3-01 Excel 导入 | 补齐非 CSV 文件导入能力 |
-| 2 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
+| 1 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -821,6 +820,44 @@
 - `php artisan test` 通过：73 个测试、534 个断言。
 - `composer analyse` 通过。
 
+### 6.13 AIP-13 / P3-01：Excel 导入
+
+状态：已完成。
+
+执行目标：在 CSV 导入闭环上补齐 `.xlsx` 文件导入能力，并保持队列、幂等、失败记录和重试语义一致。
+
+代码路径：
+
+- `composer.json`、`composer.lock`
+- `app/Domains/Imports/Readers/MetricImportReader.php`
+- `app/Jobs/ProcessMetricImportJob.php`
+- `app/Http/Controllers/Api/V1/Imports/ImportTaskController.php`
+- `resources/js/Pages/Imports/Index.vue`
+- `tests/Feature/PhaseSeventeenExcelImportTest.php`
+- `docs/queue/import-export-worker.md`
+
+实施路径：
+
+1. 引入 `openspout/openspout`，使用流式读取 `.xlsx`，避免全量加载工作簿。
+2. 新增 `MetricImportReader`，统一 CSV 和 XLSX 行读取，Job 只处理业务校验、幂等写入和失败记录。
+3. 上传接口支持 `.csv`、`.txt`、`.xlsx`，拒绝旧 `.xls`。
+4. XLSX 导入复用 `import_tasks`、`import_failures`、`Idempotency-Key` 和 retry 接口。
+5. OpenAPI 和导入 Worker 文档说明 CSV/XLSX 解析差异、内存风险和生产边界。
+
+验收标准：
+
+- `php artisan test --filter=PhaseSeventeenExcelImportTest` 稳定通过。
+- 原 CSV 导入测试 `php artisan test --filter=PhaseFourImportQueueTest` 仍然通过。
+- 文档能回答“为什么 XLSX 不能用普通字符串解析”“为什么不用一次性加载整个工作簿”“CSV 和 XLSX 的生产风险有什么不同”。
+
+完成证据：
+
+- `php artisan test --filter=PhaseSeventeenExcelImportTest` 通过：4 个测试、23 个断言。
+- `php artisan test --filter=PhaseFourImportQueueTest` 通过：8 个测试、45 个断言。
+- `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过：2 个测试、44 个断言。
+- `php artisan test` 通过：77 个测试、559 个断言。
+- `composer analyse` 通过。
+
 ## 7. 面试通过标准
 
 一个专题补齐后，必须同时满足：
@@ -838,10 +875,10 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 P3-01 Excel 导入。
+下一轮开发建议直接执行 P3-05 语义搜索和 AI 加分模块。
 
-目标是把当前 CSV 导入闭环扩展为更贴近企业后台的 Excel 文件导入能力：
+目标是增加一个不影响主业务闭环的加分模块：
 
-- 支持 `.xlsx` 示例文件导入。
-- 复用导入任务、失败记录、幂等和重试能力。
-- 文档说明 CSV 与 Excel 解析的内存风险和库选型边界。
+- 指标名称、描述、标签支持语义检索。
+- 无外部密钥时降级到普通关键词搜索和可测试的本地向量/相似度实现。
+- 文档说明 AI SDK、向量检索、召回排序和生产成本边界。

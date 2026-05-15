@@ -32,7 +32,7 @@ class PhaseTwelveOpenApiContractTest extends TestCase
 
         $this->assertStringContainsString('summary: 用户登录', $yaml);
         $this->assertStringContainsString('summary: 指标列表', $yaml);
-        $this->assertStringContainsString('summary: 创建 CSV 导入任务', $yaml);
+        $this->assertStringContainsString('summary: 创建 CSV/XLSX 导入任务', $yaml);
         $this->assertStringContainsString('未登录', $yaml);
         $this->assertStringContainsString('无权限', $yaml);
         $this->assertStringContainsString('字段验证失败', $yaml);

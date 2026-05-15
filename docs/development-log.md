@@ -826,3 +826,60 @@ git diff --check
 - PhaseTwelveOpenApiContractTest 通过：2 个测试、44 个断言。
 - 全量测试通过：73 个测试、534 个断言。
 - `composer analyse`、OpenAPI YAML 解析、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+
+## 2026-05-15 P3-01 Excel 导入
+
+目标：在现有 CSV 导入闭环上补齐 `.xlsx` 文件导入能力，并保持队列、幂等、失败记录和重试语义一致。
+
+### 开发内容
+
+- 新增依赖 `openspout/openspout`：
+  - 用于 `.xlsx` 流式读取，避免一次性加载整个工作簿。
+- 新增 `app/Domains/Imports/Readers/MetricImportReader.php`：
+  - 统一封装 CSV 和 XLSX 行读取。
+  - CSV 使用 `fgetcsv()` 逐行读取。
+  - XLSX 使用 OpenSpout 读取第一张 Sheet，并规范化日期、布尔值和空单元格。
+- 更新 `app/Jobs/ProcessMetricImportJob.php`：
+  - Job 只处理业务校验、幂等写入、失败记录和 Kafka 完成事件。
+  - 文件解析职责移动到 Reader，方便后续扩展模板校验和列映射。
+- 更新 `app/Http/Controllers/Api/V1/Imports/ImportTaskController.php`：
+  - `POST /api/v1/imports` 支持 `.csv`、`.txt`、`.xlsx`。
+  - 旧 `.xls` 文件仍被拒绝，避免二进制 Excel 格式带来的解析边界。
+- 更新 `resources/js/Pages/Imports/Index.vue`：
+  - 文件选择器支持 `.xlsx` MIME 类型。
+- 更新 `public/docs/openapi.yaml` 和 `tests/Feature/PhaseTwelveOpenApiContractTest.php`：
+  - 接口摘要改为“创建 CSV/XLSX 导入任务”。
+  - 请求体说明补 `.xlsx` 和 OpenSpout 流式解析。
+- 更新 `docker/php/Dockerfile` 和 `docs/deploy/docker-deploy-runbook.md`：
+  - PHP 镜像补 `libxml2-dev`、`dom`、`xmlreader`、`xmlwriter` 和 `zip`，满足 OpenSpout 运行依赖。
+- 新增 `tests/Feature/PhaseSeventeenExcelImportTest.php`：
+  - 覆盖 XLSX 成功导入、失败行记录、幂等、重试、非法 `.xls` 拒绝和 OpenAPI 文档。
+- 更新 `docs/queue/import-export-worker.md`、`docs/pending-development-tasks.md`、`docs/interview/architect-interview-coverage-plan.md`、`docs/learning-index.md`、`docs/development-completion-review.md` 和 `docs/implementation-execution-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseSeventeenExcelImportTest
+php artisan test --filter=PhaseFourImportQueueTest
+php artisan test --filter=PhaseTwelveOpenApiContractTest
+php artisan test --filter=PhaseFourteenDockerRunbookTest
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+ruby -e "require 'yaml'; YAML.load_file('public/docs/openapi.yaml')"
+git diff --check
+```
+
+验收结果：
+
+- PhaseSeventeenExcelImportTest 通过：4 个测试、23 个断言。
+- PhaseFourImportQueueTest 通过：8 个测试、45 个断言。
+- PhaseTwelveOpenApiContractTest 通过：2 个测试、44 个断言。
+- PhaseFourteenDockerRunbookTest 通过：5 个测试、41 个断言。
+- 全量测试通过：77 个测试、559 个断言。
+- `composer analyse`、OpenAPI YAML 解析、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。

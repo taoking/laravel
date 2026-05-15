@@ -482,7 +482,7 @@
 
 ### P3-01 Excel 导入
 
-- 状态：待开发
+- 状态：已完成
 - 目标：在 CSV 导入基础上增加 Excel 导入能力。
 - 建议范围：
   - 导入 Controller、Request、Job
@@ -495,6 +495,17 @@
 - 验收标准：
   - Excel 示例文件可导入。
   - 非法文件类型会被拒绝并记录审计日志。
+- 完成记录：
+  - 已新增依赖 `openspout/openspout`，用于 `.xlsx` 流式读取。
+  - 已新增 `app/Domains/Imports/Readers/MetricImportReader.php`，统一封装 CSV/XLSX 行读取。
+  - `POST /api/v1/imports` 已支持 `.csv`、`.txt` 和 `.xlsx`，并拒绝旧 `.xls` 文件。
+  - XLSX 导入复用 `import_tasks`、`import_failures`、幂等键、重试接口和队列 Job。
+  - 已更新 `resources/js/Pages/Imports/Index.vue` 文件选择类型和 `public/docs/openapi.yaml`。
+  - 已新增 `tests/Feature/PhaseSeventeenExcelImportTest.php`，覆盖 XLSX 成功导入、失败行、幂等、重试、非法 XLS 拒绝和 OpenAPI。
+  - 已通过 `php artisan test --filter=PhaseSeventeenExcelImportTest`，4 个测试、23 个断言。
+  - 已通过 `php artisan test --filter=PhaseFourImportQueueTest`，8 个测试、45 个断言。
+  - 已通过全量 `php artisan test`，77 个测试、559 个断言。
+  - 已通过 `composer analyse`，保持 PHPStan/Larastan/Psalm 基线。
 
 ### P3-02 大数据导出异步化
 
@@ -581,9 +592,8 @@
 
 ## 7. 推荐下一轮开发顺序
 
-1. P3-01 Excel 导入。
-2. P3-05 语义搜索和 AI 加分模块。
+1. P3-05 语义搜索和 AI 加分模块。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-02 测试覆盖增强、P2-04 安全攻防、P3-02 大数据导出异步化和 P3-04 Docker 一键启动验收均已完成。后续补 Excel 文件导入和语义搜索/AI 加分模块。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-02 测试覆盖增强、P2-04 安全攻防、P3-01 Excel 导入、P3-02 大数据导出异步化和 P3-04 Docker 一键启动验收均已完成。后续补语义搜索/AI 加分模块。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

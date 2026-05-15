@@ -35,7 +35,7 @@ class ImportTaskController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:20480'],
             'idempotency_key' => ['sometimes', 'string', 'max:120'],
         ]);
 

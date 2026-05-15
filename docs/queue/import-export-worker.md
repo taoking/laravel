@@ -1,6 +1,6 @@
 # 导入导出 Worker 与 MQ 可靠性说明
 
-本文记录 CSV 导入、导出任务、Redis Queue 可靠性、补偿命令和 MQ 选型对比。它对应待开发任务 `P1-03 MQ 与队列可靠性专题`，目标是让导入队列可以承受资深面试里关于消息丢失、重复消费、失败补偿和选型的连续追问。
+本文记录 CSV/XLSX 导入、导出任务、Redis Queue 可靠性、补偿命令和 MQ 选型对比。它对应待开发任务 `P1-03 MQ 与队列可靠性专题`，目标是让导入队列可以承受资深面试里关于消息丢失、重复消费、失败补偿和选型的连续追问。
 
 ## 1. API 入口
 
@@ -18,7 +18,7 @@
 - Swagger UI：`http://127.0.0.1:8000/docs/api`
 - OpenAPI YAML：`http://127.0.0.1:8000/docs/openapi.yaml`
 
-## 2. CSV 导入格式
+## 2. CSV/XLSX 导入格式
 
 ```csv
 metric_code,region_code,frequency_code,period_date,period_label,value,source
@@ -35,6 +35,20 @@ revenue_amount,CN-SH,monthly,2026-05-01,2026-05,1300000,test
 - `value`
 
 导入 Job 会按 `metric_code`、`region_code`、`frequency_code`、`period_date` 定位指标值，存在则更新，不存在则创建。因此重复执行不会产生重复指标值。
+
+当前支持文件：
+
+| 类型 | 处理方式 | 面试重点 |
+| --- | --- | --- |
+| `.csv` / `.txt` | `fgetcsv()` 逐行读取 | 简单、内存低，但对复杂 Excel 格式无能为力 |
+| `.xlsx` | `openspout/openspout` 流式读取第一张 Sheet | 避免一次性加载整个工作簿，适合大文件导入 |
+
+解析边界：
+
+- `.xlsx` 只读取第一张 Sheet，首行必须是标准字段名。
+- `.xls` 暂不支持；旧二进制 Excel 格式会被上传校验拒绝。
+- Excel 日期单元格会被规范化为 `Y-m-d` 字符串；建议导入模板固定日期列格式。
+- 解析逻辑集中在 `App\Domains\Imports\Readers\MetricImportReader`，Job 只处理业务校验、幂等写入和失败记录。
 
 ## 3. 导出 CSV 格式
 
@@ -234,7 +248,8 @@ stopwaitsecs=3600
 3. Worker 更新代码后为什么要执行 `queue:restart`？
 4. `completed_with_errors` 为什么也要作为终态？
 5. 业务行失败和 Job 级失败为什么要分开记录？
-6. 大数据导出为什么不能在 Controller 里直接生成并返回？
+6. `.xlsx` 导入为什么要用流式解析库？
+7. 大数据导出为什么不能在 Controller 里直接生成并返回？
 
 资深追问：
 
@@ -252,6 +267,8 @@ stopwaitsecs=3600
    - Controller 只创建任务，Worker 使用 `chunkById` 分批查库，CSV 写入临时文件句柄，再通过 Storage stream 保存，避免把完整数组或字符串常驻内存。
 7. 下载接口为什么还要校验任务创建者？
    - 导出文件通常包含筛选后的业务数据，只校验“有导出权限”不够；本项目还校验 `export_tasks.user_id`，防止同权限用户互相下载文件。
+8. CSV 和 XLSX 导入在生产上有什么差异？
+   - CSV 可以直接逐行读取，XLSX 是压缩包加 XML，需要专用解析器；生产上要关注解压临时目录、共享字符串内存、日期格式、公式单元格和多 Sheet 边界。
 
 ## 12. 验收命令
 
@@ -260,6 +277,7 @@ php artisan list imports --raw
 php artisan imports:compensate --dry-run
 php artisan test --filter=PhaseFourImportQueueTest
 php artisan test --filter=PhaseSixteenAsyncExportTest
+php artisan test --filter=PhaseSeventeenExcelImportTest
 composer analyse
 php artisan test
 ./vendor/bin/pint --test
@@ -273,6 +291,8 @@ php artisan test
 - 重试接口重新派发任务。
 - `imports:compensate` 可补偿 failed 任务。
 - `imports:compensate --dry-run` 不修改任务。
+- XLSX 导入复用导入任务、失败记录、幂等键和重试接口。
+- `.xls` 文件会被拒绝，不会创建导入任务。
 - 导出 Job 生成 CSV、记录进度和文件大小。
 - 导出下载校验任务创建者和任务完成状态。
 - 目标磁盘异常会记录 `failure_type=storage` 和 `attempts`。

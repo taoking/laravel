@@ -471,7 +471,7 @@ docs/
 任务：
 
 - 实现 CSV 导入任务。
-- 预留 Excel 导入接口，首期可先只支持 CSV。
+- 实现 CSV 和 XLSX 导入接口。
 - 导入任务写入 `import_tasks`。
 - 失败行写入 `import_failures`。
 - Job 使用幂等键，支持重试。
@@ -508,6 +508,7 @@ docs/
   - `app/Domains/Imports/Models/ImportTask.php`
   - `app/Domains/Imports/Models/ImportFailure.php`
   - `app/Domains/Imports/Models/ExportTask.php`
+  - `app/Domains/Imports/Readers/MetricImportReader.php`
   - `app/Domains/Files/Models/UploadedFile.php`
   - `app/Http/Controllers/Api/V1/Imports/ImportTaskController.php`
   - `app/Http/Controllers/Api/V1/Imports/ExportTaskController.php`
@@ -521,9 +522,11 @@ docs/
 - 测试入口：
   - `tests/Feature/PhaseFourImportQueueTest.php`
   - `tests/Feature/PhaseSixteenAsyncExportTest.php`
+  - `tests/Feature/PhaseSeventeenExcelImportTest.php`
 - 已覆盖场景：
-  - CSV 导入创建任务并写入指标值。
+  - CSV 和 XLSX 导入创建任务并写入指标值。
   - 错误行写入 `import_failures`。
+  - `.xls` 等不支持文件类型被拒绝，不创建导入任务。
   - 同一个幂等键重复提交不会创建重复任务。
   - 导入任务可重试。
   - 无导入/导出权限用户被拒绝。

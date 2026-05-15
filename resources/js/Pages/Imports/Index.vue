@@ -168,7 +168,7 @@ onMounted(loadTasks);
                 <div class="mt-4 grid gap-3">
                     <label class="block text-sm">
                         <span class="font-medium text-slate-700">{{ t('field.file') }}</span>
-                        <input type="file" accept=".csv,text/csv" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" @change="onFileChange">
+                        <input type="file" accept=".csv,.txt,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" @change="onFileChange">
                     </label>
                     <label class="block text-sm">
                         <span class="font-medium text-slate-700">{{ t('field.idempotency_key') }}</span>

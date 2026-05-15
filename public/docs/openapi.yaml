@@ -760,8 +760,8 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       tags: [Async]
-      summary: 创建 CSV 导入任务
-      description: 上传 CSV/TXT 文件并创建异步导入任务。支持 `Idempotency-Key`，重复提交会返回已有任务。
+      summary: 创建 CSV/XLSX 导入任务
+      description: 上传 CSV、TXT 或 `.xlsx` 文件并创建异步导入任务。CSV 使用逐行读取，XLSX 使用 OpenSpout 流式解析；支持 `Idempotency-Key`，重复提交会返回已有任务。
       operationId: postImports
       parameters:
         - in: header
@@ -781,11 +781,12 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: 支持 `.csv`、`.txt`、`.xlsx`
                 idempotency_key:
                   type: string
             encoding:
               file:
-                contentType: text/csv
+                contentType: text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
       responses:
         '202':
           $ref: '#/components/responses/ImportTaskEnvelope'
