@@ -1,11 +1,8 @@
 <?php
 
-use App\Domains\Access\Models\Role;
-use App\Domains\Metrics\Models\Metric;
+use App\Domains\Dashboard\Services\DashboardSummaryService;
 use App\Http\Controllers\AuthSessionController;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -29,16 +26,9 @@ Route::post('/logout', [AuthSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/admin', function () {
-        $summary = Cache::remember('dashboard:summary', 60, fn () => [
-            'users' => User::query()->count(),
-            'roles' => Role::query()->count(),
-            'metrics' => Metric::query()->count(),
-            'jobs' => 0,
-        ]);
-
+    Route::get('/admin', function (DashboardSummaryService $dashboardSummary) {
         return Inertia::render('Dashboard', [
-            'summary' => $summary,
+            'summary' => $dashboardSummary->summary(),
             'stages' => [
                 ['name' => 'Phase 1', 'area' => 'Scaffold', 'status' => 'done'],
                 ['name' => 'Phase 2', 'area' => 'Auth and RBAC', 'status' => 'in_progress'],

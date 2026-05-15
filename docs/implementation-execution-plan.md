@@ -178,6 +178,7 @@ docs/
 | PUT | `/api/v1/roles/{id}/permissions` | 分配权限 |
 | PUT | `/api/v1/menus/{id}` | 更新菜单排序和可见性 |
 | GET | `/api/v1/metrics` | 指标列表，支持筛选排序分页 |
+| GET | `/api/v1/metrics/semantic-search` | 指标语义搜索，使用本地 token vector 降级引擎 |
 | POST | `/api/v1/metrics` | 创建指标 |
 | GET | `/api/v1/metrics/{id}` | 指标详情 |
 | PUT | `/api/v1/metrics/{id}` | 更新指标 |
@@ -585,18 +586,23 @@ docs/
   - `app/Domains/Metrics/Services/HotMetricService.php`
   - `app/Domains/Metrics/Services/MetricCacheService.php`
   - `app/Domains/Metrics/Services/RedisRateLimiterService.php`
+  - `app/Domains/Dashboard/Services/DashboardSummaryService.php`
+  - `app/Domains/Dashboard/Observers/RefreshDashboardSummaryObserver.php`
   - `app/Console/Commands/RedisCacheLabCommand.php`
   - `app/Providers/AppServiceProvider.php`
   - `app/Http/Controllers/Api/V1/Audit/AuditLogController.php`
 - 文档入口：
   - `docs/security/security-audit.md`
+  - `docs/performance/dashboard-summary-cache.md`
 - 测试入口：
   - `tests/Feature/PhaseFiveSecurityAuditTest.php`
+  - `tests/Feature/PhaseNineteenDashboardSummaryTest.php`
 - 已覆盖场景：
   - 指标详情缓存命中。
   - 空指标详情写入短 TTL 空值缓存，避免缓存穿透。
   - 指标详情重建使用 token lock，避免击穿和误删锁。
-  - 首页统计缓存命中。
+  - 首页统计缓存真实用户数、角色数、指标数和导入任务数。
+  - 首页统计在相关模型保存或删除后主动失效。
   - 热点指标排行记录。
   - 热点指标和详情缓存使用随机 TTL。
   - Redis Lua 限流实验命令可执行。
@@ -650,6 +656,12 @@ docs/
 - 面试入口：
   - `docs/interview/project-story.md`
   - `docs/interview/senior-questions.md`
+- AI 加分模块入口：
+  - `GET /api/v1/metrics/semantic-search`
+  - `app/Http/Controllers/Api/V1/Metrics/SemanticMetricSearchController.php`
+  - `app/Domains/Metrics/Services/SemanticMetricSearchService.php`
+  - `docs/ai/semantic-search.md`
+  - `tests/Feature/PhaseEighteenSemanticSearchTest.php`
 - 已覆盖内容：
   - Nginx + PHP-FPM + MySQL + Redis + Queue Worker + Scheduler。
   - OPcache 配置样例。
@@ -660,6 +672,7 @@ docs/
   - 一键 smoke 已验证 `/login`、`/docs/api`、`/api/v1/health`。
   - 发布、回滚、502/504 排查。
   - wrk 压测脚本。
+  - 指标语义搜索使用本地 token vector、同义词扩展和余弦相似度，不依赖外部 AI 密钥即可测试。
   - 项目包装话术和资深追问。
 
 ## 7. API 文档规范
@@ -688,6 +701,7 @@ OpenAPI 必须覆盖：
 - 角色权限。
 - 指标管理。
 - 指标查询。
+- 指标语义搜索。
 - 导入任务。
 - 导出任务。
 - 审计日志。
@@ -738,10 +752,14 @@ composer analyse:psalm
 - 缓存：命中、未命中、刷新测试。
 - API 文档：文档路径访问测试。
 - 模块级回归：认证、授权、验证错误、404 和关键副作用测试。
+- 语义搜索：召回、权限、验证和 OpenAPI 契约测试。
+- 首页统计：真实计数、缓存命中和主动失效测试。
 
 当前回归保障入口：
 
 - `tests/Feature/PhaseFifteenRegressionCoverageTest.php`：覆盖关键 API 统一 401、422、403、404 合同和无效导出不落库副作用。
+- `tests/Feature/PhaseEighteenSemanticSearchTest.php`：覆盖指标语义搜索召回、权限、验证和 OpenAPI。
+- `tests/Feature/PhaseNineteenDashboardSummaryTest.php`：覆盖工作台真实统计、缓存写入和主动失效。
 - `docs/testing-ci/regression-coverage.md`：记录后续新增 API、权限、异步任务和缓存测试的最低规则。
 
 ## 9. 完成定义

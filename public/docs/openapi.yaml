@@ -607,6 +607,66 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/v1/metrics/semantic-search:
+    get:
+      tags: [Metrics]
+      summary: 语义搜索指标
+      description: 使用本地 token vector 和同义词扩展搜索指标名称、编码、描述和分类；测试环境不依赖外部 AI 密钥，后续可替换为 embedding/vector store。
+      operationId: semanticSearchMetrics
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 120
+          example: income sales
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+            default: 10
+      responses:
+        '200':
+          description: 语义搜索结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          query:
+                            type: string
+                          results:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                metric:
+                                  $ref: '#/components/schemas/Metric'
+                                score:
+                                  type: number
+                                  format: float
+                                matched_terms:
+                                  type: array
+                                  items:
+                                    type: string
+                                engine:
+                                  type: string
+                                  example: local-token-vector
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /api/v1/metrics/{metric}:
     get:
       tags: [Metrics]

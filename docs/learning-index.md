@@ -1,6 +1,6 @@
 # Laravel 13 学习项目索引
 
-本文档是当前 Laravel 13 长期学习项目的导航页。项目首轮已完成 Phase 1 到 Phase 6，并补充了默认中文的前端多语言能力。
+本文档是当前 Laravel 13 长期学习项目的导航页。项目首轮已完成 Phase 1 到 Phase 6，并补充了默认中文的前端多语言能力、首页真实统计、Excel 导入、异步导出、Docker 一键验收和语义搜索加分模块。
 
 ## 当前项目基线
 
@@ -9,7 +9,7 @@
 - PHP 主运行版本：8.4。
 - 产品形态：Inertia 管理后台。
 - 项目主题：多数据源指标分析与内容管理平台。
-- 当前范围：认证权限、指标 API、导入导出、安全审计、性能部署文档、面试复盘和中文多语言界面。
+- 当前范围：认证权限、指标 API、导入导出、安全审计、首页统计缓存、语义搜索、性能部署文档、面试复盘和中文多语言界面。
 
 ## 推荐阅读顺序
 
@@ -21,16 +21,18 @@
 6. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
 7. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块说明，已完成 P1-04 最小事件流闭环。
 8. `docs/redis/cache-reliability.md`：Redis 缓存穿透、击穿、雪崩、锁、Lua、大 Key 和热 Key 专题。
-9. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
-10. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
-11. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
-12. `docs/laravel-core/container.md`：服务容器与依赖解析源码追问。
-13. `docs/laravel-core/middleware-pipeline.md`：Middleware Pipeline 洋葱模型源码追问。
-14. `docs/laravel-core/queue-worker.md`：Queue Worker 执行流程源码追问。
-15. `docs/database/large-pagination.md`：大数据分页、offset 与 seek pagination 优化。
-16. `docs/runtime/php-fpm-worker-octane.md`：PHP-FPM、Worker、Scheduler、Octane 和常驻进程专题。
-17. `docs/php-language/runtime-labs.md`：PHP 弱类型、COW、引用、对象、Generator 和 PHP 8.x 新特性实验。
-18. `docs/testing-ci/github-actions.md`：GitHub Actions CI、质量门禁和失败本地复现。
+9. `docs/performance/dashboard-summary-cache.md`：工作台真实统计、缓存失效和面试追问。
+10. `docs/ai/semantic-search.md`：本地 token vector 语义搜索、向量检索演进和 AI 成本边界。
+11. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
+12. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
+13. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
+14. `docs/laravel-core/container.md`：服务容器与依赖解析源码追问。
+15. `docs/laravel-core/middleware-pipeline.md`：Middleware Pipeline 洋葱模型源码追问。
+16. `docs/laravel-core/queue-worker.md`：Queue Worker 执行流程源码追问。
+17. `docs/database/large-pagination.md`：大数据分页、offset 与 seek pagination 优化。
+18. `docs/runtime/php-fpm-worker-octane.md`：PHP-FPM、Worker、Scheduler、Octane 和常驻进程专题。
+19. `docs/php-language/runtime-labs.md`：PHP 弱类型、COW、引用、对象、Generator 和 PHP 8.x 新特性实验。
+20. `docs/testing-ci/github-actions.md`：GitHub Actions CI、质量门禁和失败本地复现。
 
 ## 已实现访问路径
 
@@ -44,6 +46,7 @@
 - 用户列表接口：`http://127.0.0.1:8000/api/v1/users`
 - 角色列表接口：`http://127.0.0.1:8000/api/v1/roles`
 - 指标列表接口：`http://127.0.0.1:8000/api/v1/metrics`
+- 指标语义搜索接口：`http://127.0.0.1:8000/api/v1/metrics/semantic-search?q=income%20sales`
 - 指标分类接口：`http://127.0.0.1:8000/api/v1/metric-categories`
 - 地区维度接口：`http://127.0.0.1:8000/api/v1/dimensions/regions`
 - 频率维度接口：`http://127.0.0.1:8000/api/v1/dimensions/frequencies`
@@ -75,6 +78,9 @@
 - 后台布局：`resources/js/Layouts/AdminLayout.vue`
 - 登录页：`resources/js/Pages/Auth/Login.vue`
 - 后台首页：`resources/js/Pages/Dashboard.vue`
+- 首页统计缓存服务：`app/Domains/Dashboard/Services/DashboardSummaryService.php`
+- 首页统计缓存失效 Observer：`app/Domains/Dashboard/Observers/RefreshDashboardSummaryObserver.php`
+- 首页统计缓存说明：`docs/performance/dashboard-summary-cache.md`
 - 前端多语言：`resources/js/i18n.js`
 - 用户管理页：`resources/js/Pages/Access/Users.vue`
 - 角色管理页：`resources/js/Pages/Access/Roles.vue`
@@ -85,6 +91,9 @@
 - 指标模型：`app/Domains/Metrics/Models/Metric.php`、`MetricCategory.php`、`MetricValue.php`、`Region.php`、`Frequency.php`
 - 指标查询对象：`app/Domains/Metrics/Queries/MetricQuery.php`
 - 指标控制器：`app/Http/Controllers/Api/V1/Metrics/MetricController.php`
+- 指标语义搜索控制器：`app/Http/Controllers/Api/V1/Metrics/SemanticMetricSearchController.php`
+- 指标语义搜索服务：`app/Domains/Metrics/Services/SemanticMetricSearchService.php`
+- 指标语义搜索说明：`docs/ai/semantic-search.md`
 - 指标 Explain 复盘：`docs/database/metric-query-explain.md`
 - 指标大数据分页复盘：`docs/database/large-pagination.md`
 - 指标大数据造数命令：`app/Console/Commands/SeedMetricDatasetCommand.php`
@@ -157,6 +166,8 @@
 - Phase 15 模块级回归测试：`tests/Feature/PhaseFifteenRegressionCoverageTest.php`
 - Phase 16 异步导出测试：`tests/Feature/PhaseSixteenAsyncExportTest.php`
 - Phase 17 Excel 导入测试：`tests/Feature/PhaseSeventeenExcelImportTest.php`
+- Phase 18 语义搜索测试：`tests/Feature/PhaseEighteenSemanticSearchTest.php`
+- Phase 19 首页统计缓存测试：`tests/Feature/PhaseNineteenDashboardSummaryTest.php`
 - RBAC 模型：`app/Domains/Access/Models/Role.php`、`Permission.php`、`Menu.php`
 - 权限服务：`app/Domains/Access/Services/PermissionService.php`
 - 权限中间件：`app/Http/Middleware/EnsureUserHasPermission.php`
@@ -200,7 +211,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Queue、Schedule、Worker、Supervisor。
 - 性能压测、慢 SQL、PHP-FPM、OPcache、Nginx。
 - Docker 部署和生产排障。
-- AI SDK、向量搜索、语义搜索作为后期加分模块。
+- 语义搜索、向量检索和 Laravel AI SDK 演进作为后期加分模块。
 
 ### 知识主线
 
@@ -229,6 +240,8 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - GitHub Actions CI：`docs/testing-ci/github-actions.md`
 - Kafka 专题计划：`docs/queue/kafka-practice.md`
 - Redis 缓存可靠性专题：`docs/redis/cache-reliability.md`
+- 首页统计缓存专题：`docs/performance/dashboard-summary-cache.md`
+- 指标语义搜索专题：`docs/ai/semantic-search.md`
 - Laravel 源码专题：`docs/laravel-core/container.md`、`service-provider.md`、`facade.md`、`middleware-pipeline.md`、`router-model-binding.md`、`eloquent-query.md`、`queue-worker.md`
 - 数据库性能专题：`docs/database/metric-query-explain.md`、`docs/database/large-pagination.md`
 - PHP 运行机制专题：`docs/runtime/php-fpm-worker-octane.md`
@@ -257,9 +270,9 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 - Phase 4 已实现 CSV/XLSX 导入、失败记录、幂等提交、重试、导出任务异步生成、进度查询、下载鉴权和定时统计命令。
 - Phase 5 已实现指标详情缓存、指标查询限流、签名反重放、非法上传校验和审计日志。
 - Phase 6 已实现性能 Runbook、Docker Compose、Nginx/PHP-FPM/Supervisor 配置、发布回滚 Runbook 和面试包装文档。
-- P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API。
-- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-02 测试覆盖增强、P2-04 安全攻防增强、P3-01 Excel 导入、P3-02 大数据导出异步化和 P3-04 Docker 一键启动验收已完成，后续优先进入语义搜索和 AI 加分模块。
-- 后续开发提交前必须保持 `composer analyse` 通过；P3-05 语义搜索和 AI 加分模块是当前下一项高优先级任务。
+- P0 后台真实数据联动已完成：用户、角色、菜单、指标、导入任务、审计日志页面均已接入真实 API，工作台统计已使用真实数据库计数和缓存失效策略。
+- 当前执行计划首轮已覆盖 Phase 1 到 Phase 6，P0 页面联动、P1-02 静态分析基线、P1-04 Kafka 使用专题、P1-03 MQ 队列可靠性专题、P1-01 Redis 缓存专题实验、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层代码示例、P2-03 CI、P2-01 OpenAPI 中文化、P2-02 测试覆盖增强、P2-04 安全攻防增强、P3-01 Excel 导入、P3-02 大数据导出异步化、P3-03 首页统计真实化、P3-04 Docker 一键启动验收和 P3-05 语义搜索/AI 加分模块已完成。
+- 后续开发提交前必须保持 `composer analyse` 通过；当前暂无 P0-P3 待开发项，继续扩展前应先重新做架构师覆盖度复审并新增 P4 任务。
 - 架构师面试补齐计划和后续 agent 任务卡已写入 `docs/interview/architect-interview-coverage-plan.md`，后续任务必须同时满足代码入口、验收命令、中文专题说明和资深追问。
 - 每次新增 API 必须同步更新 `public/docs/openapi.yaml`。
 - 每次新增页面必须同步更新本文档访问路径。

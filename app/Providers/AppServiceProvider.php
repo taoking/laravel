@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domains\Access\Models\Role;
+use App\Domains\Dashboard\Observers\RefreshDashboardSummaryObserver;
+use App\Domains\Imports\Models\ImportTask;
 use App\Domains\Messaging\Clients\DockerKafkaClient;
 use App\Domains\Messaging\Clients\LocalKafkaClient;
 use App\Domains\Messaging\Contracts\KafkaClient;
@@ -9,8 +12,10 @@ use App\Domains\Messaging\Handlers\AuditLogEventHandler;
 use App\Domains\Messaging\Handlers\MetricCacheRefreshHandler;
 use App\Domains\Messaging\KafkaConsumerService;
 use App\Domains\Messaging\KafkaMessageFactory;
+use App\Domains\Metrics\Models\Metric;
 use App\Events\AuditEvent;
 use App\Listeners\WriteAuditLog;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
@@ -71,6 +76,11 @@ class AppServiceProvider extends ServiceProvider
         // boot() 在所有 provider 注册完成后运行。
         // 适合注册事件监听、Blade 指令、路由模型绑定、Schema 默认长度、模型全局 scope 等。
         Event::listen(AuditEvent::class, WriteAuditLog::class);
+
+        User::observe(RefreshDashboardSummaryObserver::class);
+        Role::observe(RefreshDashboardSummaryObserver::class);
+        Metric::observe(RefreshDashboardSummaryObserver::class);
+        ImportTask::observe(RefreshDashboardSummaryObserver::class);
 
         RateLimiter::for('metrics-query', function (Request $request) {
             return Limit::perMinute(3)->by($request->user()?->id ?: $request->ip());

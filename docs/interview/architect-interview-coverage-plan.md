@@ -19,11 +19,11 @@
 
 | 检查项 | 证据 | 面试价值 |
 | --- | --- | --- |
-| 路由规模 | `php artisan route:list --except-vendor` 显示 43 条项目路由 | 能说明后台、API、文档、登录和业务接口已经形成可演示闭环 |
+| 路由规模 | `php artisan route:list --except-vendor` 显示 48 条项目路由 | 能说明后台、API、文档、登录和业务接口已经形成可演示闭环 |
 | Kafka 命令 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 | 能说明 Kafka 不只是文档概念，已有生产、消费、lag、topic、死信重放入口 |
 | 后台页面 | `resources/js/Pages/*` 覆盖登录、工作台、用户、角色、菜单、指标、导入、审计 | 能演示企业后台主流程和中文多语言界面 |
 | API 主线 | `routes/api.php` 覆盖健康检查、鉴权、权限、指标、导入导出、签名、审计 | 能串起 Auth、RBAC、业务 API、安全和审计 |
-| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15/16/17 | 能作为回归和面试证据，后续重点是浏览器端验收 |
+| 自动化测试 | `tests/Feature/Phase*Test.php` 覆盖 Phase 1/2/3/4/5/7/8/9/10/11/12/13/14/15/16/17/18/19 | 能作为回归和面试证据，后续重点是浏览器端验收 |
 | 静态分析 | `composer.json` 已提供 `analyse`、`analyse:phpstan`、`analyse:psalm` | 已具备 P1 工程质量门禁 |
 | 专题文档 | `docs/queue/kafka-practice.md`、`docs/testing-ci/static-analysis.md`、`docs/testing-ci/regression-coverage.md`、`docs/deploy/docker-deploy-runbook.md` | 已具备专题说明，但部分主题还缺可运行实验和失败案例 |
 
@@ -44,6 +44,7 @@
 - CSV 导入、Redis Queue、Job 幂等、失败记录。
 - Kafka 事件流最小闭环。
 - 审计日志、接口签名、反重放、限流、上传校验。
+- 工作台真实统计缓存和语义搜索加分模块。
 - Docker、Nginx、PHP-FPM、Queue Worker、Scheduler 文档。
 - PHPStan/Larastan/Psalm 静态分析基线。
 
@@ -71,8 +72,8 @@
 | Redis 深度 | 7/10 | 有空值缓存、随机 TTL、token lock、热点 ZSet、Lua 限流实验 | 缺 Redis Cluster、Sentinel、真实大 Key/热 Key 监控和线上指标 |
 | Queue/MQ 深度 | 8/10 | Redis Queue 可靠性 + Kafka 事件流已完成闭环 | Outbox Pattern 仍是文档级，RabbitMQ 暂未落地代码 |
 | 安全能力 | 8/10 | 签名、反重放、越权、上传校验、SSRF 检查、审计脱敏和安全攻防测试 | 后续可补 CSP、OAuth2、反序列化真实漏洞复现和安全扫描报告 |
-| 架构设计 | 6/10 | Domains、Service、Query Object、Event-Driven 已出现 | DTO、Value Object、Repository 取舍、Outbox、模块边界还需成文 |
-| 性能优化 | 6/10 | 缓存、Explain、wrk 脚本、Runbook | 缺基准数据、前后对比、容量估算和 APM 式定位流程 |
+| 架构设计 | 7/10 | Domains、Service、Query Object、Event-Driven、缓存失效 Observer、语义搜索服务已出现 | DTO、Value Object、Repository 取舍、Outbox、模块边界还可继续成文 |
+| 性能优化 | 7/10 | 缓存、首页统计主动失效、Explain、wrk 脚本、Runbook | 缺基准数据、前后对比、容量估算和 APM 式定位流程 |
 | 测试与质量 | 8/10 | Feature Test、Pint、PHPStan、Psalm、GitHub Actions CI | 缺浏览器自动化和覆盖率策略 |
 | 部署运维 | 8/10 | Docker Compose、Nginx、FPM、Queue、Scheduler、Kafka、healthcheck、smoke 脚本和排障 Runbook | 后续可补真实发布脚本、日志样例、监控指标和灰度回滚演练 |
 
@@ -438,7 +439,7 @@
 
 | 顺序 | 任务 | 原因 |
 | ---: | --- | --- |
-| 1 | P3-05 语义搜索和 AI 加分模块 | 补齐 Laravel AI/向量检索亮点 |
+| 1 | 暂无 P0-P3 待开发项 | 已完成 P3-03 首页统计真实化和 P3-05 语义搜索；继续扩展前应先新增 P4 任务 |
 
 ## 6. 后续 Agent 执行任务卡
 
@@ -665,7 +666,7 @@
 验收标准：
 
 - `/docs/api` 能按中文说明理解主要接口。
-- OpenAPI 覆盖当前 43 条项目路由中的 API 路由。
+- OpenAPI 覆盖当前 48 条项目路由中的 API 路由。
 - 文档能回答“接口契约如何维护”“鉴权失败和权限失败如何区分”。
 
 完成证据：
@@ -858,6 +859,79 @@
 - `php artisan test` 通过：77 个测试、559 个断言。
 - `composer analyse` 通过。
 
+### 6.14 AIP-14 / P3-03：首页统计真实化
+
+状态：已完成。
+
+执行目标：让 `/admin` 工作台从静态占位统计升级为真实业务计数，并具备缓存和失效策略，能回答缓存一致性与统计口径追问。
+
+代码路径：
+
+- `routes/web.php`
+- `app/Domains/Dashboard/Services/DashboardSummaryService.php`
+- `app/Domains/Dashboard/Observers/RefreshDashboardSummaryObserver.php`
+- `resources/js/Pages/Dashboard.vue`
+- `resources/js/i18n.js`
+- `docs/performance/dashboard-summary-cache.md`
+- `tests/Feature/PhaseNineteenDashboardSummaryTest.php`
+
+实施路径：
+
+1. 把用户数、角色数、指标数和导入任务数集中到 `DashboardSummaryService`。
+2. 使用 `Cache::remember()` 写入 `dashboard:summary`，TTL 为 60 秒。
+3. 对 `User`、`Role`、`Metric`、`ImportTask` 注册 Observer，保存或删除时主动清理缓存。
+4. 前端继续复用 Dashboard summary 渲染，并补充中英文“导入任务”文案。
+5. 文档说明 TTL、主动失效、多机缓存和最终一致边界。
+
+验收标准：
+
+- `/admin` 输出的四项统计与数据库记录一致。
+- 首次访问后能写入缓存。
+- 新增导入任务后缓存主动失效，再次访问显示最新计数。
+- 文档能回答“为什么统计适合缓存”“只用 TTL 有什么风险”“高并发下如何处理缓存击穿”。
+
+完成证据：
+
+- `php artisan test --filter=PhaseNineteenDashboardSummaryTest` 通过：1 个测试、28 个断言。
+- `docs/performance/dashboard-summary-cache.md` 已写入代码入口、验收标准和面试追问。
+
+### 6.15 AIP-15 / P3-05：语义搜索和 AI 加分模块
+
+状态：已完成。
+
+执行目标：补齐一个不依赖外部密钥的语义搜索入口，用 Laravel 业务代码串起 AI/向量检索、召回排序、权限过滤、成本边界和生产演进追问。
+
+代码路径：
+
+- `GET /api/v1/metrics/semantic-search`
+- `app/Http/Controllers/Api/V1/Metrics/SemanticMetricSearchController.php`
+- `app/Domains/Metrics/Services/SemanticMetricSearchService.php`
+- `public/docs/openapi.yaml`
+- `docs/ai/semantic-search.md`
+- `tests/Feature/PhaseEighteenSemanticSearchTest.php`
+
+实施路径：
+
+1. 新增指标语义搜索 API，复用 `metrics.view` 权限和 `metrics-query` 限流。
+2. 使用本地 `local-token-vector` 引擎，基于分词、同义词扩展和余弦相似度排序。
+3. 搜索文档覆盖指标编码、名称、描述和分类信息。
+4. OpenAPI 记录查询参数、响应结构、`matched_terms` 和 `engine`。
+5. 文档说明未来演进到 embedding、pgvector/Milvus/Elasticsearch kNN 和 Laravel AI SDK 的边界。
+
+验收标准：
+
+- `income sales` 能召回 `revenue_amount`。
+- `people activity` 能召回 `active_users`。
+- 未登录和缺少查询词分别返回 401/422。
+- 无外部 AI 密钥也能通过测试。
+- 文档能回答“语义搜索和 LIKE 的区别”“百万指标下当前实现哪里先出问题”“向量召回后如何保证权限过滤”。
+
+完成证据：
+
+- `php artisan test --filter=PhaseEighteenSemanticSearchTest` 通过：4 个测试、16 个断言。
+- `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过：2 个测试、45 个断言。
+- `composer analyse` 通过。
+
 ## 7. 面试通过标准
 
 一个专题补齐后，必须同时满足：
@@ -875,10 +949,12 @@
 
 ## 8. 下一步建议
 
-下一轮开发建议直接执行 P3-05 语义搜索和 AI 加分模块。
+P0-P3 计划项已完成。下一轮不建议继续在旧优先级里追加零散功能，应先重新做一次架构师覆盖度复审，再新增 P4 任务。
 
-目标是增加一个不影响主业务闭环的加分模块：
+推荐 P4 方向：
 
-- 指标名称、描述、标签支持语义检索。
-- 无外部密钥时降级到普通关键词搜索和可测试的本地向量/相似度实现。
-- 文档说明 AI SDK、向量检索、召回排序和生产成本边界。
+- 浏览器端自动化验收：登录、切换语言、指标 CRUD、导入和导出主流程。
+- 真实压测与容量评估：记录 wrk/JMeter 结果、FPM 进程数估算、慢 SQL 和 Redis 命中率。
+- Outbox Pattern 落地：把业务写库和 Kafka 事件发布变成可恢复的一致性流程。
+- Redis Sentinel/Cluster 或大 Key/热 Key 监控演示。
+- Octane 常驻容器实验，展示状态污染、内存增长和 Worker reload。

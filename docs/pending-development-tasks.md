@@ -537,7 +537,7 @@
 
 ### P3-03 首页统计真实化
 
-- 状态：待开发
+- 状态：已完成
 - 目标：让 `/admin` 工作台展示真实业务统计。
 - 建议范围：
   - `routes/web.php`
@@ -550,6 +550,15 @@
 - 验收标准：
   - 数据与数据库记录一致。
   - 缓存命中后接口或页面加载更快。
+- 完成记录：
+  - 已新增 `app/Domains/Dashboard/Services/DashboardSummaryService.php`，集中统计用户数、角色数、指标数和导入任务数。
+  - 已新增 `app/Domains/Dashboard/Observers/RefreshDashboardSummaryObserver.php`，在用户、角色、指标和导入任务保存/删除后清理 `dashboard:summary`。
+  - `/admin` 已通过 `DashboardSummaryService` 输出真实统计，不再使用固定任务数占位。
+  - 已更新 `resources/js/i18n.js`，中文显示“导入任务”，英文显示“Import tasks”。
+  - 已新增 `docs/performance/dashboard-summary-cache.md`，说明缓存策略、失效策略、风险和面试追问。
+  - 已新增 `tests/Feature/PhaseNineteenDashboardSummaryTest.php`，覆盖真实计数、缓存写入和导入任务新增后的主动失效。
+  - 已通过 `php artisan test --filter=PhaseNineteenDashboardSummaryTest`，1 个测试、28 个断言。
+  - 已通过最终全量 `php artisan test`，82 个测试、604 个断言。
 
 ### P3-04 Docker 一键启动验收
 
@@ -578,7 +587,7 @@
 
 ### P3-05 语义搜索和 AI 加分模块
 
-- 状态：暂缓
+- 状态：已完成
 - 目标：作为后期面试加分模块，补充 Laravel 13 AI SDK、向量搜索或语义检索示例。
 - 建议范围：
   - 新增独立模块，避免影响主业务闭环。
@@ -589,11 +598,23 @@
 - 验收标准：
   - 有可演示入口。
   - 不依赖生产密钥才能运行基础测试。
+- 完成记录：
+  - 已新增 `GET /api/v1/metrics/semantic-search`。
+  - 已新增 `app/Domains/Metrics/Services/SemanticMetricSearchService.php`，使用本地 token vector、同义词扩展和余弦相似度。
+  - 已新增 `app/Http/Controllers/Api/V1/Metrics/SemanticMetricSearchController.php`。
+  - 已新增 `docs/ai/semantic-search.md`，说明本地降级、向量检索演进、生产风险和资深追问。
+  - 已更新 `public/docs/openapi.yaml`。
+  - 已新增 `tests/Feature/PhaseEighteenSemanticSearchTest.php`，覆盖语义召回、权限、验证和 OpenAPI。
+  - 已通过 `php artisan test --filter=PhaseEighteenSemanticSearchTest`，4 个测试、16 个断言。
+  - 已通过 `php artisan test --filter=PhaseTwelveOpenApiContractTest`，2 个测试、45 个断言。
+  - 已通过 `composer analyse`，保持 PHPStan/Larastan/Psalm 基线。
+  - 已通过最终全量 `php artisan test`，82 个测试、604 个断言。
+  - 已通过 `npm run build`、`./vendor/bin/pint --test`、`composer validate --strict`、`docker compose config`、OpenAPI YAML 解析和 `git diff --check`。
 
 ## 7. 推荐下一轮开发顺序
 
-1. P3-05 语义搜索和 AI 加分模块。
+暂无 P0-P3 待开发项。
 
-原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-02 测试覆盖增强、P2-04 安全攻防、P3-01 Excel 导入、P3-02 大数据导出异步化和 P3-04 Docker 一键启动验收均已完成。后续补语义搜索/AI 加分模块。每个任务都必须保持 `composer analyse` 通过，并在专题文档中补基础问题、资深追问、生产风险和验收证据。
+原因：P0 后台真实数据联动、P1-02 静态分析基线、P1-04 Kafka 事件流闭环、P1-03 MQ 队列可靠性、P1-01 Redis 缓存专题、P1-06 Laravel 源码专题、P1-08 MySQL 大数据性能实证、P1-05 运行机制专题、P1-07 PHP 语言底层实验、P2-03 CI、P2-01 OpenAPI、P2-02 测试覆盖增强、P2-04 安全攻防、P3-01 Excel 导入、P3-02 大数据导出异步化、P3-03 首页统计真实化、P3-04 Docker 一键启动验收和 P3-05 语义搜索/AI 加分模块均已完成。后续如继续扩展，应先重新进行架构师覆盖度复审，再新增 P4 任务。
 
 执行说明：下一轮 agent 领取上述任务时，先读取 `docs/interview/architect-interview-coverage-plan.md` 的“后续 Agent 执行任务卡”，再按本文档更新任务状态。任务没有代码入口、测试或可验证命令时，不得标记为已完成。

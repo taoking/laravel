@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\MenuController;
 use App\Http\Controllers\Api\V1\Metrics\DimensionController;
 use App\Http\Controllers\Api\V1\Metrics\MetricCategoryController;
 use App\Http\Controllers\Api\V1\Metrics\MetricController;
+use App\Http\Controllers\Api\V1\Metrics\SemanticMetricSearchController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\Security\SignedEchoController;
 use App\Http\Controllers\Api\V1\Security\UrlSafetyController;
@@ -74,6 +75,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/metrics', [MetricController::class, 'index'])
             ->middleware(['permission:metrics.view', 'throttle:metrics-query'])
             ->name('metrics.index');
+        Route::get('/metrics/semantic-search', SemanticMetricSearchController::class)
+            ->middleware(['permission:metrics.view', 'throttle:metrics-query'])
+            ->name('metrics.semantic-search');
         Route::post('/metrics', [MetricController::class, 'store'])
             ->middleware('permission:metrics.manage')
             ->name('metrics.store');

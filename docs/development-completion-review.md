@@ -14,7 +14,7 @@
 | Phase 2 | 登录、RBAC、菜单、权限缓存、Policy、越权测试、用户/角色/菜单页面联动 | 已完成 | `/login`、`/api/v1/permissions`、`/admin/users` |
 | Phase 3 | 指标库、分类、维度、筛选、排序、分页、指标页面联动、Explain 文档 | 已完成 | `/api/v1/metrics`、`docs/database/metric-query-explain.md` |
 | Phase 4 | CSV/XLSX 导入、失败记录、幂等、队列 Job、导入页面联动、异步导出、下载鉴权、定时统计 | 已完成 | `/api/v1/imports`、`/api/v1/exports` |
-| Phase 5 | 缓存、限流、签名反重放、文件上传安全、审计日志页面联动 | 已完成 | `/api/v1/security/signed-echo`、`/api/v1/audit-logs` |
+| Phase 5 | 缓存、限流、签名反重放、文件上传安全、审计日志页面联动、首页统计缓存 | 已完成 | `/api/v1/security/signed-echo`、`/api/v1/audit-logs`、`docs/performance/dashboard-summary-cache.md` |
 | Phase 6 | Docker、Nginx、PHP-FPM、Supervisor、压测、发布回滚、面试包装 | 已完成 | `docker-compose.yml`、`docs/deploy/docker-deploy-runbook.md` |
 | UI i18n | 中文默认显示、英文切换、持久化语言偏好 | 已完成 | `/login`、`/admin` 页面右上角语言选择 |
 | P1-02 | PHPStan/Larastan/Psalm 静态分析基线 | 已完成 | `composer analyse`、`docs/testing-ci/static-analysis.md` |
@@ -31,7 +31,9 @@
 | P2-04 | 安全攻防增强 | 已完成 | `/api/v1/security/url-check`、`docs/security/web-attack-labs.md` |
 | P3-01 | Excel 导入 | 已完成 | `MetricImportReader`、`tests/Feature/PhaseSeventeenExcelImportTest.php` |
 | P3-02 | 大数据导出异步化 | 已完成 | `ProcessMetricExportJob`、`/api/v1/exports/{export}/download` |
+| P3-03 | 首页统计真实化 | 已完成 | `DashboardSummaryService`、`tests/Feature/PhaseNineteenDashboardSummaryTest.php` |
 | P3-04 | Docker 一键启动验收 | 已完成 | `scripts/deploy/docker-smoke.sh`、`docs/deploy/docker-deploy-runbook.md` |
+| P3-05 | 语义搜索和 AI 加分模块 | 已完成 | `/api/v1/metrics/semantic-search`、`docs/ai/semantic-search.md` |
 
 ## 2. 多语言实现说明
 
@@ -83,6 +85,7 @@
 | `http://127.0.0.1:8000/api/v1/users` | 用户列表 |
 | `http://127.0.0.1:8000/api/v1/roles` | 角色列表 |
 | `http://127.0.0.1:8000/api/v1/metrics` | 指标列表和筛选 |
+| `http://127.0.0.1:8000/api/v1/metrics/semantic-search?q=income%20sales` | 指标语义搜索 |
 | `http://127.0.0.1:8000/api/v1/metric-categories` | 指标分类 |
 | `http://127.0.0.1:8000/api/v1/dimensions/regions` | 地区维度 |
 | `http://127.0.0.1:8000/api/v1/dimensions/frequencies` | 频率维度 |
@@ -131,6 +134,8 @@ php artisan test --filter=PhaseTenRuntimeProcessTest
 php artisan test --filter=PhaseFifteenRegressionCoverageTest
 php artisan test --filter=PhaseSixteenAsyncExportTest
 php artisan test --filter=PhaseSeventeenExcelImportTest
+php artisan test --filter=PhaseEighteenSemanticSearchTest
+php artisan test --filter=PhaseNineteenDashboardSummaryTest
 ```
 
 验收账号：
@@ -152,7 +157,7 @@ php artisan test --filter=PhaseSeventeenExcelImportTest
 
 ## 6. 当前剩余待办
 
-这些内容不影响首轮计划验收，但适合作为下一轮开发任务：
+当前 P0-P3 计划项均已完成。后续内容不影响首轮计划验收，适合作为重新复审后新增 P4 任务：
 
 - 详细任务池见 `docs/pending-development-tasks.md`。
 - P0 后台列表页面已接入真实 API，后续可继续打磨交互细节和浏览器端自动化测试。
@@ -168,7 +173,9 @@ php artisan test --filter=PhaseSeventeenExcelImportTest
 - P2-02 测试覆盖增强已完成，新增模块级回归测试，覆盖统一 401、422、403、404 合同和关键副作用。
 - P3-01 Excel 导入已完成，补齐 `.xlsx` 上传、流式解析、幂等重试、失败行记录和非法 `.xls` 拒绝。
 - P3-02 大数据导出异步化已完成，补齐导出 Job、进度查询、下载鉴权、失败分类和 OpenAPI 契约。
-- P3-04 Docker 一键启动验收已完成，补齐生产部署证据、运行态健康检查和排障 Runbook。下一项高优先级任务为 P3-05 语义搜索和 AI 加分模块。
+- P3-03 首页统计真实化已完成，工作台使用真实用户、角色、指标和导入任务计数，并具备缓存主动失效说明。
+- P3-04 Docker 一键启动验收已完成，补齐生产部署证据、运行态健康检查和排障 Runbook。
+- P3-05 语义搜索和 AI 加分模块已完成，提供不依赖外部密钥的 `local-token-vector` 搜索入口、OpenAPI 和面试追问文档。
 - 可继续补充 Redis Cluster、RabbitMQ 对比、多进程和 Octane 相关实验模块。
 
 ## 7. 本次检查记录
@@ -180,19 +187,21 @@ php artisan test --filter=PhaseSeventeenExcelImportTest
 | 检查项 | 结果 |
 | --- | --- |
 | 前端生产构建 | `npm run build` 通过 |
-| PHP 测试 | `php artisan test` 通过，77 个测试、559 个断言 |
+| PHP 测试 | `php artisan test` 通过，82 个测试、604 个断言 |
 | 静态分析 | `composer analyse:phpstan`、`composer analyse:psalm` 通过 |
 | 导入队列可靠性专项测试 | `php artisan test --filter=PhaseFourImportQueueTest` 通过，8 个测试、45 个断言 |
 | Redis 缓存可靠性专项测试 | `php artisan test --filter=PhaseEightRedisCacheReliabilityTest` 通过，5 个测试、27 个断言 |
 | 数据库性能专项测试 | `php artisan test --filter=PhaseNineDatabasePerformanceTest` 通过，2 个测试、8 个断言 |
 | 运行机制专项测试 | `php artisan test --filter=PhaseTenRuntimeProcessTest` 通过，2 个测试、2 个断言 |
 | PHP 语言底层专项测试 | `php artisan test --filter=PhaseElevenPhpLanguageLabTest` 通过，3 个测试、13 个断言 |
-| OpenAPI 契约专项测试 | `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过，2 个测试、44 个断言 |
+| OpenAPI 契约专项测试 | `php artisan test --filter=PhaseTwelveOpenApiContractTest` 通过，2 个测试、45 个断言 |
 | 安全攻防专项测试 | `php artisan test --filter=PhaseThirteenSecurityAttackLabTest` 通过，5 个测试、15 个断言 |
 | Docker Runbook 专项测试 | `php artisan test --filter=PhaseFourteenDockerRunbookTest` 通过，5 个测试、41 个断言 |
 | 模块级回归专项测试 | `php artisan test --filter=PhaseFifteenRegressionCoverageTest` 通过，5 个测试、99 个断言 |
 | 异步导出专项测试 | `php artisan test --filter=PhaseSixteenAsyncExportTest` 通过，4 个测试、33 个断言 |
 | Excel 导入专项测试 | `php artisan test --filter=PhaseSeventeenExcelImportTest` 通过，4 个测试、23 个断言 |
+| 语义搜索专项测试 | `php artisan test --filter=PhaseEighteenSemanticSearchTest` 通过，4 个测试、16 个断言 |
+| 首页统计缓存专项测试 | `php artisan test --filter=PhaseNineteenDashboardSummaryTest` 通过，1 个测试、28 个断言 |
 | Kafka 专项测试 | `php artisan test --filter=PhaseSevenKafkaMessagingTest` 通过，3 个测试、19 个断言 |
 | Kafka 命令注册 | `php artisan list kafka --raw` 显示 5 个 Kafka 命令 |
 | Docker Kafka 集成 | `docker compose up -d kafka`、`KAFKA_DRIVER=docker php artisan kafka:topics --create`、生产和消费命令通过 |
@@ -201,7 +210,7 @@ php artisan test --filter=PhaseSeventeenExcelImportTest
 | Docker Compose 配置 | `docker compose config` 通过 |
 | Docker 一键 smoke | `scripts/deploy/docker-smoke.sh` 通过，`app`、`nginx`、`mysql`、`redis`、`queue`、`scheduler`、`kafka` 均运行，`/up`、`/login`、`/docs/api`、`/api/v1/health` 可访问 |
 | GitHub Actions CI 配置 | `.github/workflows/ci.yml` 覆盖 Composer、静态分析、Pint、PHPUnit、npm build 和 Docker Compose 校验 |
-| 路由注册 | `php artisan route:list --except-vendor` 显示 43 条项目路由 |
+| 路由注册 | `php artisan route:list --except-vendor` 显示 48 条项目路由 |
 | 登录页中文基准 | `/login` 输出 `<html lang="zh-CN">` 和 `<title inertia>指标分析平台</title>` |
 | 接口文档中文基准 | `/docs/api` 输出 `<html lang="zh-CN">` 和 `<title>接口文档 - 指标分析平台</title>` |
 

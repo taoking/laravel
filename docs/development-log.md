@@ -883,3 +883,86 @@ git diff --check
 - PhaseFourteenDockerRunbookTest 通过：5 个测试、41 个断言。
 - 全量测试通过：77 个测试、559 个断言。
 - `composer analyse`、OpenAPI YAML 解析、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验和 diff 检查均通过。
+
+## 2026-05-15 P3-03 首页统计真实化
+
+目标：把 `/admin` 工作台统计从占位数据补齐为真实业务计数，并补充缓存失效策略和验收测试。
+
+### 开发内容
+
+- 新增 `app/Domains/Dashboard/Services/DashboardSummaryService.php`：
+  - 统计用户数、角色数、指标数和导入任务数。
+  - 使用 `dashboard:summary` 缓存，TTL 为 60 秒。
+- 新增 `app/Domains/Dashboard/Observers/RefreshDashboardSummaryObserver.php`：
+  - 用户、角色、指标和导入任务保存或删除后主动清理首页统计缓存。
+- 更新 `routes/web.php`：
+  - `/admin` 通过 `DashboardSummaryService` 获取 summary，不再保留固定任务数占位。
+- 更新 `resources/js/i18n.js`：
+  - 中文显示“导入任务”，英文显示“Import tasks”。
+- 新增 `docs/performance/dashboard-summary-cache.md`：
+  - 记录代码入口、缓存策略、失效策略、验收标准和面试追问。
+- 新增 `tests/Feature/PhaseNineteenDashboardSummaryTest.php`：
+  - 覆盖真实计数、缓存写入和导入任务新增后的主动失效。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseNineteenDashboardSummaryTest
+php artisan test
+composer analyse
+```
+
+验收结果：
+
+- PhaseNineteenDashboardSummaryTest 通过：1 个测试、28 个断言。
+- 全量测试通过：82 个测试、604 个断言。
+- `composer analyse` 通过。
+
+## 2026-05-15 P3-05 语义搜索和 AI 加分模块
+
+目标：补齐一个不依赖外部密钥的指标语义搜索入口，作为 AI/向量检索、召回排序和生产边界的面试加分模块。
+
+### 开发内容
+
+- 新增 `app/Domains/Metrics/Services/SemanticMetricSearchService.php`：
+  - 使用本地 `local-token-vector` 引擎。
+  - 支持分词、同义词扩展和余弦相似度排序。
+  - 搜索文档覆盖指标编码、名称、描述和分类信息。
+- 新增 `app/Http/Controllers/Api/V1/Metrics/SemanticMetricSearchController.php`：
+  - 提供 `GET /api/v1/metrics/semantic-search`。
+  - 复用 `metrics.view` 权限和 `metrics-query` 限流。
+  - 返回 `metric`、`score`、`matched_terms` 和 `engine`。
+- 更新 `routes/api.php` 和 `public/docs/openapi.yaml`：
+  - OpenAPI 补中文摘要、参数、响应结构和 `local-token-vector` 示例。
+- 新增 `docs/ai/semantic-search.md`：
+  - 说明本地降级、向量检索演进、Laravel AI SDK 接入边界、成本风险和资深追问。
+- 新增 `tests/Feature/PhaseEighteenSemanticSearchTest.php`：
+  - 覆盖收入/销售语义召回、用户活跃语义召回、权限、验证和 OpenAPI。
+- 更新 `docs/pending-development-tasks.md`、`docs/learning-index.md`、`docs/development-completion-review.md`、`docs/implementation-execution-plan.md` 和 `docs/interview/architect-interview-coverage-plan.md`。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+php artisan test --filter=PhaseEighteenSemanticSearchTest
+php artisan test --filter=PhaseTwelveOpenApiContractTest
+php artisan test
+composer analyse
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+ruby -e "require 'yaml'; YAML.load_file('public/docs/openapi.yaml')"
+git diff --check
+```
+
+验收结果：
+
+- PhaseEighteenSemanticSearchTest 通过：4 个测试、16 个断言。
+- PhaseTwelveOpenApiContractTest 通过：2 个测试、45 个断言。
+- 全量测试通过：82 个测试、604 个断言。
+- `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验、OpenAPI YAML 解析和 diff 检查均通过。
+- `php artisan route:list --except-vendor` 显示 48 条项目路由。
