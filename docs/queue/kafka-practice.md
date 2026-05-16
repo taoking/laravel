@@ -1,9 +1,9 @@
 # Kafka 消息事件流实践模块计划
 
-更新日期：2026-05-14  
+更新日期：2026-05-17
 任务编号：P1-04  
 状态：已完成
-当前优先级：P1 高，已完成最小可验收事件流闭环；后续由 P1-03 继续补强 MQ 可靠性
+当前状态：Kafka 事件流闭环和 P1-03 MQ 可靠性补强均已完成；后续如继续扩展，应进入 Outbox Pattern、RabbitMQ 对比或生产级 Kafka 客户端等 P4 任务。
 
 适用项目：Laravel 13 指标分析平台
 
@@ -46,7 +46,7 @@
 
 ## 0. 执行优先级和准入门禁
 
-Kafka 专题已提升为当前 P1 最高优先级开发项。后续 agent 领取任务时，先读本文，再读 `docs/testing-ci/static-analysis.md`，并保持以下质量门禁通过：
+Kafka 专题已完成 P1 验收。后续 agent 如果修改消息模块，先读本文，再读 `docs/testing-ci/static-analysis.md`，并保持以下质量门禁通过：
 
 ```bash
 composer analyse
@@ -55,7 +55,7 @@ php artisan test
 docker compose config
 ```
 
-开发顺序建议：
+已完成的开发顺序：
 
 1. Docker 单节点 Kafka 环境和配置文件。
 2. 消息协议、Topic 配置、Producer/Consumer 抽象和 fake 实现。
@@ -64,7 +64,7 @@ docker compose config
 5. dead letter topic、失败补偿命令和 lag 观察命令。
 6. Feature Test、集成测试说明、OpenAPI 或命令文档补充。
 
-本任务完成前，不建议优先开发普通产品增强项；Kafka 要挂在导入、审计、指标变更这些真实业务事件上，不做孤立 Demo。
+当前实现已挂在导入、审计、指标变更这些真实业务事件上，不是孤立 Demo。后续扩展应优先补 Outbox、生产级客户端、监控指标或 RabbitMQ 对比，而不是重复当前最小闭环。
 
 ## 1. 开发目标
 

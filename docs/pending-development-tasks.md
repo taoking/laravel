@@ -1,18 +1,18 @@
 # 待开发任务清单
 
-更新日期：2026-05-15
+更新日期：2026-05-17
 适用分支：`13.x`  
 执行基线：`docs/development-completion-review.md`  
 主计划：`docs/implementation-execution-plan.md`
 架构师面试补齐计划：`docs/interview/architect-interview-coverage-plan.md`
 
-本文档记录首轮 Phase 1 到 Phase 6 完成后的后续开发任务。后续 Codex agent 可以按优先级领取任务，每个任务完成后必须同步更新本文档状态、相关接口文档和验收记录。
+本文档记录首轮 Phase 1 到 Phase 6 完成后的后续开发任务。当前 P0-P3 任务已全部归档完成；后续 Codex agent 如需继续扩展，应先进行新的 P4 复审和立项，每个任务完成后必须同步更新本文档状态、相关接口文档和验收记录。
 
 当前优先级调整：
 
 - PHPStan/Larastan/Psalm 已提升为 P1 工程质量基线，后续每个开发任务都要先保证 `composer analyse` 可通过。
 - Kafka 使用专题已完成 P1 最小事件流闭环。
-- 资深架构师/面试官覆盖度评估已写入 `docs/interview/architect-interview-coverage-plan.md`，该文档现在包含后续 agent 可直接执行的任务卡；MQ 可靠性和 Redis 深度已完成，后续补齐重点转为 Laravel 源码、MySQL 性能实证、PHP 运行机制和 CI/CD。
+- 资深架构师/面试官覆盖度评估已写入 `docs/interview/architect-interview-coverage-plan.md`，P1 到 P3 任务卡均已完成。当前无 P0-P3 待开发项，P4 方向应先重新复审再立项。
 
 ## 1. 优先级定义
 

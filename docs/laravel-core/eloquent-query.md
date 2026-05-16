@@ -55,7 +55,7 @@ Metric::query()
 
 - `whereHas()` 多层嵌套可能生成复杂 SQL，要结合 Explain。
 - `like "%keyword%"` 不能很好使用普通索引。
-- 大 offset 分页会越来越慢，后续要补 seek pagination。
+- 大 offset 分页会越来越慢；当前已补 `metrics:seek-page` 命令和 `docs/database/large-pagination.md` 说明，后续扩展重点是生产压测数据和覆盖索引对比。
 - Resource 中访问未加载关联可能引发 N+1。
 - 批量导入更新指标值时要关注唯一约束和事务。
 

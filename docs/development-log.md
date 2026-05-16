@@ -966,3 +966,70 @@ git diff --check
 - 全量测试通过：82 个测试、604 个断言。
 - `composer analyse`、`npm run build`、Pint、Composer 校验、Docker Compose 配置校验、OpenAPI YAML 解析和 diff 检查均通过。
 - `php artisan route:list --except-vendor` 显示 48 条项目路由。
+
+## 2026-05-17 当前项目未完成与待补充内容审计
+
+目标：检查当前项目是否仍有未完成内容或需要补充的内容，完成本轮可直接闭环的补齐项，并记录操作过程。完成后必须通过 git 提交并推送。
+
+### 审计过程
+
+1. 检查分支、工作树和最近提交：
+   - 当前目录：`/Users/tao/workspace/code/laravel/laravel`
+   - 当前分支：`13.x`
+   - 审计前工作树干净。
+   - 最近提交为 `e559c9bc Complete dashboard summary and semantic search`。
+2. 检查 `docs/pending-development-tasks.md`：
+   - 未发现仍处于 `待开发` 或 `暂缓` 状态的 P0-P3 任务。
+   - 文档已写明“暂无 P0-P3 待开发项”。
+3. 检查文档中的滞后表述：
+   - `docs/laravel-core/eloquent-query.md` 仍把 seek pagination 描述为后续待补。
+   - `docs/queue/kafka-practice.md` 仍保留 Kafka/P1-03 开发前优先级说明。
+   - `docs/interview/architect-interview-coverage-plan.md` 的 P4 方向需要明确为下一轮立项建议，不计入当前未完成项。
+
+### 补齐内容
+
+- 新增 `docs/current-project-audit.md`：
+  - 记录本次审计目标、证据、结论、P4 建议边界、验收命令和 git 要求。
+- 更新 `docs/pending-development-tasks.md`：
+  - 日期更新到 2026-05-17。
+  - 明确当前 P0-P3 已归档完成，后续扩展应先做 P4 复审和立项。
+- 更新 `docs/laravel-core/eloquent-query.md`：
+  - 将 seek pagination 从“后续要补”改为“已补 `metrics:seek-page` 命令和 `docs/database/large-pagination.md`”。
+- 更新 `docs/queue/kafka-practice.md`：
+  - 明确 Kafka 事件流闭环和 P1-03 MQ 可靠性均已完成。
+  - 后续扩展转为 Outbox、RabbitMQ 或生产级 Kafka 客户端等 P4 方向。
+- 更新 `docs/interview/architect-interview-coverage-plan.md`：
+  - 日期更新到 2026-05-17。
+  - 增加复审补充说明：P4 建议未被用户确认前不视为当前未完成项。
+- 更新 `docs/learning-index.md`：
+  - 增加 `docs/current-project-audit.md` 入口。
+
+### 验收记录
+
+已通过命令：
+
+```bash
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+ruby -e "require 'yaml'; YAML.load_file('public/docs/openapi.yaml')"
+git diff --check
+```
+
+验收结果：
+
+- `composer analyse` 通过：PHPStan 0 errors，Psalm no errors。
+- `php artisan test` 通过：82 个测试、604 个断言。
+- `npm run build` 通过。
+- `./vendor/bin/pint --test` 通过。
+- `composer validate --strict` 通过。
+- `docker compose config` 通过。
+- OpenAPI YAML 解析通过。
+- `git diff --check` 通过。
+
+### Git 要求
+
+本次审计和文档补齐完成后，需要提交并推送到 `origin/13.x`，最终回复必须提及 git 提交和推送状态。
