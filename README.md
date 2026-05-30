@@ -1,67 +1,44 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel 13 资深 PHP 学习项目
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+这是一个用于长期学习、复盘和资深 PHP/Laravel 面试准备的 Laravel 13 项目。项目主题是“多数据源指标分析与内容管理平台”，通过真实代码把 PHP 语言机制、Laravel 框架源码、MySQL、Redis、Queue、Kafka、安全、性能、Docker 部署和工程质量串起来。
 
-## About Laravel
+详细介绍见：[项目介绍文档](docs/project-introduction.md)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 快速入口
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- 后台首页：`http://127.0.0.1:8000/admin`
+- 登录页：`http://127.0.0.1:8000/login`
+- Swagger UI：`http://127.0.0.1:8000/docs/api`
+- OpenAPI YAML：`http://127.0.0.1:8000/docs/openapi.yaml`
+- 学习索引：[docs/learning-index.md](docs/learning-index.md)
+- 完成度审计：[docs/development-completion-review.md](docs/development-completion-review.md)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## 中文源码学习文档
-
-本仓库已新增面向源码学习和面试准备的中文说明文档：
-
-- [Laravel 框架学习与面试说明文档](docs/laravel-framework-study-guide.md)
-- [Laravel 启动与关闭流程说明](docs/laravel-startup-shutdown-flow.md)
-
-该文档按当前本地骨架说明 HTTP/CLI 启动流程、主要类、服务容器、Service Provider、路由/中间件、Eloquent、迁移、队列、缓存、测试与面试高频问题，并说明本地 `13.x` 分支和远端 `10.x` 骨架的差异。
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## 本地运行
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+php artisan migrate --seed
+npm run build
+php artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+本地种子账号：
 
-## Contributing
+| 角色 | 邮箱 | 密码 |
+| --- | --- | --- |
+| 超级管理员 | `admin@example.com` | `password` |
+| 分析师 | `analyst@example.com` | `password` |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 质量门禁
 
-## Code of Conduct
+```bash
+composer analyse
+php artisan test
+npm run build
+./vendor/bin/pint --test
+composer validate --strict
+docker compose config
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+当前 P0-P3 计划项已完成。后续扩展应先阅读 [当前项目审计](docs/current-project-audit.md) 和 [架构师面试覆盖度计划](docs/interview/architect-interview-coverage-plan.md)，再新增 P4 任务。

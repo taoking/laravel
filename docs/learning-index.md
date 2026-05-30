@@ -14,26 +14,27 @@
 ## 推荐阅读顺序
 
 1. `docs/laravel13-senior-php-learning-architecture.md`：长期学习项目总纲。
-2. `docs/implementation-execution-plan.md`：可交给 Codex agent 执行的开发计划、访问路径、接口路径和验收标准。
-3. `docs/development-completion-review.md`：当前开发完成度、访问路径、验收命令和后续执行规则。
-4. `docs/pending-development-tasks.md`：后续待开发任务清单、优先级、交付物和验收标准。
-5. `docs/interview/architect-interview-coverage-plan.md`：资深架构师/面试官视角的覆盖度评估、追问地图和后续 agent 执行任务卡。
-6. `docs/current-project-audit.md`：当前项目未完成项、待补充项和本轮审计结论。
-7. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
-8. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块说明，已完成 P1-04 最小事件流闭环。
-9. `docs/redis/cache-reliability.md`：Redis 缓存穿透、击穿、雪崩、锁、Lua、大 Key 和热 Key 专题。
-10. `docs/performance/dashboard-summary-cache.md`：工作台真实统计、缓存失效和面试追问。
-11. `docs/ai/semantic-search.md`：本地 token vector 语义搜索、向量检索演进和 AI 成本边界。
-12. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
-13. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
-14. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
-15. `docs/laravel-core/container.md`：服务容器与依赖解析源码追问。
-16. `docs/laravel-core/middleware-pipeline.md`：Middleware Pipeline 洋葱模型源码追问。
-17. `docs/laravel-core/queue-worker.md`：Queue Worker 执行流程源码追问。
-18. `docs/database/large-pagination.md`：大数据分页、offset 与 seek pagination 优化。
-19. `docs/runtime/php-fpm-worker-octane.md`：PHP-FPM、Worker、Scheduler、Octane 和常驻进程专题。
-20. `docs/php-language/runtime-labs.md`：PHP 弱类型、COW、引用、对象、Generator 和 PHP 8.x 新特性实验。
-21. `docs/testing-ci/github-actions.md`：GitHub Actions CI、质量门禁和失败本地复现。
+2. `docs/project-introduction.md`：项目定位、技术栈、业务模块、访问路径、启动方式和知识覆盖。
+3. `docs/implementation-execution-plan.md`：可交给 Codex agent 执行的开发计划、访问路径、接口路径和验收标准。
+4. `docs/development-completion-review.md`：当前开发完成度、访问路径、验收命令和后续执行规则。
+5. `docs/pending-development-tasks.md`：后续待开发任务清单、优先级、交付物和验收标准。
+6. `docs/interview/architect-interview-coverage-plan.md`：资深架构师/面试官视角的覆盖度评估、追问地图和后续 agent 执行任务卡。
+7. `docs/current-project-audit.md`：当前项目未完成项、待补充项和本轮审计结论。
+8. `docs/testing-ci/static-analysis.md`：PHPStan/Larastan/Psalm 静态分析基线和后续准入门禁。
+9. `docs/queue/kafka-practice.md`：Kafka 消息事件流实践模块说明，已完成 P1-04 最小事件流闭环。
+10. `docs/redis/cache-reliability.md`：Redis 缓存穿透、击穿、雪崩、锁、Lua、大 Key 和热 Key 专题。
+11. `docs/performance/dashboard-summary-cache.md`：工作台真实统计、缓存失效和面试追问。
+12. `docs/ai/semantic-search.md`：本地 token vector 语义搜索、向量检索演进和 AI 成本边界。
+13. `docs/learning-knowledge-map.md`：12 层知识地图和文档目录规划。
+14. `docs/laravel-framework-study-guide.md`：当前 Laravel 13 骨架和源码学习说明。
+15. `docs/laravel-startup-shutdown-flow.md`：Laravel 启动、关闭、HTTP/CLI 生命周期。
+16. `docs/laravel-core/container.md`：服务容器与依赖解析源码追问。
+17. `docs/laravel-core/middleware-pipeline.md`：Middleware Pipeline 洋葱模型源码追问。
+18. `docs/laravel-core/queue-worker.md`：Queue Worker 执行流程源码追问。
+19. `docs/database/large-pagination.md`：大数据分页、offset 与 seek pagination 优化。
+20. `docs/runtime/php-fpm-worker-octane.md`：PHP-FPM、Worker、Scheduler、Octane 和常驻进程专题。
+21. `docs/php-language/runtime-labs.md`：PHP 弱类型、COW、引用、对象、Generator 和 PHP 8.x 新特性实验。
+22. `docs/testing-ci/github-actions.md`：GitHub Actions CI、质量门禁和失败本地复现。
 
 ## 已实现访问路径
 
@@ -232,6 +233,7 @@ DB_CONNECTION=sqlite DB_DATABASE=$(pwd)/database/database.sqlite php artisan ser
 ## 当前文档
 
 - 总纲：`docs/laravel13-senior-php-learning-architecture.md`
+- 项目介绍：`docs/project-introduction.md`
 - 执行计划：`docs/implementation-execution-plan.md`
 - 完成度审计：`docs/development-completion-review.md`
 - 开发日志：`docs/development-log.md`
