@@ -2,6 +2,8 @@
 
 use App\Domains\Dashboard\Services\DashboardSummaryService;
 use App\Http\Controllers\AuthSessionController;
+use App\Http\Controllers\PatternLabController;
+use App\Http\Controllers\PhpLabController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -55,3 +57,18 @@ Route::get('/docs/openapi.yaml', function () {
         'Content-Type' => 'application/yaml',
     ]);
 })->name('docs.openapi');
+
+Route::prefix('pattern-lab')
+    ->name('pattern-lab.')
+    ->group(function (): void {
+        Route::get('/', [PatternLabController::class, 'index'])->name('index');
+        Route::get('/{category}', [PatternLabController::class, 'category'])->name('category');
+        Route::get('/{category}/{pattern}', [PatternLabController::class, 'show'])->name('show');
+    });
+
+Route::prefix('php-lab')
+    ->name('php-lab.')
+    ->group(function (): void {
+        Route::get('/', [PhpLabController::class, 'index'])->name('index');
+        Route::get('/{topic}', [PhpLabController::class, 'show'])->name('show');
+    });

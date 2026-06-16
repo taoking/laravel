@@ -42,3 +42,47 @@ docker compose config
 ```
 
 当前 P0-P3 计划项已完成。后续扩展应先阅读 [当前项目审计](docs/current-project-audit.md) 和 [架构师面试覆盖度计划](docs/interview/architect-interview-coverage-plan.md)，再新增 P4 任务。
+
+## Laravel Design Patterns Lab
+
+本项目新增了一个设计模式练习模块：PatternLab。
+
+访问页面：
+
+```bash
+php artisan serve
+http://127.0.0.1:8000/pattern-lab
+```
+
+可用命令：
+
+```bash
+php artisan pattern-lab:list
+php artisan pattern-lab:show strategy
+php artisan pattern-lab:next
+```
+
+总览文档目录：
+
+```text
+docs/pattern-lab/
+```
+
+每个模式的文档和练习代码目录：
+
+```text
+app/PatternLab/
+```
+
+每个具体模式目录中包含：
+
+```text
+PATTERN.md
+Exercise.php
+README.md
+TODO.md
+```
+
+注意：
+
+本模块只提供设计模式说明、场景、TODO、练习骨架和测试骨架，不提供完整实现。具体设计模式代码需要学习者自己完成。
