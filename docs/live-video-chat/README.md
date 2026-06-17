@@ -351,3 +351,4 @@ FFPROBE_PATH=/opt/homebrew/bin/ffprobe
 - [08-adaptive-hls.md](./08-adaptive-hls.md)：多码率 HLS / Adaptive Bitrate HLS。
 - [09-mediamtx-live.md](./09-mediamtx-live.md)：MediaMTX 真实直播接入。
 - [10-mainstream-roadmap.md](./10-mainstream-roadmap.md)：对照主流视频/直播平台的后续功能和技术路线图。
+- [11-senior-backend-interview-system-design.md](./11-senior-backend-interview-system-design.md)：面向大视频/直播网站资深后端面试的覆盖度检查和总架构设计。
