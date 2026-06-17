@@ -350,4 +350,4 @@ FFPROBE_PATH=/opt/homebrew/bin/ffprobe
 - [07-project-review.md](./07-project-review.md)：项目整体复盘、代码体检和学习整理。
 - [08-adaptive-hls.md](./08-adaptive-hls.md)：多码率 HLS / Adaptive Bitrate HLS。
 - [09-mediamtx-live.md](./09-mediamtx-live.md)：MediaMTX 真实直播接入。
-
+- [10-mainstream-roadmap.md](./10-mainstream-roadmap.md)：对照主流视频/直播平台的后续功能和技术路线图。
