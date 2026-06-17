@@ -10,6 +10,7 @@ final class PhpLabRegistry
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
@@ -19,14 +20,14 @@ final class PhpLabRegistry
     public function all(): array
     {
         return [
-            $this->basicTypes(),
-            $this->strings(),
-            $this->arrays(),
-            $this->functionsAndClosures(),
-            $this->controlFlow(),
-            $this->objectOriented(),
-            $this->exceptions(),
-            $this->generators(),
+            $this->arrayTransform(),
+            $this->arrayFilterSearch(),
+            $this->arrayAggregateSort(),
+            $this->stringCleanFormat(),
+            $this->stringSearchSplit(),
+            $this->typeValidateConvert(),
+            $this->jsonUrl(),
+            $this->datePath(),
         ];
     }
 
@@ -36,6 +37,7 @@ final class PhpLabRegistry
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
@@ -59,6 +61,7 @@ final class PhpLabRegistry
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
@@ -78,158 +81,76 @@ final class PhpLabRegistry
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
      *     practice: array<int, string>
      * }
      */
-    private function basicTypes(): array
+    private function arrayTransform(): array
     {
-        $name = 'Laravel';
-        $count = '12';
-        $price = 99.5;
-        $isPublished = true;
-        $payload = null;
-
-        return [
-            'key' => 'basic-types',
-            'title' => '变量与基础类型',
-            'level' => '入门',
-            'summary' => '练习变量命名、标量类型、类型转换、空值判断和严格比较。',
-            'concepts' => [
-                '变量以 $ 开头，命名应该表达业务含义。',
-                'PHP 常见标量类型包括 int、float、string、bool。',
-                '使用 === 避免隐式类型转换带来的判断偏差。',
-                'null 合并运算符 ?? 适合给可空数据设置默认值。',
-            ],
-            'code' => <<<'PHP'
-$name = 'Laravel';
-$count = '12';
-$price = 99.5;
-$isPublished = true;
-$payload = null;
-
-$total = (int) $count * $price;
-$status = $isPublished === true ? 'published' : 'draft';
-$displayName = $payload['name'] ?? $name;
-PHP,
-            'output' => [
-                'total='.number_format((int) $count * $price, 2, '.', ''),
-                'status='.($isPublished === true ? 'published' : 'draft'),
-                'display_name='.($payload['name'] ?? $name),
-            ],
-            'practice' => [
-                '把字符串 "15" 转成整数后参与金额计算。',
-                '分别用 == 和 === 比较 0、false、"0"，观察结果差异。',
-                '为一个可能为 null 的数组字段设置默认值。',
-            ],
-        ];
-    }
-
-    /**
-     * @return array{
-     *     key: string,
-     *     title: string,
-     *     level: string,
-     *     summary: string,
-     *     concepts: array<int, string>,
-     *     code: string,
-     *     output: array<int, string>,
-     *     practice: array<int, string>
-     * }
-     */
-    private function strings(): array
-    {
-        $title = '  PHP Basics Lab  ';
-        $slug = str_replace(' ', '-', strtolower(trim($title)));
-        $contains = str_contains($slug, 'php');
-
-        return [
-            'key' => 'strings',
-            'title' => '字符串处理',
-            'level' => '入门',
-            'summary' => '练习字符串清理、大小写转换、查找、替换和格式化输出。',
-            'concepts' => [
-                'trim() 常用于清理用户输入两侧空白。',
-                'str_contains()、str_starts_with()、str_ends_with() 可读性优于手写 strpos 判断。',
-                'str_replace() 适合简单替换，复杂规则再考虑正则。',
-                'sprintf() 适合生成固定格式的文本。',
-            ],
-            'code' => <<<'PHP'
-$title = '  PHP Basics Lab  ';
-$slug = str_replace(' ', '-', strtolower(trim($title)));
-$contains = str_contains($slug, 'php');
-$message = sprintf('topic=%s, contains_php=%s', $slug, $contains ? 'yes' : 'no');
-PHP,
-            'output' => [
-                'slug='.$slug,
-                'contains_php='.($contains ? 'yes' : 'no'),
-                sprintf('topic=%s, contains_php=%s', $slug, $contains ? 'yes' : 'no'),
-            ],
-            'practice' => [
-                '把用户输入的标题转换成小写短横线 slug。',
-                '判断一个邮箱是否以指定公司域名结尾。',
-                '使用 sprintf() 生成订单编号展示文案。',
-            ],
-        ];
-    }
-
-    /**
-     * @return array{
-     *     key: string,
-     *     title: string,
-     *     level: string,
-     *     summary: string,
-     *     concepts: array<int, string>,
-     *     code: string,
-     *     output: array<int, string>,
-     *     practice: array<int, string>
-     * }
-     */
-    private function arrays(): array
-    {
-        $scores = [
-            ['name' => 'array', 'score' => 70],
-            ['name' => 'function', 'score' => 88],
-            ['name' => 'object', 'score' => 92],
+        $orders = [
+            ['id' => 1001, 'user' => ' Tao ', 'amount' => 199.9],
+            ['id' => 1002, 'user' => ' Lin ', 'amount' => 88],
         ];
 
-        $passed = array_filter($scores, fn (array $row): bool => $row['score'] >= 80);
-        $names = array_map(fn (array $row): string => $row['name'], $passed);
-        $total = array_reduce($scores, fn (int $carry, array $row): int => $carry + $row['score'], 0);
+        $names = array_map(fn (array $order): string => trim($order['user']), $orders);
+
+        array_walk($orders, function (array &$order): void {
+            $order['user'] = trim($order['user']);
+            $order['amount_label'] = number_format($order['amount'], 2, '.', '');
+        });
+
+        $amountsById = array_combine(
+            array_column($orders, 'id'),
+            array_column($orders, 'amount_label'),
+        );
 
         return [
-            'key' => 'arrays',
-            'title' => '数组与常用数组函数',
-            'level' => '入门',
-            'summary' => '练习索引数组、关联数组、过滤、映射、聚合和解构。',
+            'key' => 'arrays-transform',
+            'title' => '数组遍历与转换函数',
+            'level' => '高频',
+            'summary' => '重点练 array_map、array_walk、array_column 这类日常数据整理函数。',
+            'methods' => [
+                'array_map()：返回新数组，适合纯转换，不应该依赖副作用。',
+                'array_walk()：遍历数组并可原地修改元素，适合补字段、清洗字段。',
+                'array_column()：从二维数组取一列，常用于取 id、code、name。',
+                'array_combine()：把两个数组组合成 key => value 映射。',
+                'array_keys() / array_values()：取键名、取值并重新整理索引。',
+            ],
             'concepts' => [
-                'PHP 数组既可以当 list，也可以当 map；实际项目要明确数据形状。',
-                'array_filter() 负责筛选，array_map() 负责转换，array_reduce() 负责聚合。',
-                '读取关联数组字段前要考虑默认值或数据校验。',
-                'Laravel Collection 与数组函数思想类似，但链式表达更强。',
+                '要改原数组时用 array_walk，并让回调参数按引用传入。',
+                '只做映射转换时用 array_map，更容易保持输入和输出边界清楚。',
+                '二维数组整理时，array_column 通常比 foreach 临时变量更简洁。',
             ],
             'code' => <<<'PHP'
-$scores = [
-    ['name' => 'array', 'score' => 70],
-    ['name' => 'function', 'score' => 88],
-    ['name' => 'object', 'score' => 92],
+$orders = [
+    ['id' => 1001, 'user' => ' Tao ', 'amount' => 199.9],
+    ['id' => 1002, 'user' => ' Lin ', 'amount' => 88],
 ];
 
-$passed = array_filter($scores, fn (array $row): bool => $row['score'] >= 80);
-$names = array_map(fn (array $row): string => $row['name'], $passed);
-$total = array_reduce($scores, fn (int $carry, array $row): int => $carry + $row['score'], 0);
+$names = array_map(fn (array $order): string => trim($order['user']), $orders);
+
+array_walk($orders, function (array &$order): void {
+    $order['user'] = trim($order['user']);
+    $order['amount_label'] = number_format($order['amount'], 2, '.', '');
+});
+
+$amountsById = array_combine(
+    array_column($orders, 'id'),
+    array_column($orders, 'amount_label'),
+);
 PHP,
             'output' => [
-                'passed='.implode(', ', $names),
-                'total='.$total,
-                'average='.number_format($total / count($scores), 2, '.', ''),
+                'names='.implode(', ', $names),
+                'first_user='.$orders[0]['user'],
+                'amount_1002='.$amountsById[1002],
             ],
             'practice' => [
-                '从商品数组中过滤出库存大于 0 的商品。',
-                '把用户数组转换成只包含 id 和 name 的数组。',
-                '统计订单金额总和并计算平均值。',
+                '用 array_map 把用户列表转换成只包含 id、name、email 的公开 DTO。',
+                '用 array_walk 给订单数组补充 amount_label、status_label 两个展示字段。',
+                '用 array_column + array_combine 把分类数组整理成 id => name 的下拉选项。',
             ],
         ];
     }
@@ -240,47 +161,77 @@ PHP,
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
      *     practice: array<int, string>
      * }
      */
-    private function functionsAndClosures(): array
+    private function arrayFilterSearch(): array
     {
-        $subtotal = $this->subtotal([40, 60, 100], discount: 20);
-        $multiplier = 3;
-        $triple = fn (int $value): int => $value * $multiplier;
+        $users = [
+            ['id' => 1, 'name' => 'Tao', 'role' => 'admin', 'enabled' => true],
+            ['id' => 2, 'name' => 'Lin', 'role' => 'editor', 'enabled' => true],
+            ['id' => 3, 'name' => 'Ning', 'role' => 'viewer', 'enabled' => false],
+        ];
+        $requiredRoles = ['admin', 'editor', 'analyst'];
+        $roles = array_column($users, 'role');
+        $enabledUsers = array_filter(
+            $users,
+            fn (array $user): bool => $user['enabled'] && in_array($user['role'], $requiredRoles, true),
+        );
+        $missingRoles = array_diff($requiredRoles, array_unique($roles));
+        $firstEditorIndex = array_search('editor', $roles, true);
+        $firstUserHasEmailKey = array_key_exists('email', $users[0]) ? 'yes' : 'no';
 
         return [
-            'key' => 'functions',
-            'title' => '函数、参数与闭包',
-            'level' => '基础',
-            'summary' => '练习类型声明、默认参数、命名参数、可变参数、闭包和箭头函数。',
+            'key' => 'arrays-filter-search',
+            'title' => '数组筛选与查找函数',
+            'level' => '高频',
+            'summary' => '整理 array_filter、in_array、array_search、array_diff 等集合判断函数。',
+            'methods' => [
+                'array_filter()：按条件筛选数组，注意会保留原 key。',
+                'in_array()：判断值是否存在，第三个参数建议传 true 开启严格比较。',
+                'array_search()：查找值所在 key，返回值可能是 0，判断时要用 !== false。',
+                'array_key_exists() / isset()：判断 key 是否存在；isset 对 null 返回 false。',
+                'array_unique()：去重，常用于角色、标签、状态集合。',
+                'array_diff() / array_intersect()：求差集、交集，适合权限和标签比对。',
+            ],
             'concepts' => [
-                '函数参数和返回值尽量声明类型，便于静态分析和团队协作。',
-                '命名参数能提升多参数调用的可读性。',
-                '...$values 可接收可变数量参数，也可用于数组展开。',
-                '箭头函数自动按值捕获外部变量，适合短回调。',
+                '筛选后如果要返回 JSON 列表，通常需要 array_values() 重排索引。',
+                '查找函数返回 0 时容易被当成 false，这是 PHP 常见坑。',
+                '权限、状态、标签这类集合判断要优先开启严格比较。',
             ],
             'code' => <<<'PHP'
-function subtotal(array $prices, int $discount = 0): int
-{
-    return array_sum($prices) - $discount;
-}
+$users = [
+    ['id' => 1, 'name' => 'Tao', 'role' => 'admin', 'enabled' => true],
+    ['id' => 2, 'name' => 'Lin', 'role' => 'editor', 'enabled' => true],
+    ['id' => 3, 'name' => 'Ning', 'role' => 'viewer', 'enabled' => false],
+];
 
-$subtotal = subtotal([40, 60, 100], discount: 20);
-$multiplier = 3;
-$triple = fn (int $value): int => $value * $multiplier;
+$requiredRoles = ['admin', 'editor', 'analyst'];
+$roles = array_column($users, 'role');
+
+$enabledUsers = array_filter(
+    $users,
+    fn (array $user): bool => $user['enabled'] && in_array($user['role'], $requiredRoles, true),
+);
+
+$missingRoles = array_diff($requiredRoles, array_unique($roles));
+$firstEditorIndex = array_search('editor', $roles, true);
+$firstUserHasEmailKey = array_key_exists('email', $users[0]) ? 'yes' : 'no';
 PHP,
             'output' => [
-                'subtotal='.$subtotal,
-                'triple_7='.$triple(7),
+                'enabled_ids='.implode(', ', array_column($enabledUsers, 'id')),
+                'missing_roles='.implode(', ', $missingRoles),
+                'first_editor_index='.(string) $firstEditorIndex,
+                'first_user_has_email_key='.$firstUserHasEmailKey,
             ],
             'practice' => [
-                '写一个函数接收多个分数并返回最高分。',
-                '用命名参数调用一个包含默认值的函数。',
-                '用闭包完成价格数组的折扣计算。',
+                '用 array_filter + array_values 输出启用用户列表，保证 JSON 是数组不是对象。',
+                '用 in_array(..., true) 判断请求状态是否在白名单内。',
+                '用 array_diff 找出用户缺少的权限编码。',
             ],
         ];
     }
@@ -291,61 +242,83 @@ PHP,
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
      *     practice: array<int, string>
      * }
      */
-    private function controlFlow(): array
+    private function arrayAggregateSort(): array
     {
-        $role = 'editor';
-        $permission = match ($role) {
-            'admin' => 'all',
-            'editor' => 'write',
-            'viewer' => 'read',
-            default => 'none',
-        };
+        $items = [
+            ['name' => 'cache', 'score' => 80, 'weight' => 2],
+            ['name' => 'queue', 'score' => 95, 'weight' => 3],
+            ['name' => 'database', 'score' => 88, 'weight' => 4],
+        ];
+        $weightedTotal = array_reduce(
+            $items,
+            fn (int $carry, array $item): int => $carry + $item['score'] * $item['weight'],
+            0,
+        );
+        $scoreSum = array_sum(array_column($items, 'score'));
 
-        $steps = [];
+        usort($items, fn (array $left, array $right): int => $right['score'] <=> $left['score']);
 
-        for ($index = 1; $index <= 3; $index++) {
-            $steps[] = 'step-'.$index;
-        }
+        $config = array_replace(
+            ['timeout' => 3, 'retries' => 1, 'trace' => false],
+            ['retries' => 2, 'trace' => true],
+        );
 
         return [
-            'key' => 'control-flow',
-            'title' => '流程控制',
-            'level' => '基础',
-            'summary' => '练习 if、match、for、foreach、break、continue 和早返回。',
+            'key' => 'arrays-aggregate-sort',
+            'title' => '数组聚合、合并与排序函数',
+            'level' => '高频',
+            'summary' => '练 array_reduce、array_sum、array_merge/replace、sort/usort 等常用整理函数。',
+            'methods' => [
+                'array_reduce()：把数组折叠成一个结果，适合复杂汇总。',
+                'array_sum() / count()：快速求和、计数，常配合 array_column。',
+                'array_merge()：合并数组；字符串 key 后者覆盖，数字 key 重新编号。',
+                'array_replace()：按 key 覆盖，更适合默认配置被用户配置覆盖。',
+                'sort() / asort() / ksort() / usort()：按值、保留 key、按 key、自定义排序。',
+                'array_multisort()：多列排序时常用，但可读性要谨慎控制。',
+            ],
             'concepts' => [
-                'match 使用严格比较，并且必须覆盖所有可能分支或提供 default。',
-                'foreach 更适合遍历数组，for 更适合固定次数循环。',
-                '早返回可以减少深层嵌套，让业务条件更清晰。',
-                'break 和 continue 要谨慎使用，避免循环逻辑难读。',
+                '配置覆盖优先考虑 array_replace，避免数字 key 被 array_merge 重排带来误解。',
+                '业务对象排序通常用 usort 和太空船操作符 <=>。',
+                'array_reduce 适合复杂聚合，但简单求和用 array_sum 更直接。',
             ],
             'code' => <<<'PHP'
-$role = 'editor';
+$items = [
+    ['name' => 'cache', 'score' => 80, 'weight' => 2],
+    ['name' => 'queue', 'score' => 95, 'weight' => 3],
+    ['name' => 'database', 'score' => 88, 'weight' => 4],
+];
 
-$permission = match ($role) {
-    'admin' => 'all',
-    'editor' => 'write',
-    'viewer' => 'read',
-    default => 'none',
-};
+$weightedTotal = array_reduce(
+    $items,
+    fn (int $carry, array $item): int => $carry + $item['score'] * $item['weight'],
+    0,
+);
+$scoreSum = array_sum(array_column($items, 'score'));
 
-for ($index = 1; $index <= 3; $index++) {
-    $steps[] = 'step-'.$index;
-}
+usort($items, fn (array $left, array $right): int => $right['score'] <=> $left['score']);
+
+$config = array_replace(
+    ['timeout' => 3, 'retries' => 1, 'trace' => false],
+    ['retries' => 2, 'trace' => true],
+);
 PHP,
             'output' => [
-                'permission='.$permission,
-                'steps='.implode(' > ', $steps),
+                'weighted_total='.$weightedTotal,
+                'score_sum='.$scoreSum,
+                'top_item='.$items[0]['name'],
+                'config_retries='.$config['retries'],
             ],
             'practice' => [
-                '用 match 把订单状态转换成中文展示文案。',
-                '用 foreach 汇总一个班级每个学生的分数。',
-                '重写一个多层 if，让非法输入提前返回。',
+                '用 array_reduce 汇总订单总金额、最大金额和订单数。',
+                '用 usort 按 created_at 倒序排列任务列表。',
+                '用 array_replace 实现默认查询条件和请求查询条件合并。',
             ],
         ];
     }
@@ -356,58 +329,56 @@ PHP,
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
      *     practice: array<int, string>
      * }
      */
-    private function objectOriented(): array
+    private function stringCleanFormat(): array
     {
-        $lesson = new PhpLabLesson('oop', '面向对象基础');
-        $lesson->publish();
+        $rawCode = '  revenue amount  ';
+        $code = strtoupper(str_replace(' ', '_', trim($rawCode)));
+        $title = ucwords(str_replace('_', ' ', strtolower('MONTHLY_REVENUE')));
+        $orderNo = str_pad('42', 6, '0', STR_PAD_LEFT);
+        $message = sprintf('%s: %s', $orderNo, number_format(1288.5, 2, '.', ','));
 
         return [
-            'key' => 'oop',
-            'title' => '类、对象、接口与枚举',
-            'level' => '进阶',
-            'summary' => '练习构造函数、属性、方法、接口、枚举、readonly 和对象状态变化。',
+            'key' => 'strings-clean-format',
+            'title' => '字符串清理与格式化函数',
+            'level' => '高频',
+            'summary' => '整理 trim、大小写转换、sprintf、number_format、str_pad 等展示层常用函数。',
+            'methods' => [
+                'trim() / ltrim() / rtrim()：清理两侧、左侧、右侧空白或指定字符。',
+                'strtolower() / strtoupper()：英文大小写转换；多字节文本看 mb_strtolower。',
+                'ucfirst() / ucwords()：首字母、每个单词首字母大写。',
+                'sprintf()：固定格式字符串，适合日志、编号、提示文案。',
+                'number_format()：金额、百分比、统计数值展示格式化。',
+                'str_pad()：左补零、右补空格，常用于编号对齐。',
+            ],
             'concepts' => [
-                '类把数据和行为组织在一起，适合表达有生命周期的业务对象。',
-                '接口定义能力边界，调用方依赖接口能降低耦合。',
-                'enum 适合替代散落的状态字符串。',
-                'readonly 属性适合表达创建后不应变化的数据。',
+                '输入清洗通常先 trim，再做格式转换或校验。',
+                '展示格式和存储值要分开，金额不要直接存 number_format 后的字符串。',
+                '处理中文长度和截取时优先考虑 mb_* 系列函数。',
             ],
             'code' => <<<'PHP'
-enum LessonStatus: string
-{
-    case Draft = 'draft';
-    case Published = 'published';
-}
+$rawCode = '  revenue amount  ';
+$code = strtoupper(str_replace(' ', '_', trim($rawCode)));
 
-final class Lesson
-{
-    public LessonStatus $status = LessonStatus::Draft;
-
-    public function __construct(
-        public readonly string $key,
-        public readonly string $title,
-    ) {}
-
-    public function publish(): void
-    {
-        $this->status = LessonStatus::Published;
-    }
-}
+$title = ucwords(str_replace('_', ' ', strtolower('MONTHLY_REVENUE')));
+$orderNo = str_pad('42', 6, '0', STR_PAD_LEFT);
+$message = sprintf('%s: %s', $orderNo, number_format(1288.5, 2, '.', ','));
 PHP,
             'output' => [
-                'lesson='.$lesson->key.' / '.$lesson->title,
-                'status='.$lesson->status->value,
+                'code='.$code,
+                'title='.$title,
+                'message='.$message,
             ],
             'practice' => [
-                '定义一个 UserProfile 类，包含姓名、邮箱和激活状态。',
-                '用 enum 表达订单状态，并为每个状态提供中文 label。',
-                '定义一个接口，让不同通知渠道实现同一个 send 方法。',
+                '把用户输入的指标名称整理成大写下划线编码。',
+                '用 sprintf + str_pad 生成固定长度的订单号。',
+                '用 number_format 生成金额展示文案，但保留原始 float/int 用于计算。',
             ],
         ];
     }
@@ -418,59 +389,64 @@ PHP,
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
      *     practice: array<int, string>
      * }
      */
-    private function exceptions(): array
+    private function stringSearchSplit(): array
     {
-        try {
-            $result = $this->divide(100, 0);
-        } catch (\InvalidArgumentException $exception) {
-            $result = 'error: '.$exception->getMessage();
-        } finally {
-            $closed = true;
-        }
+        $email = 'tao@example.com';
+        $path = '/api/v1/metrics/revenue';
+        $tags = ' php, array , string ';
+        $domain = substr($email, strpos($email, '@') + 1);
+        $segments = explode('/', trim($path, '/'));
+        $cleanTags = array_map('trim', explode(',', $tags));
+        $routeName = str_replace('/', '.', trim($path, '/'));
+        $isMetricCode = preg_match('/^metric_[a-z_]+$/', 'metric_revenue_amount') === 1;
 
         return [
-            'key' => 'exceptions',
-            'title' => '异常处理',
-            'level' => '基础',
-            'summary' => '练习 throw、try、catch、finally 和异常边界设计。',
+            'key' => 'strings-search-split',
+            'title' => '字符串查找、替换与拆分函数',
+            'level' => '高频',
+            'summary' => '整理 str_contains、strpos、substr、explode、implode、str_replace 和 preg_*。',
+            'methods' => [
+                'str_contains() / str_starts_with() / str_ends_with()：语义化判断包含、前缀、后缀。',
+                'strpos()：查找位置，返回 0 时要用 !== false 判断。',
+                'substr() / strlen()：截取和长度；中文内容优先考虑 mb_substr、mb_strlen。',
+                'explode() / implode()：字符串和数组之间转换。',
+                'str_replace()：简单替换，适合固定字符或固定片段。',
+                'preg_match() / preg_replace()：复杂模式匹配和替换。',
+            ],
             'concepts' => [
-                '异常适合表达无法继续当前流程的错误。',
-                'catch 应该捕获自己能处理或能补充上下文的异常。',
-                'finally 无论是否抛异常都会执行，常用于释放资源。',
-                '业务层不要吞掉异常后返回含糊结果。',
+                '只判断是否包含时优先用 str_contains，可读性比 strpos 更直接。',
+                '拆分用户输入后通常要 array_map("trim", $items) 再过滤空值。',
+                '正则适合复杂规则，但简单替换不要过早使用 preg_replace。',
             ],
             'code' => <<<'PHP'
-function divide(int $left, int $right): float
-{
-    if ($right === 0) {
-        throw new InvalidArgumentException('除数不能为 0');
-    }
+$email = 'tao@example.com';
+$path = '/api/v1/metrics/revenue';
+$tags = ' php, array , string ';
 
-    return $left / $right;
-}
-
-try {
-    $result = divide(100, 0);
-} catch (InvalidArgumentException $exception) {
-    $result = 'error: '.$exception->getMessage();
-} finally {
-    $closed = true;
-}
+$domain = substr($email, strpos($email, '@') + 1);
+$segments = explode('/', trim($path, '/'));
+$cleanTags = array_map('trim', explode(',', $tags));
+$routeName = str_replace('/', '.', trim($path, '/'));
+$isMetricCode = preg_match('/^metric_[a-z_]+$/', 'metric_revenue_amount') === 1;
 PHP,
             'output' => [
-                $result,
-                'finally_closed='.($closed ? 'yes' : 'no'),
+                'domain='.$domain,
+                'segments='.implode(' > ', $segments),
+                'tags='.implode('|', $cleanTags),
+                'route='.$routeName,
+                'is_metric_code='.($isMetricCode ? 'yes' : 'no'),
             ],
             'practice' => [
-                '给用户注册逻辑增加邮箱格式异常。',
-                '捕获一个业务异常并转换成页面错误提示。',
-                '在 finally 中记录一次资源释放状态。',
+                '用 explode + array_map("trim", ...) 解析逗号分隔的标签输入。',
+                '用 str_contains / str_ends_with 判断上传文件名是否符合规则。',
+                '用 preg_match 校验 metric_xxx 格式的指标编码。',
             ],
         ];
     }
@@ -481,103 +457,194 @@ PHP,
      *     title: string,
      *     level: string,
      *     summary: string,
+     *     methods: array<int, string>,
      *     concepts: array<int, string>,
      *     code: string,
      *     output: array<int, string>,
      *     practice: array<int, string>
      * }
      */
-    private function generators(): array
+    private function typeValidateConvert(): array
     {
-        $rows = [];
-
-        foreach ($this->metricRows(3) as $row) {
-            $rows[] = $row['code'].':'.$row['value'];
-        }
+        $input = [
+            'page' => '2',
+            'email' => ' tao@example.com ',
+            'active' => '1',
+            'limit' => null,
+        ];
+        $page = filter_var($input['page'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+        $email = filter_var(trim($input['email']), FILTER_VALIDATE_EMAIL) ?: 'invalid';
+        $active = filter_var($input['active'], FILTER_VALIDATE_BOOLEAN);
+        $limit = isset($input['limit']) ? (int) $input['limit'] : 20;
 
         return [
-            'key' => 'generators',
-            'title' => '生成器与惰性遍历',
-            'level' => '进阶',
-            'summary' => '练习 yield、逐行处理和低内存数据遍历。',
+            'key' => 'type-validate-convert',
+            'title' => '类型判断、过滤与转换函数',
+            'level' => '常用',
+            'summary' => '整理 is_*、filter_var、intval/floatval/boolval、isset/empty 等输入处理函数。',
+            'methods' => [
+                'is_int() / is_string() / is_array() / is_numeric()：基础类型判断。',
+                'get_debug_type()：调试时查看变量真实类型，比 gettype 输出更贴近现代 PHP。',
+                'filter_var()：校验 email、url、int、boolean 等输入。',
+                'intval() / floatval() / boolval()：显式基础类型转换。',
+                'isset()：判断变量或数组 key 存在且不为 null。',
+                'empty()：判断空值，但 "0" 也会被认为 empty，业务判断要谨慎。',
+            ],
             'concepts' => [
-                'yield 会返回 Generator，不会一次性构建完整数组。',
-                '适合处理导入文件、大结果集和流式数据。',
-                '生成器只能按迭代顺序消费，不能像数组一样随机读取。',
-                'Laravel LazyCollection 底层思想与生成器接近。',
+                '外部输入先过滤和转换，再进入业务逻辑。',
+                'filter_var 校验失败可能返回 false，和合法值 0 要区分清楚。',
+                'isset 与 array_key_exists 在 null 字段上的结果不同。',
             ],
             'code' => <<<'PHP'
-function metricRows(int $count): Generator
-{
-    for ($index = 1; $index <= $count; $index++) {
-        yield [
-            'code' => 'metric_'.$index,
-            'value' => $index * 10,
-        ];
-    }
-}
+$input = [
+    'page' => '2',
+    'email' => ' tao@example.com ',
+    'active' => '1',
+    'limit' => null,
+];
 
-foreach (metricRows(3) as $row) {
-    $rows[] = $row['code'].':'.$row['value'];
-}
+$page = filter_var($input['page'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+$email = filter_var(trim($input['email']), FILTER_VALIDATE_EMAIL) ?: 'invalid';
+$active = filter_var($input['active'], FILTER_VALIDATE_BOOLEAN);
+$limit = isset($input['limit']) ? (int) $input['limit'] : 20;
 PHP,
-            'output' => $rows,
+            'output' => [
+                'page='.$page,
+                'email='.$email,
+                'active='.($active ? 'true' : 'false'),
+                'limit='.$limit,
+            ],
             'practice' => [
-                '用生成器模拟逐行读取 CSV 数据。',
-                '对比 range(1, 100000) 和 yield 生成数字的内存差异。',
-                '把一个大数组处理函数改成逐条 yield。',
+                '用 filter_var 校验 email、url、page 三个请求字段。',
+                '比较 isset($data["x"]) 和 array_key_exists("x", $data) 在 null 值上的差异。',
+                '写一组 empty 判断样例，观察 0、"0"、""、[]、null 的结果。',
             ],
         ];
     }
 
     /**
-     * @param  array<int, int>  $prices
+     * @return array{
+     *     key: string,
+     *     title: string,
+     *     level: string,
+     *     summary: string,
+     *     methods: array<int, string>,
+     *     concepts: array<int, string>,
+     *     code: string,
+     *     output: array<int, string>,
+     *     practice: array<int, string>
+     * }
      */
-    private function subtotal(array $prices, int $discount = 0): int
+    private function jsonUrl(): array
     {
-        return array_sum($prices) - $discount;
-    }
+        $payload = ['metric' => 'revenue', 'filters' => ['region' => 'cn', 'page' => 2]];
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        $query = http_build_query(['q' => 'PHP array_map', 'page' => 2]);
+        $url = 'https://example.com/search?'.$query;
+        parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
 
-    private function divide(int $left, int $right): float
-    {
-        if ($right === 0) {
-            throw new \InvalidArgumentException('除数不能为 0');
-        }
+        return [
+            'key' => 'json-url',
+            'title' => 'JSON、URL 与查询字符串函数',
+            'level' => '常用',
+            'summary' => '整理 json_encode/json_decode、http_build_query、parse_url、parse_str 等接口常用函数。',
+            'methods' => [
+                'json_encode()：数组或对象转 JSON，接口输出常用。',
+                'json_decode()：JSON 转数组或对象，建议配合 JSON_THROW_ON_ERROR。',
+                'http_build_query()：数组生成 query string。',
+                'parse_url()：拆 URL 的 scheme、host、path、query。',
+                'parse_str()：把 query string 解析为数组。',
+                'urlencode() / rawurlencode()：URL 参数编码，rawurlencode 更符合 RFC 3986。',
+            ],
+            'concepts' => [
+                'JSON 解析失败不要静默吞掉，JSON_THROW_ON_ERROR 更适合后端接口。',
+                'query string 不建议手拼，http_build_query 能处理编码细节。',
+                'parse_str 会写入传入的数组变量，避免不传第二个参数。',
+            ],
+            'code' => <<<'PHP'
+$payload = ['metric' => 'revenue', 'filters' => ['region' => 'cn', 'page' => 2]];
 
-        return $left / $right;
+$json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+$decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+$query = http_build_query(['q' => 'PHP array_map', 'page' => 2]);
+$url = 'https://example.com/search?'.$query;
+parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $params);
+PHP,
+            'output' => [
+                'json='.$json,
+                'metric='.$decoded['metric'],
+                'query='.$query,
+                'q='.$params['q'],
+            ],
+            'practice' => [
+                '用 JSON_THROW_ON_ERROR 解析一段接口响应，并捕获异常。',
+                '用 http_build_query 生成搜索 URL 的查询参数。',
+                '用 parse_url + parse_str 从回调 URL 中取出 code 和 state。',
+            ],
+        ];
     }
 
     /**
-     * @return \Generator<int, array{code: string, value: int}>
+     * @return array{
+     *     key: string,
+     *     title: string,
+     *     level: string,
+     *     summary: string,
+     *     methods: array<int, string>,
+     *     concepts: array<int, string>,
+     *     code: string,
+     *     output: array<int, string>,
+     *     practice: array<int, string>
+     * }
      */
-    private function metricRows(int $count): \Generator
+    private function datePath(): array
     {
-        for ($index = 1; $index <= $count; $index++) {
-            yield [
-                'code' => 'metric_'.$index,
-                'value' => $index * 10,
-            ];
-        }
-    }
-}
+        $now = new \DateTimeImmutable('2026-06-17 09:30:00');
+        $nextWeek = $now->modify('+7 days');
+        $days = $now->diff($nextWeek)->days;
+        $path = '/var/app/storage/reports/monthly.csv';
+        $info = pathinfo($path);
 
-enum PhpLabLessonStatus: string
-{
-    case Draft = 'draft';
-    case Published = 'published';
-}
+        return [
+            'key' => 'date-path',
+            'title' => '日期时间与文件路径函数',
+            'level' => '常用',
+            'summary' => '整理 DateTimeImmutable、strtotime/date、basename/dirname/pathinfo 等日常工具函数。',
+            'methods' => [
+                'DateTimeImmutable：不可变日期对象，适合业务代码避免意外修改原值。',
+                'format() / modify() / diff()：格式化、偏移、计算日期差。',
+                'strtotime() / date()：老代码常见，简单场景可读性尚可。',
+                'basename() / dirname()：取文件名、目录名。',
+                'pathinfo()：一次性取 dirname、basename、extension、filename。',
+                'file_exists() / is_file() / is_dir()：文件和目录存在性判断。',
+            ],
+            'concepts' => [
+                '新业务日期逻辑优先使用 DateTimeImmutable，避免原对象被 modify 改掉。',
+                '路径拆解用 pathinfo 比手写 explode 更稳。',
+                '文件存在性判断要区分路径存在、普通文件、目录三种语义。',
+            ],
+            'code' => <<<'PHP'
+$now = new DateTimeImmutable('2026-06-17 09:30:00');
+$nextWeek = $now->modify('+7 days');
+$days = $now->diff($nextWeek)->days;
 
-final class PhpLabLesson
-{
-    public PhpLabLessonStatus $status = PhpLabLessonStatus::Draft;
-
-    public function __construct(
-        public readonly string $key,
-        public readonly string $title,
-    ) {}
-
-    public function publish(): void
-    {
-        $this->status = PhpLabLessonStatus::Published;
+$path = '/var/app/storage/reports/monthly.csv';
+$info = pathinfo($path);
+PHP,
+            'output' => [
+                'today='.$now->format('Y-m-d'),
+                'next_week='.$nextWeek->format('Y-m-d'),
+                'days='.$days,
+                'basename='.$info['basename'],
+                'extension='.$info['extension'],
+            ],
+            'practice' => [
+                '用 DateTimeImmutable 计算本月第一天和下月第一天。',
+                '用 diff 计算任务截止日期距离今天还有几天。',
+                '用 pathinfo 校验上传文件扩展名并生成新文件名。',
+            ],
+        ];
     }
 }

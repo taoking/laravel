@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $topic['title'] }} - PHP 基础练习实验室</title>
+    <title>{{ $topic['title'] }} - PHP 常用函数练习实验室</title>
     <style>
         body { color: #202124; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7fb; }
         main { max-width: 1180px; margin: 0 auto; padding: 32px 20px 48px; }
@@ -39,7 +39,16 @@
     </nav>
 
     <section class="panel">
-        <h2>知识点</h2>
+        <h2>常用函数</h2>
+        <ul>
+            @foreach ($topic['methods'] as $method)
+                <li><code>{{ $method }}</code></li>
+            @endforeach
+        </ul>
+    </section>
+
+    <section class="panel">
+        <h2>使用要点</h2>
         <ul>
             @foreach ($topic['concepts'] as $concept)
                 <li>{{ $concept }}</li>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PHP 基础练习实验室</title>
+    <title>PHP 常用函数练习实验室</title>
     <style>
         body { color: #202124; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f5f7fb; }
         main { max-width: 1180px; margin: 0 auto; padding: 32px 20px 48px; }
@@ -24,8 +24,8 @@
 </head>
 <body>
 <main>
-    <h1>PHP 基础练习实验室</h1>
-    <p>面向 PHP 基础语法、常用函数和运行时特性的练习模块。每个主题包含知识点、示例代码、运行结果和动手任务。</p>
+    <h1>PHP 常用函数练习实验室</h1>
+    <p>面向日常后端开发高频函数的练习模块。每个主题列出常用函数、使用场景、示例代码、运行结果和动手任务。</p>
 
     <nav class="toolbar" aria-label="PHP Lab 快速入口">
         @foreach ($topics as $topic)
@@ -42,7 +42,7 @@
             <th>主题</th>
             <th>阶段</th>
             <th>练习内容</th>
-            <th>核心知识点</th>
+            <th>常用函数</th>
             <th>详情</th>
         </tr>
         </thead>
@@ -52,7 +52,7 @@
                 <td>{{ $topic['title'] }}</td>
                 <td><span class="badge">{{ $topic['level'] }}</span></td>
                 <td>{{ $topic['summary'] }}</td>
-                <td class="muted">{{ implode('、', array_slice($topic['concepts'], 0, 2)) }}</td>
+                <td class="muted">{{ implode('、', array_slice($topic['methods'], 0, 3)) }}</td>
                 <td>
                     <a href="{{ route('php-lab.show', ['topic' => $topic['key']]) }}">
                         开始练习
