@@ -56,6 +56,20 @@ class LiveRoom extends Model
         return $this->hasMany(ChatMessage::class);
     }
 
+    /**
+     * Get all supported room statuses.
+     *
+     * @return array<int, string>
+     */
+    public static function statuses(): array
+    {
+        return [
+            self::STATUS_SCHEDULED,
+            self::STATUS_LIVE,
+            self::STATUS_ENDED,
+        ];
+    }
+
     public function isLive(): bool
     {
         return $this->status === self::STATUS_LIVE;

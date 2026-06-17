@@ -44,7 +44,7 @@
                 accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
                 class="mt-2 block w-full text-sm text-slate-700 file:mr-4 file:rounded file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700"
             >
-            <p class="mt-2 text-xs text-slate-500">Allowed: mp4, mov, webm. Maximum size: 100 MB.</p>
+            <p class="mt-2 text-xs text-slate-500">Allowed: mp4, mov, webm. Maximum size: 500 MB.</p>
         </div>
 
         <div class="flex items-center gap-3">

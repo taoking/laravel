@@ -19,15 +19,48 @@
                 <p class="mt-2 text-slate-600">{{ $room->description }}</p>
             @endif
         </div>
-        <a href="{{ route('rooms.index') }}" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-            Back to rooms
-        </a>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            @if ($room->status !== \App\Models\LiveRoom::STATUS_LIVE)
+                <form method="POST" action="{{ route('rooms.status.update', $room) }}">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="status" value="{{ \App\Models\LiveRoom::STATUS_LIVE }}">
+                    <button type="submit" class="rounded bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800">Go live</button>
+                </form>
+            @endif
+            @if ($room->status !== \App\Models\LiveRoom::STATUS_ENDED)
+                <form method="POST" action="{{ route('rooms.status.update', $room) }}">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="status" value="{{ \App\Models\LiveRoom::STATUS_ENDED }}">
+                    <button type="submit" class="rounded bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-950">End room</button>
+                </form>
+            @endif
+            <a href="{{ route('rooms.edit', $room) }}" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                Edit
+            </a>
+            <a href="{{ route('rooms.index') }}" class="rounded border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+                Back
+            </a>
+        </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <section class="space-y-4">
             <div class="rounded border border-slate-200 bg-white p-4">
-                @if ($video && $video->isPlayable())
+                @if ($video && $video->hlsReady())
+                    <video
+                        controls
+                        preload="metadata"
+                        class="aspect-video w-full rounded bg-black"
+                        data-hls-player
+                        data-hls-url="{{ route('videos.hls.playlist', $video) }}"
+                        data-fallback-url="{{ $video->isPlayable() ? $video->playback_url : route('videos.hls.playlist', $video) }}"
+                    >
+                        Your browser does not support HTML5 video playback.
+                    </video>
+                    <p class="mt-3 text-sm text-emerald-700">Pseudo live is playing this room's bound HLS video.</p>
+                @elseif ($video && $video->isPlayable())
                     <video
                         controls
                         preload="metadata"
@@ -43,6 +76,7 @@
                         @endunless
                         Your browser does not support HTML5 video playback.
                     </video>
+                    <p class="mt-3 text-sm text-amber-700">The bound video is using MP4 fallback because HLS is not ready yet.</p>
                 @elseif ($room->stream_url)
                     <video
                         controls

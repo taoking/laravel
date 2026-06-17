@@ -20,5 +20,10 @@ Route::get('/videos/{video}/hls/segment/{filename}', [VideoHlsController::class,
     ->name('videos.hls.segment');
 
 Route::get('/rooms', [LiveRoomController::class, 'index'])->name('rooms.index');
+Route::get('/rooms/create', [LiveRoomController::class, 'create'])->name('rooms.create');
+Route::post('/rooms', [LiveRoomController::class, 'store'])->name('rooms.store');
+Route::get('/rooms/{room}/edit', [LiveRoomController::class, 'edit'])->name('rooms.edit');
+Route::patch('/rooms/{room}', [LiveRoomController::class, 'update'])->name('rooms.update');
+Route::patch('/rooms/{room}/status', [LiveRoomController::class, 'updateStatus'])->name('rooms.status.update');
 Route::get('/rooms/{room}', [LiveRoomController::class, 'show'])->name('rooms.show');
 Route::post('/rooms/{room}/messages', [ChatMessageController::class, 'store'])->name('rooms.messages.store');

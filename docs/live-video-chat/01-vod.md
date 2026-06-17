@@ -280,13 +280,27 @@ DB_PORT=33062
 
 ### 上传文件大小限制
 
-Laravel 校验限制是 `max:102400`，单位是 KB，也就是 100 MB。
+Laravel 校验限制是 `max:512000`，单位是 KB，也就是 500 MB。
 
 如果 PHP 自身限制更小，需要调整 `php.ini`：
 
 ```ini
-upload_max_filesize = 100M
-post_max_size = 100M
+upload_max_filesize = 500M
+post_max_size = 520M
+memory_limit = 1024M
+max_input_time = 300
+max_execution_time = 300
+```
+
+本地临时验证时，也可以直接用 CLI 参数启动开发服务器：
+
+```bash
+php -d upload_max_filesize=500M \
+    -d post_max_size=520M \
+    -d memory_limit=1024M \
+    -d max_input_time=300 \
+    -d max_execution_time=300 \
+    artisan serve
 ```
 
 ### 视频 404

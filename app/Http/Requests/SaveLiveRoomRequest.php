@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\LiveRoom;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreVideoRequest extends FormRequest
+class SaveLiveRoomRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,15 +16,16 @@ class StoreVideoRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            // Laravel's max rule for files is measured in kilobytes. 512000 KB = 500 MB.
-            'video' => ['required', 'file', 'mimes:mp4,mov,webm', 'max:512000'],
+            'status' => ['required', Rule::in(LiveRoom::statuses())],
+            'video_id' => ['nullable', 'integer', 'exists:videos,id'],
+            'stream_url' => ['nullable', 'url', 'max:2048'],
         ];
     }
 }
