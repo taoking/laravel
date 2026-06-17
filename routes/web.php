@@ -15,6 +15,13 @@ Route::get('/videos/create', [VideoController::class, 'create'])->name('videos.c
 Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
 Route::get('/videos/{video}', [VideoController::class, 'show'])->name('videos.show');
 Route::get('/videos/{video}/hls/playlist', [VideoHlsController::class, 'playlist'])->name('videos.hls.playlist');
+Route::get('/videos/{video}/hls/renditions/{label}/playlist', [VideoHlsController::class, 'renditionPlaylist'])
+    ->where('label', '[A-Za-z0-9._-]+')
+    ->name('videos.hls.rendition.playlist');
+Route::get('/videos/{video}/hls/renditions/{label}/segment/{filename}', [VideoHlsController::class, 'renditionSegment'])
+    ->where('label', '[A-Za-z0-9._-]+')
+    ->where('filename', '[A-Za-z0-9._-]+')
+    ->name('videos.hls.rendition.segment');
 Route::get('/videos/{video}/hls/segment/{filename}', [VideoHlsController::class, 'segment'])
     ->where('filename', '[A-Za-z0-9._-]+')
     ->name('videos.hls.segment');

@@ -3,6 +3,10 @@
 @section('title', $video->title)
 
 @section('content')
+    @php
+        $configuredRenditions = config('video.renditions', []);
+    @endphp
+
     <div class="mb-6 flex items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold">{{ $video->title }}</h1>
@@ -21,13 +25,15 @@
                 <img src="{{ $video->thumbnail_url }}" alt="Thumbnail for {{ $video->title }}" class="mb-4 aspect-video w-full rounded object-cover">
             @endif
 
-            @if ($video->isPlayable())
+            @if ($video->hlsReady() || $video->isPlayable())
                 <video
                     controls
                     preload="metadata"
                     class="aspect-video w-full rounded bg-black"
                     data-hls-player
-                    data-fallback-url="{{ $video->playback_url }}"
+                    @if ($video->isPlayable())
+                        data-fallback-url="{{ $video->playback_url }}"
+                    @endif
                     @if ($video->hlsReady())
                         data-hls-url="{{ route('videos.hls.playlist', $video) }}"
                     @endif
@@ -38,14 +44,18 @@
                     Your browser does not support HTML5 video playback.
                 </video>
 
-                @if ($video->hlsReady())
-                    <p class="mt-3 text-sm text-emerald-700">HLS is ready. The player will prefer the HLS playlist and fall back to the original file if needed.</p>
+                <p class="mt-3 text-sm text-slate-600">Playback source: <span class="font-medium text-slate-900">{{ $video->hlsSourceLabel() }}</span></p>
+
+                @if ($video->adaptiveHlsReady())
+                    <p class="mt-2 text-sm text-emerald-700">Adaptive HLS is ready. The player loads the master playlist and can switch between ready renditions.</p>
+                @elseif ($video->hlsReady())
+                    <p class="mt-2 text-sm text-emerald-700">Single-bitrate HLS is ready. The player will prefer HLS and fall back to the original file if needed.</p>
                 @elseif ($video->hls_status === 'processing')
-                    <p class="mt-3 text-sm text-amber-700">HLS is still processing. The original file is available as a fallback.</p>
+                    <p class="mt-2 text-sm text-amber-700">HLS is still processing. The original file is available as a fallback.</p>
                 @elseif ($video->hls_status === 'failed')
-                    <p class="mt-3 text-sm text-red-700">HLS generation failed. The original file is still available.</p>
+                    <p class="mt-2 text-sm text-red-700">HLS generation failed. The original file is still available.</p>
                 @else
-                    <p class="mt-3 text-sm text-slate-600">HLS has not been generated yet. The original file is available.</p>
+                    <p class="mt-2 text-sm text-slate-600">HLS has not been generated yet. The original file is available.</p>
                 @endif
             @else
                 <div class="flex aspect-video items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
@@ -92,10 +102,51 @@
                     <dt class="font-medium text-slate-500">HLS status</dt>
                     <dd class="mt-1 text-slate-900">{{ $video->hls_status ?? 'pending' }}</dd>
                 </div>
+                <div>
+                    <dt class="font-medium text-slate-500">Playback source</dt>
+                    <dd class="mt-1 text-slate-900">{{ $video->hlsSourceLabel() }}</dd>
+                </div>
                 @if ($video->hls_path)
                     <div>
                         <dt class="font-medium text-slate-500">HLS path</dt>
-                        <dd class="mt-1 break-all text-slate-900">local:{{ $video->hls_path }}</dd>
+                        <dd class="mt-1 break-all text-slate-900">{{ $video->hlsDiskName() }}:{{ $video->hls_path }}</dd>
+                    </div>
+                @endif
+                @if ($video->hls_playlist_path)
+                    <div>
+                        <dt class="font-medium text-slate-500">HLS playlist</dt>
+                        <dd class="mt-1 break-all text-slate-900">{{ $video->hlsDiskName() }}:{{ $video->hls_playlist_path }}</dd>
+                    </div>
+                @endif
+                @if ($configuredRenditions)
+                    <div>
+                        <dt class="font-medium text-slate-500">Renditions</dt>
+                        <dd class="mt-2 space-y-2">
+                            @foreach ($configuredRenditions as $label => $settings)
+                                @php
+                                    $rendition = $video->renditions->firstWhere('label', $label);
+                                    $sourceTooSmall = $video->height
+                                        && isset($settings['height'])
+                                        && (int) $video->height < (int) $settings['height']
+                                        && ! config('video.hls_allow_upscale', false);
+                                    $status = $rendition?->status ?? ($sourceTooSmall ? 'skipped' : 'pending');
+                                @endphp
+                                <div class="rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="font-medium text-slate-800">{{ $label }}</span>
+                                        <span class="text-xs text-slate-600">{{ $status }}</span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        {{ $settings['width'] ?? '?' }}x{{ $settings['height'] ?? '?' }},
+                                        video {{ $settings['video_bitrate'] ?? 'auto' }},
+                                        audio {{ $settings['audio_bitrate'] ?? 'auto' }}
+                                    </p>
+                                    @if ($rendition?->failure_reason)
+                                        <p class="mt-1 whitespace-pre-wrap text-xs text-red-700">{{ $rendition->failure_reason }}</p>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </dd>
                     </div>
                 @endif
                 @if ($video->hls_error_message)

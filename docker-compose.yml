@@ -26,6 +26,15 @@ services:
     volumes:
       - laravel_live_redis_data:/data
 
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: laravel_live_mediamtx
+    ports:
+      - "1935:1935"
+      - "8888:8888"
+      - "8889:8889"
+      - "8554:8554"
+
 volumes:
   laravel_live_mysql_data:
   laravel_live_redis_data:

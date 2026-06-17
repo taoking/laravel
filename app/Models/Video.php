@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class Video extends Model
@@ -60,6 +61,11 @@ class Video extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function renditions(): HasMany
+    {
+        return $this->hasMany(VideoRendition::class)->orderBy('height');
+    }
+
     public function getFileSizeForHumansAttribute(): string
     {
         if ($this->size_bytes === null) {
@@ -113,18 +119,74 @@ class Video extends Model
     public function hlsReady(): bool
     {
         return $this->hls_status === 'ready'
-            && $this->hls_path === $this->hlsDirectory()
-            && $this->hls_playlist_path === $this->hlsPlaylistPath()
-            && Storage::disk('local')->exists($this->hlsPlaylistPath());
+            && $this->hls_playlist_path
+            && Storage::disk($this->hlsDiskName())->exists($this->hls_playlist_path);
+    }
+
+    public function adaptiveHlsReady(): bool
+    {
+        return $this->hlsReady()
+            && $this->hls_playlist_path === $this->hlsMasterPlaylistPath();
+    }
+
+    public function legacyHlsReady(): bool
+    {
+        return $this->hlsReady()
+            && $this->hls_playlist_path === $this->hlsPlaylistPath();
     }
 
     public function hlsDirectory(): string
     {
-        return 'videos/hls/'.$this->id;
+        return trim((string) config('video.hls_directory', 'videos/hls'), '/').'/'.$this->id;
     }
 
     public function hlsPlaylistPath(): string
     {
         return $this->hlsDirectory().'/index.m3u8';
+    }
+
+    public function hlsMasterPlaylistPath(): string
+    {
+        return $this->hlsDirectory().'/'.config('video.hls_master_playlist_name', 'master.m3u8');
+    }
+
+    public function hlsRenditionDirectory(string $label): string
+    {
+        return $this->hlsDirectory().'/'.$label;
+    }
+
+    public function hlsRenditionPlaylistPath(string $label): string
+    {
+        return $this->hlsRenditionDirectory($label).'/index.m3u8';
+    }
+
+    public function hlsDiskName(): string
+    {
+        $configured = (string) config('video.hls_disk', 'public');
+
+        if ($this->hls_playlist_path && Storage::disk($configured)->exists($this->hls_playlist_path)) {
+            return $configured;
+        }
+
+        foreach (['public', 'local'] as $disk) {
+            if ($disk !== $configured && $this->hls_playlist_path && Storage::disk($disk)->exists($this->hls_playlist_path)) {
+                return $disk;
+            }
+        }
+
+        return $configured;
+    }
+
+    public function hlsSourceLabel(): string
+    {
+        if ($this->adaptiveHlsReady()) {
+            return 'Adaptive HLS master playlist';
+        }
+
+        if ($this->legacyHlsReady()) {
+            return 'Single-bitrate HLS playlist';
+        }
+
+        return 'MP4 fallback';
     }
 }

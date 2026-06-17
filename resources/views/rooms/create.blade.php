@@ -13,6 +13,7 @@
             'room' => $room,
             'videos' => $videos,
             'statuses' => $statuses,
+            'playbackTypes' => $playbackTypes,
             'submitLabel' => 'Create room',
         ])
     </form>

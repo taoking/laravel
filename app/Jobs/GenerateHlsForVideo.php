@@ -6,6 +6,7 @@ use App\Models\Video;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -66,7 +67,7 @@ class GenerateHlsForVideo implements ShouldQueue
         } catch (Throwable $exception) {
             $video->forceFill([
                 'hls_status' => 'failed',
-                'hls_error_message' => $exception->getMessage(),
+                'hls_error_message' => $this->failureMessage($exception),
             ])->save();
 
             throw $exception;
@@ -105,5 +106,10 @@ class GenerateHlsForVideo implements ShouldQueue
 
             throw new RuntimeException('ffmpeg HLS generation failed: '.($error ?: 'Unknown error.'));
         }
+    }
+
+    private function failureMessage(Throwable $exception): string
+    {
+        return Str::limit($exception->getMessage(), 4000);
     }
 }

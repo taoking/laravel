@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -63,12 +64,14 @@ class ProcessUploadedVideo implements ShouldQueue
                 'processed_at' => now(),
             ])->save();
 
-            GenerateHlsForVideo::dispatch($video->id);
+            GenerateAdaptiveHlsForVideo::dispatch($video->id);
         } catch (Throwable $exception) {
+            $message = $this->failureMessage($exception);
+
             $video->forceFill([
                 'status' => 'failed',
-                'error_message' => $exception->getMessage(),
-                'failure_reason' => $exception->getMessage(),
+                'error_message' => $message,
+                'failure_reason' => $message,
             ])->save();
 
             throw $exception;
@@ -170,5 +173,10 @@ class ProcessUploadedVideo implements ShouldQueue
         }
 
         return $process->getOutput();
+    }
+
+    private function failureMessage(Throwable $exception): string
+    {
+        return Str::limit($exception->getMessage(), 4000);
     }
 }

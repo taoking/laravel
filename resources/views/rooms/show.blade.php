@@ -5,7 +5,8 @@
 @section('content')
     @php
         $video = $room->video;
-        $streamPath = $room->stream_url ? parse_url($room->stream_url, PHP_URL_PATH) : null;
+        $externalPlaybackUrl = $room->effectivePlaybackUrl();
+        $streamPath = $externalPlaybackUrl ? parse_url($externalPlaybackUrl, PHP_URL_PATH) : null;
         $streamIsHls = $streamPath && str_contains($streamPath, '.m3u8');
     @endphp
 
@@ -48,7 +49,7 @@
     <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <section class="space-y-4">
             <div class="rounded border border-slate-200 bg-white p-4">
-                @if ($video && $video->hlsReady())
+                @if ($room->usesBoundVideo() && $video && $video->hlsReady())
                     <video
                         controls
                         preload="metadata"
@@ -59,8 +60,8 @@
                     >
                         Your browser does not support HTML5 video playback.
                     </video>
-                    <p class="mt-3 text-sm text-emerald-700">Pseudo live is playing this room's bound HLS video.</p>
-                @elseif ($video && $video->isPlayable())
+                    <p class="mt-3 text-sm text-emerald-700">Pseudo live is playing this room's bound video through {{ $video->hlsSourceLabel() }}.</p>
+                @elseif ($room->usesBoundVideo() && $video && $video->isPlayable())
                     <video
                         controls
                         preload="metadata"
@@ -77,21 +78,26 @@
                         Your browser does not support HTML5 video playback.
                     </video>
                     <p class="mt-3 text-sm text-amber-700">The bound video is using MP4 fallback because HLS is not ready yet.</p>
-                @elseif ($room->stream_url)
+                @elseif (($room->usesExternalHls() || $room->usesMediaMtx()) && $externalPlaybackUrl)
                     <video
                         controls
                         preload="metadata"
                         class="aspect-video w-full rounded bg-black"
                         @if ($streamIsHls)
                             data-hls-player
-                            data-hls-url="{{ $room->stream_url }}"
-                            data-fallback-url="{{ $room->stream_url }}"
+                            data-hls-url="{{ $externalPlaybackUrl }}"
+                            data-fallback-url="{{ $externalPlaybackUrl }}"
                         @else
-                            src="{{ $room->stream_url }}"
+                            src="{{ $externalPlaybackUrl }}"
                         @endif
                     >
                         Your browser does not support HTML5 video playback.
                     </video>
+                    @if ($room->usesMediaMtx())
+                        <p class="mt-3 text-sm text-amber-700">If the live HLS does not start yet, confirm MediaMTX is running, OBS is pushing, the stream key matches, and the m3u8 request is not 404.</p>
+                    @else
+                        <p class="mt-3 text-sm text-emerald-700">This room is playing an external HLS URL.</p>
+                    @endif
                 @else
                     <div class="flex aspect-video items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
                         No playback source has been attached to this room.
@@ -107,6 +113,10 @@
                         <dd class="mt-1 text-slate-900">{{ $room->status }}</dd>
                     </div>
                     <div>
+                        <dt class="font-medium text-slate-500">Playback type</dt>
+                        <dd class="mt-1 text-slate-900">{{ $room->playback_type ?: \App\Models\LiveRoom::PLAYBACK_VIDEO }}</dd>
+                    </div>
+                    <div>
                         <dt class="font-medium text-slate-500">Owner</dt>
                         <dd class="mt-1 text-slate-900">{{ $room->owner?->name ?? 'None' }}</dd>
                     </div>
@@ -118,11 +128,39 @@
                             </dd>
                         </div>
                     @endif
-                    @if ($room->stream_url)
+                    @if ($externalPlaybackUrl)
                         <div>
-                            <dt class="font-medium text-slate-500">Stream URL</dt>
-                            <dd class="mt-1 break-all text-slate-900">{{ $room->stream_url }}</dd>
+                            <dt class="font-medium text-slate-500">Playback URL</dt>
+                            <dd class="mt-1 break-all text-slate-900">{{ $externalPlaybackUrl }}</dd>
                         </div>
+                    @endif
+                    @if ($room->usesMediaMtx())
+                        <div>
+                            <dt class="font-medium text-slate-500">Media server</dt>
+                            <dd class="mt-1 text-slate-900">{{ $room->media_server ?? 'mediamtx' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-slate-500">Playback protocol</dt>
+                            <dd class="mt-1 text-slate-900">{{ $room->playback_protocol ?? 'hls' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-slate-500">Stream key</dt>
+                            <dd class="mt-1 break-all text-slate-900">{{ $room->stream_key }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-slate-500">OBS Server</dt>
+                            <dd class="mt-1 break-all text-slate-900">{{ $obsServerUrl }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium text-slate-500">OBS Stream Key</dt>
+                            <dd class="mt-1 break-all text-slate-900">{{ $room->stream_key }}</dd>
+                        </div>
+                        @if ($room->push_url)
+                            <div>
+                                <dt class="font-medium text-slate-500">Full push URL</dt>
+                                <dd class="mt-1 break-all text-slate-900">{{ $room->push_url }}</dd>
+                            </div>
+                        @endif
                     @endif
                     @if ($room->started_at)
                         <div>

@@ -52,6 +52,8 @@ class VideoController extends Controller
 
     public function show(Video $video): View
     {
+        $video->load('renditions');
+
         return view('videos.show', [
             'video' => $video,
         ]);

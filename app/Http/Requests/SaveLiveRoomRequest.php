@@ -24,8 +24,11 @@ class SaveLiveRoomRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'status' => ['required', Rule::in(LiveRoom::statuses())],
+            'playback_type' => ['nullable', Rule::in(LiveRoom::playbackTypes())],
             'video_id' => ['nullable', 'integer', 'exists:videos,id'],
             'stream_url' => ['nullable', 'url', 'max:2048'],
+            'stream_key' => ['nullable', 'string', 'max:255'],
+            'playback_url' => ['nullable', 'url', 'max:2048'],
         ];
     }
 }

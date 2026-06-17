@@ -52,10 +52,12 @@
                                 <span class="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ $room->status }}</span>
                             </td>
                             <td class="px-4 py-3 text-slate-700">
-                                @if ($room->video)
+                                @if ($room->usesBoundVideo() && $room->video)
                                     Video: {{ $room->video->title }}
-                                @elseif ($room->stream_url)
-                                    Stream URL
+                                @elseif ($room->usesMediaMtx())
+                                    MediaMTX: {{ $room->stream_key ?? 'test' }}
+                                @elseif ($room->usesExternalHls())
+                                    External HLS
                                 @else
                                     None
                                 @endif

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Video;
+use App\Models\VideoRendition;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -16,12 +17,51 @@ class VideoHlsController extends Controller
 
         abort_unless($video->hlsReady(), 404);
 
-        $disk = Storage::disk('local');
-        $contents = $disk->get($video->hlsPlaylistPath());
+        $disk = Storage::disk($video->hlsDiskName());
+        $contents = $disk->get($video->hls_playlist_path);
+        $rewritten = $video->adaptiveHlsReady()
+            ? $this->rewriteMasterPlaylist($contents, $video)
+            : $this->rewriteMediaPlaylist($contents, $video);
 
-        return response($this->rewritePlaylist($contents, $video), 200, [
+        return response($rewritten, 200, [
             'Content-Type' => 'application/vnd.apple.mpegurl',
             'Cache-Control' => 'no-store',
+        ]);
+    }
+
+    public function renditionPlaylist(Video $video, string $label): Response
+    {
+        $this->authorizeHlsAccess($video);
+
+        abort_unless($this->isSafeHlsLabel($label), 404);
+
+        $rendition = $this->readyRendition($video, $label);
+        $disk = Storage::disk($rendition->disk);
+
+        abort_unless($rendition->playlist_path && $disk->exists($rendition->playlist_path), 404);
+
+        return response($this->rewriteMediaPlaylist($disk->get($rendition->playlist_path), $video, $label), 200, [
+            'Content-Type' => 'application/vnd.apple.mpegurl',
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+
+    public function renditionSegment(Video $video, string $label, string $filename): BinaryFileResponse
+    {
+        $this->authorizeHlsAccess($video);
+
+        abort_unless($this->isSafeHlsLabel($label), 404);
+        abort_unless($this->isSafeHlsFilename($filename), 404);
+
+        $rendition = $this->readyRendition($video, $label);
+        $disk = Storage::disk($rendition->disk);
+        $path = $rendition->directory_path.'/'.$filename;
+
+        abort_unless($disk->exists($path), 404);
+
+        return response()->file($disk->path($path), [
+            'Content-Type' => $this->contentType($filename),
+            'Cache-Control' => 'public, max-age=31536000',
         ]);
     }
 
@@ -32,7 +72,7 @@ class VideoHlsController extends Controller
         abort_unless($video->hlsReady(), 404);
         abort_unless($this->isSafeHlsFilename($filename), 404);
 
-        $disk = Storage::disk('local');
+        $disk = Storage::disk($video->hlsDiskName());
         $path = $video->hlsDirectory().'/'.$filename;
 
         abort_unless($disk->exists($path), 404);
@@ -48,7 +88,7 @@ class VideoHlsController extends Controller
         abort_if($video->user_id !== null && auth()->id() !== $video->user_id, 403);
     }
 
-    private function rewritePlaylist(string $contents, Video $video): string
+    private function rewriteMasterPlaylist(string $contents, Video $video): string
     {
         $lines = preg_split('/\r\n|\r|\n/', $contents);
 
@@ -63,10 +103,54 @@ class VideoHlsController extends Controller
                 return $line;
             }
 
+            $parts = explode('/', str_replace('\\', '/', $trimmed));
+
+            if (count($parts) !== 2 || basename($parts[1]) !== 'index.m3u8') {
+                return $line;
+            }
+
+            $label = $parts[0];
+
+            if (! $this->isSafeHlsLabel($label)) {
+                return $line;
+            }
+
+            return route('videos.hls.rendition.playlist', [
+                'video' => $video,
+                'label' => $label,
+            ]);
+        }, $lines);
+
+        return implode("\n", $rewritten);
+    }
+
+    private function rewriteMediaPlaylist(string $contents, Video $video, ?string $label = null): string
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $contents);
+
+        if ($lines === false) {
+            return $contents;
+        }
+
+        $rewritten = array_map(function (string $line) use ($video, $label): string {
+            $trimmed = trim($line);
+
+            if ($trimmed === '' || Str::startsWith($trimmed, '#')) {
+                return $line;
+            }
+
             $filename = basename($trimmed);
 
             if (! $this->isSafeHlsFilename($filename)) {
                 return $line;
+            }
+
+            if ($label !== null) {
+                return route('videos.hls.rendition.segment', [
+                    'video' => $video,
+                    'label' => $label,
+                    'filename' => $filename,
+                ]);
             }
 
             return route('videos.hls.segment', [
@@ -76,6 +160,21 @@ class VideoHlsController extends Controller
         }, $lines);
 
         return implode("\n", $rewritten);
+    }
+
+    private function readyRendition(Video $video, string $label): VideoRendition
+    {
+        return $video->renditions()
+            ->where('label', $label)
+            ->where('status', VideoRendition::STATUS_READY)
+            ->firstOrFail();
+    }
+
+    private function isSafeHlsLabel(string $label): bool
+    {
+        return $label === basename($label)
+            && ! str_contains($label, '..')
+            && preg_match('/\A[A-Za-z0-9._-]+\z/', $label) === 1;
     }
 
     private function isSafeHlsFilename(string $filename): bool

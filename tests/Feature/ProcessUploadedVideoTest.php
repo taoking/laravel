@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\GenerateHlsForVideo;
+use App\Jobs\GenerateAdaptiveHlsForVideo;
 use App\Jobs\ProcessUploadedVideo;
 use App\Models\Video;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +36,7 @@ class ProcessUploadedVideoTest extends TestCase
             'video.ffmpeg_path' => $this->fakeFfmpegCommand(),
             'video.thumbnail_time' => '00:00:01',
         ]);
-        Queue::fake([GenerateHlsForVideo::class]);
+        Queue::fake([GenerateAdaptiveHlsForVideo::class]);
 
         (new ProcessUploadedVideo($video->id))->handle();
 
@@ -54,7 +54,7 @@ class ProcessUploadedVideoTest extends TestCase
         $this->assertNull($video->error_message);
 
         Storage::disk('public')->assertExists($video->thumbnail_path);
-        Queue::assertPushed(GenerateHlsForVideo::class, fn (GenerateHlsForVideo $job): bool => $job->videoId === $video->id);
+        Queue::assertPushed(GenerateAdaptiveHlsForVideo::class, fn (GenerateAdaptiveHlsForVideo $job): bool => $job->videoId === $video->id);
     }
 
     public function test_job_marks_video_as_failed_when_processing_fails(): void
@@ -77,7 +77,7 @@ class ProcessUploadedVideoTest extends TestCase
             'video.ffprobe_path' => $this->failingCommand('probe exploded'),
             'video.ffmpeg_path' => $this->fakeFfmpegCommand(),
         ]);
-        Queue::fake([GenerateHlsForVideo::class]);
+        Queue::fake([GenerateAdaptiveHlsForVideo::class]);
 
         try {
             (new ProcessUploadedVideo($video->id))->handle();
@@ -90,7 +90,7 @@ class ProcessUploadedVideoTest extends TestCase
 
         $this->assertSame('failed', $video->status);
         $this->assertStringContainsString('probe exploded', $video->error_message);
-        Queue::assertNotPushed(GenerateHlsForVideo::class);
+        Queue::assertNotPushed(GenerateAdaptiveHlsForVideo::class);
     }
 
     private function fakeFfprobeCommand(): string

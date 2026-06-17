@@ -14,6 +14,7 @@
             'room' => $room,
             'videos' => $videos,
             'statuses' => $statuses,
+            'playbackTypes' => $playbackTypes,
             'submitLabel' => 'Save changes',
         ])
     </form>

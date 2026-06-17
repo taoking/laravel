@@ -67,8 +67,9 @@ class LiveRoomManagementTest extends TestCase
             'title' => 'Updated Room',
             'description' => 'Updated details.',
             'status' => LiveRoom::STATUS_ENDED,
+            'playback_type' => LiveRoom::PLAYBACK_HLS_URL,
             'video_id' => $video->id,
-            'stream_url' => 'https://example.test/live/index.m3u8',
+            'playback_url' => 'https://example.test/live/index.m3u8',
         ]);
 
         $response
@@ -79,8 +80,10 @@ class LiveRoomManagementTest extends TestCase
 
         $this->assertSame('Updated Room', $room->title);
         $this->assertSame(LiveRoom::STATUS_ENDED, $room->status);
-        $this->assertSame($video->id, $room->video_id);
+        $this->assertSame(LiveRoom::PLAYBACK_HLS_URL, $room->playback_type);
+        $this->assertNull($room->video_id);
         $this->assertSame('https://example.test/live/index.m3u8', $room->stream_url);
+        $this->assertSame('https://example.test/live/index.m3u8', $room->playback_url);
         $this->assertNotNull($room->started_at);
         $this->assertNotNull($room->ended_at);
     }
@@ -138,8 +141,61 @@ class LiveRoomManagementTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee("Pseudo live is playing this room's bound HLS video.", false)
+            ->assertSee("Pseudo live is playing this room's bound video through", false)
             ->assertSee(route('videos.hls.playlist', $video), false);
+    }
+
+    public function test_live_room_can_be_created_for_mediamtx_playback(): void
+    {
+        config([
+            'live.mediamtx_rtmp_base_url' => 'rtmp://127.0.0.1:1935/live',
+            'live.mediamtx_hls_base_url' => 'http://127.0.0.1:8888/live',
+        ]);
+
+        $response = $this->post(route('rooms.store'), [
+            'title' => 'Real Live Class',
+            'description' => 'OBS pushes to MediaMTX.',
+            'status' => LiveRoom::STATUS_SCHEDULED,
+            'playback_type' => LiveRoom::PLAYBACK_MEDIAMTX,
+            'stream_key' => 'test',
+        ]);
+
+        $room = LiveRoom::query()->firstOrFail();
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('rooms.show', $room));
+
+        $this->assertSame(LiveRoom::PLAYBACK_MEDIAMTX, $room->playback_type);
+        $this->assertSame('test', $room->stream_key);
+        $this->assertSame('rtmp://127.0.0.1:1935/live/test', $room->push_url);
+        $this->assertSame('http://127.0.0.1:8888/live/test/index.m3u8', $room->playback_url);
+        $this->assertSame('hls', $room->playback_protocol);
+        $this->assertSame('mediamtx', $room->media_server);
+    }
+
+    public function test_mediamtx_room_detail_shows_obs_settings(): void
+    {
+        $room = LiveRoom::query()->create([
+            'title' => 'MediaMTX Room',
+            'status' => LiveRoom::STATUS_LIVE,
+            'playback_type' => LiveRoom::PLAYBACK_MEDIAMTX,
+            'stream_key' => 'test',
+            'push_url' => 'rtmp://127.0.0.1:1935/live/test',
+            'playback_url' => 'http://127.0.0.1:8888/live/test/index.m3u8',
+            'playback_protocol' => 'hls',
+            'media_server' => 'mediamtx',
+        ]);
+
+        $response = $this->get(route('rooms.show', $room));
+
+        $response
+            ->assertOk()
+            ->assertSee('MediaMTX Room')
+            ->assertSee('OBS Server')
+            ->assertSee('rtmp://127.0.0.1:1935/live')
+            ->assertSee('OBS Stream Key')
+            ->assertSee('http://127.0.0.1:8888/live/test/index.m3u8', false);
     }
 
     private function video(array $attributes = []): Video
