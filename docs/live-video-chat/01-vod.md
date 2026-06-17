@@ -292,7 +292,7 @@ max_input_time = 300
 max_execution_time = 300
 ```
 
-本地临时验证时，也可以直接用 CLI 参数启动开发服务器：
+本地临时验证时，可以直接用 PHP 内置服务器启动，并把这些参数传给真正处理 HTTP 请求的进程：
 
 ```bash
 php -d upload_max_filesize=500M \
@@ -300,8 +300,24 @@ php -d upload_max_filesize=500M \
     -d memory_limit=1024M \
     -d max_input_time=300 \
     -d max_execution_time=300 \
-    artisan serve
+    -S 127.0.0.1:8000 \
+    vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
 ```
+
+上面的命令需要在 `public/` 目录运行：
+
+```bash
+cd public
+php -d upload_max_filesize=500M \
+    -d post_max_size=520M \
+    -d memory_limit=1024M \
+    -d max_input_time=300 \
+    -d max_execution_time=300 \
+    -S 127.0.0.1:8000 \
+    ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
+```
+
+注意：`php -d ... artisan serve` 只会影响 `artisan serve` 父进程，Laravel 启动的 PHP 内置服务器子进程仍可能读取默认 `php.ini`，因此大文件上传可能继续被 `post_max_size=8M` 拦截。
 
 ### 视频 404
 
