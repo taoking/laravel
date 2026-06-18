@@ -1,0 +1,105 @@
+<?php
+
+namespace App\Modules\DataSource\Drivers;
+
+use App\Modules\DataSource\Models\DataSource;
+use App\Modules\DataSource\Services\IdentifierGuard;
+use Illuminate\Database\ConnectionInterface;
+use InvalidArgumentException;
+
+class MySqlMetadataDriver implements DatabaseDriverInterface
+{
+    public function test(ConnectionInterface $connection): void
+    {
+        $connection->selectOne('select 1 as connection_test');
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function tables(ConnectionInterface $connection, DataSource $dataSource): array
+    {
+        $rows = $connection->select(
+            <<<'SQL'
+select
+    TABLE_NAME as table_name,
+    TABLE_COMMENT as table_comment,
+    TABLE_TYPE as table_type,
+    TABLE_ROWS as row_count_estimate
+from information_schema.TABLES
+where TABLE_SCHEMA = ?
+order by TABLE_NAME asc
+SQL,
+            [$dataSource->database_name],
+        );
+
+        return collect($rows)
+            ->map(fn (object $row): array => [
+                'table_name' => (string) $row->table_name,
+                'table_comment' => $row->table_comment !== null ? (string) $row->table_comment : null,
+                'table_type' => $row->table_type !== null ? (string) $row->table_type : null,
+                'row_count_estimate' => $row->row_count_estimate !== null ? (int) $row->row_count_estimate : null,
+            ])
+            ->filter(fn (array $table): bool => IdentifierGuard::isSafe($table['table_name']))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function fields(ConnectionInterface $connection, DataSource $dataSource, string $tableName): array
+    {
+        if (! IdentifierGuard::isSafe($tableName)) {
+            throw new InvalidArgumentException('Unsafe table name.');
+        }
+
+        $rows = $connection->select(
+            <<<'SQL'
+select
+    COLUMN_NAME as field_name,
+    COLUMN_COMMENT as field_comment,
+    COLUMN_TYPE as data_type,
+    DATA_TYPE as base_data_type,
+    IS_NULLABLE as is_nullable,
+    COLUMN_KEY as column_key,
+    COLUMN_DEFAULT as default_value,
+    ORDINAL_POSITION as ordinal_position
+from information_schema.COLUMNS
+where TABLE_SCHEMA = ?
+  and TABLE_NAME = ?
+order by ORDINAL_POSITION asc
+SQL,
+            [$dataSource->database_name, $tableName],
+        );
+
+        return collect($rows)
+            ->map(fn (object $row): array => [
+                'table_name' => $tableName,
+                'field_name' => (string) $row->field_name,
+                'field_comment' => $row->field_comment !== null ? (string) $row->field_comment : null,
+                'data_type' => (string) $row->data_type,
+                'normalized_type' => $this->normalizeType((string) $row->base_data_type),
+                'is_nullable' => $row->is_nullable === 'YES',
+                'is_primary_key' => $row->column_key === 'PRI',
+                'default_value' => $row->default_value !== null ? (string) $row->default_value : null,
+                'ordinal_position' => (int) $row->ordinal_position,
+            ])
+            ->filter(fn (array $field): bool => IdentifierGuard::isSafe($field['field_name']))
+            ->values()
+            ->all();
+    }
+
+    private function normalizeType(string $dataType): string
+    {
+        return match (strtolower($dataType)) {
+            'tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint' => 'integer',
+            'decimal', 'numeric', 'float', 'double', 'real' => 'decimal',
+            'date' => 'date',
+            'datetime', 'timestamp', 'time', 'year' => 'datetime',
+            'json' => 'json',
+            'bit', 'bool', 'boolean' => 'boolean',
+            default => 'string',
+        };
+    }
+}
