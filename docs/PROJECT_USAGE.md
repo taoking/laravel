@@ -1,6 +1,6 @@
 # 项目使用说明
 
-本文档说明如何启动、配置、验证和调用 Laravel BI Platform 后端 API。
+本文档说明如何启动、配置、验证和使用 Laravel BI Platform 管理端与后端 API。
 
 ## 运行环境
 
@@ -8,6 +8,8 @@
 
 - PHP 8.3+
 - Composer 2
+- Node.js 20+
+- npm 10+
 - Docker / Docker Compose
 - MySQL 8.4
 - Redis 7.4
@@ -65,6 +67,7 @@ docker compose exec php-fpm php artisan db:seed
 7. 访问服务。
 
 ```text
+管理端: http://localhost:8080
 API: http://localhost:8080/api
 MinIO Console: http://localhost:9001
 ```
@@ -79,6 +82,50 @@ bucket: bi-platform
 
 如果 MinIO 中没有 `bi-platform` bucket，需要在 MinIO Console 中手动创建。
 
+## 前端管理端
+
+前端管理端使用 Laravel Vite 内置 SPA：
+
+- Blade 入口：`resources/views/welcome.blade.php`
+- Vue 入口：`resources/js/app.js`
+- 路由：`resources/js/router/index.js`
+- 状态管理：`resources/js/stores/auth.js`
+- API 封装：`resources/js/services/http.js`、`resources/js/services/api.js`
+- 页面目录：`resources/js/pages`
+
+首次安装前端依赖：
+
+```bash
+npm install
+```
+
+本地开发需要同时启动 Laravel 和 Vite：
+
+```bash
+php artisan serve --host=127.0.0.1 --port=8000
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+访问：
+
+```text
+管理端: http://127.0.0.1:8000
+登录页: http://127.0.0.1:8000/login
+```
+
+生产构建：
+
+```bash
+npm run build
+```
+
+说明：
+
+- `/api/*` 继续由 API 路由处理。
+- 其他前端路径由 `routes/web.php` catch-all 返回 Vue SPA。
+- SPA 路由排除了 Session/CSRF middleware；管理端认证使用 Sanctum Bearer token，不依赖服务端 session。
+- `public/hot` 存在时 Laravel 会读取 Vite 开发服务器资源；停止 Vite 后如需使用构建产物，应确保 `public/hot` 不存在。
+
 ## 本地非 Docker 运行
 
 本地运行适合快速测试 SQLite 或本机 MySQL。
@@ -89,6 +136,8 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 php artisan serve
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 如果使用队列异步处理导入导出，需要启动 worker：
@@ -129,6 +178,18 @@ php artisan migrate --pretend --database=sqlite
 
 ```bash
 php artisan config:clear
+```
+
+前端开发服务器：
+
+```bash
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+前端生产构建：
+
+```bash
+npm run build
 ```
 
 ## 关键环境变量
@@ -218,6 +279,8 @@ MINIO_USE_PATH_STYLE_ENDPOINT=true
 
 ## 认证流程
 
+管理端登录页使用同一组接口。登录成功后，前端会保存 `data.token` 到 `localStorage.bi_token`，并在后续 Axios 请求中添加 `Authorization: Bearer <token>`。
+
 登录：
 
 ```bash
@@ -267,6 +330,21 @@ curl -X POST http://localhost:8080/api/auth/logout \
 -> 添加图表组件
 -> 刷新仪表盘数据
 -> 配置权限/缓存/导入导出/监控
+```
+
+管理端对应菜单：
+
+```text
+首页概览
+数据源
+数据集
+图表配置
+仪表盘
+导入任务
+导出任务
+查询日志
+权限管理
+系统监控
 ```
 
 ## 数据源管理
@@ -605,7 +683,7 @@ php artisan test
 
 ## 注意事项
 
-- 当前仓库主要实现后端 API，没有包含完整 Vue 前端。
+- 当前仓库包含 Laravel 后端 API 和 Vue 3 管理端，前端作为 Laravel Vite 资源内置在同一仓库中。
 - 图表查询默认启用缓存；如果需要绕过缓存，可在请求中传 `use_cache=false`。
 - 导入/导出生产环境应使用 Redis queue，并保证 `queue-worker` 正常运行。
 - MinIO bucket 需要存在，否则导入、导出和存储健康检查会失败。

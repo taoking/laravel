@@ -1,10 +1,10 @@
 # Plan Execution Log
 
-记录 `plan.md` 从 Phase 1 到 Phase 12 的执行过程、核心产物与验收结果。
+记录 `plan.md` 从 Phase 1 到 Phase 13 的执行过程、核心产物与验收结果。
 
 执行日期：2026-06-18  
 项目目录：`/Users/tao/workspace/code/laravel/laravel`  
-最终验证：`php artisan test` 通过，48 tests，394 assertions；`vendor/bin/pint` 通过；`php artisan route:list --path=api` 输出 90 条 API 路由；`php artisan migrate --pretend --database=sqlite` 通过。
+最终验证：`php artisan test` 通过，48 tests，394 assertions；`npm run build` 通过；`vendor/bin/pint` 通过；`php artisan route:list --path=api` 输出 90 条 API 路由；`php artisan migrate --pretend --database=sqlite` 通过。
 
 ## 总体执行原则
 
@@ -309,6 +309,54 @@
 - 数据库、Redis、存储、队列检查不会因为单项失败导致接口 500。
 - Prometheus 文本指标包含查询、导入、导出和队列积压指标。
 
+## Phase 13 Vue 前端管理端
+
+目标：在 Laravel Vite 资源体系内落地 Vue 3 管理端，覆盖登录、主布局、菜单路由、业务管理页面、Axios API 封装、Pinia 状态管理和 ECharts 图表渲染。
+
+主要产物：
+
+- 前端依赖：`vue`、`vue-router`、`pinia`、`axios`、`echarts`、`@vitejs/plugin-vue`、`@lucide/vue`。
+- Vite 配置：`vite.config.js` 接入 Vue 插件，Laravel 继续使用 `resources/css/app.css` 和 `resources/js/app.js` 作为入口。
+- SPA 入口：`resources/views/welcome.blade.php` 改为 Vue 挂载容器；`routes/web.php` 使用非 `/api` catch-all 返回前端页面。
+- 路由与状态：`resources/js/router/index.js`、`resources/js/stores/auth.js`。
+- API 层：`resources/js/services/http.js`、`resources/js/services/api.js`，统一注入 Bearer token、处理 401 和分页数据。
+- 主布局与菜单：`resources/js/layouts/AppShell.vue`、`resources/js/navigation.js`。
+- 通用组件：`DataTable.vue`、`StatusBadge.vue`、`PageHeader.vue`、`JsonTextarea.vue`、`ChartRenderer.vue`。
+- 页面：
+  - `LoginView.vue`
+  - `DashboardOverviewView.vue`
+  - `DataSourcesView.vue`
+  - `DatasetsView.vue`
+  - `ChartsView.vue`
+  - `DashboardsView.vue`
+  - `ImportTasksView.vue`
+  - `ExportTasksView.vue`
+  - `QueryLogsView.vue`
+  - `PermissionsView.vue`
+  - `MonitorView.vue`
+
+关键行为：
+
+- 未登录访问管理端路由时跳转 `/login`。
+- 登录成功后保存 Sanctum token 到 `localStorage`，Axios 自动注入 `Authorization: Bearer <token>`。
+- 数据源页面支持创建、编辑、删除、测试连接、同步元数据、查看表字段。
+- 数据集页面支持创建、编辑、删除、同步字段、字段语义配置和数据预览。
+- 图表页面支持图表配置、JSON 查询配置、预览接口和 ECharts 渲染。
+- 仪表盘页面支持创建、编辑、组件挂载、数据刷新和分享 token 创建。
+- 导入页面支持文件上传、任务列表、详情日志、重试和删除。
+- 导出页面支持图表 CSV/XLSX、仪表盘 PDF 任务创建、重试和带 Bearer token 下载。
+- 查询日志页面支持按 dataset/chart/dashboard/status 筛选。
+- 权限页面支持用户、角色、权限、资源权限、行级规则、列级规则基础维护。
+- 监控页面展示健康检查和 Prometheus 文本指标。
+
+验收：
+
+- `npm run build` 通过。
+- `php artisan test` 通过，48 tests，394 assertions。
+- `php artisan route:list --path=api` 仍输出 90 条 API 路由。
+- 本地启动 `php artisan serve --host=127.0.0.1 --port=8000` 与 `npm run dev -- --host 127.0.0.1 --port 5173` 后，`GET /login` 返回 Vue SPA 容器。
+- SPA catch-all 已排除 Session/CSRF middleware，登录页面不依赖数据库 session；认证仍由 API token 负责。
+
 ## 最终验收记录
 
 最终执行的验证命令：
@@ -316,6 +364,7 @@
 ```bash
 vendor/bin/pint
 php artisan test
+npm run build
 php artisan route:list --path=api
 php artisan migrate --pretend --database=sqlite
 ```
@@ -324,13 +373,15 @@ php artisan migrate --pretend --database=sqlite
 
 - Pint：通过。
 - Test：48 tests，394 assertions，全部通过。
+- Frontend build：通过，存在 ECharts 等依赖导致的单 chunk 体积提示。
 - API routes：90 条。
 - Migration pretend：通过。
 - `laravel_live` 临时 SQLite 文件已清理。
 
 ## 已知边界
 
-- 当前项目以后端 API 为主，没有落地 Vue 前端工程。
+- 当前 Vue 管理端是 Laravel 内置 SPA，不是独立前端仓库。
+- 管理端页面已覆盖核心功能流程；复杂查询构建和仪表盘拖拽布局保留为 JSON 配置入口，后续可升级为可视化编辑器。
 - 导入生成的物理表写入当前应用数据库；导入元数据会生成 MySQL 类型的数据源记录。
 - 仪表盘 PDF 为可用的轻量版 PDF 文本导出，不是像素级页面截图。
 - Grafana/Loki 在计划中属于部署层增强，当前代码提供 Prometheus metrics 和健康检查接口，方便后续接入。
