@@ -16,6 +16,7 @@ Chart / Query API
      -> miss/fallback: 原始 MySQL SQL -> DataSourceConnectionFactory
   -> QueryLogService
   -> QueryCacheService
+  -> QueryLogAnalysisService / Recommendation / Refresh / Benefit Report
 ```
 
 职责边界：
@@ -24,6 +25,7 @@ Chart / Query API
 - Redis/Cache：查询结果缓存、图表缓存索引、后续任务状态扩展。
 - ClickHouse：查询加速明细表、预聚合表，后续可扩展物化视图。
 - Laravel Queue：加速表构建和刷新任务。
+- Laravel Scheduler：扫描刷新计划并派发刷新任务。
 
 ## 为什么需要列式数据库
 
@@ -86,6 +88,10 @@ BI 图表通常会对大量明细数据做维度筛选、分组和指标聚合�
 ### acceleration_aggregate_definitions / acceleration_aggregate_columns
 
 预聚合表元数据，详见 [预聚合表 / 物化视图加速](bi-acceleration-aggregate.md)。
+
+### acceleration_recommendations / acceleration_refresh_schedules / acceleration_benefit_reports
+
+查询日志推荐、刷新计划和收益统计元数据，详见 [查询日志推荐、自动刷新和收益统计](bi-acceleration-recommendation.md)。
 
 ## 加速表构建流程
 
@@ -205,6 +211,19 @@ GET  /api/datasets/{dataset}/acceleration/aggregates
 POST /api/datasets/{dataset}/acceleration/aggregates
 ```
 
+推荐、刷新计划和收益：
+
+```text
+GET  /api/acceleration/recommendations
+POST /api/acceleration/recommendations/generate
+POST /api/acceleration/recommendations/{recommendation}/accept
+POST /api/acceleration/recommendations/{recommendation}/reject
+GET  /api/acceleration/refresh-schedules
+POST /api/acceleration/refresh-schedules
+POST /api/acceleration/refresh-schedules/{schedule}/run-now
+GET  /api/acceleration/benefit-report
+```
+
 ## Docker 启动 ClickHouse
 
 `.env` 中保留默认配置即可：
@@ -224,6 +243,7 @@ BI_CLICKHOUSE_PASSWORD=
 ```bash
 docker compose up -d clickhouse
 docker compose up -d queue-worker
+php artisan schedule:run
 ```
 
 完整环境：

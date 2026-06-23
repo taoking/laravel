@@ -53,6 +53,8 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Create permissions', 'code' => 'permissions.create', 'group' => 'permissions'],
             ['name' => 'Update permissions', 'code' => 'permissions.update', 'group' => 'permissions'],
             ['name' => 'Delete permissions', 'code' => 'permissions.delete', 'group' => 'permissions'],
+            ['name' => 'Manage acceleration', 'code' => 'acceleration.manage', 'group' => 'acceleration'],
+            ['name' => 'Manage datasets', 'code' => 'datasets.manage', 'group' => 'datasets'],
         ];
 
         $permissions = collect($permissionDefinitions)->map(fn (array $definition): Permission => Permission::query()->updateOrCreate(

@@ -47,6 +47,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - [BI 查询加速方案](docs/bi-acceleration.md)：说明 ClickHouse 加速层、profile、同步任务、查询路由、fallback、缓存 key 和边界。
 - [ClickHouse 查询加速最小闭环](docs/bi-acceleration-clickhouse.md)：Phase 10.1 的 ClickHouse 明细表加速闭环、API 和验收边界。
 - [预聚合表 / 物化视图加速](docs/bi-acceleration-aggregate.md)：Phase 10.2 的聚合定义、构建、命中、回退、缓存和日志边界。
+- [查询日志推荐、自动刷新和收益统计](docs/bi-acceleration-recommendation.md)：Phase 10.3 的推荐规则、刷新计划、收益报表、命令和生产边界。
 - [原始开发计划](plan.md)：完整项目规划。
 
 ## 快速启动
@@ -88,13 +89,16 @@ vendor/bin/pint
 npm run build
 php artisan route:list --path=api
 php artisan migrate --pretend --database=sqlite
+php artisan bi:acceleration:recommend --dry-run
+php artisan bi:acceleration:refresh-due --dry-run
+php artisan bi:acceleration:benefit-report
 ```
 
 当前验证基线：
 
 ```text
-59 tests, 491 assertions
-116 API routes
+64 tests, 541 assertions
+132 API routes
 ```
 
 ## API 认证
@@ -131,7 +135,7 @@ Authorization: Bearer <token>
 - Imports：`/api/import-tasks`
 - Exports：`/api/export-tasks`
 - Data Permissions：`/api/resource-permissions`、`/api/data-permission-rules`、`/api/column-permission-rules`
-- Acceleration：`/api/acceleration/profiles`、`/api/acceleration/aggregates`、`/api/acceleration/tasks`、`/api/datasets/{dataset}/acceleration`
+- Acceleration：`/api/acceleration/profiles`、`/api/acceleration/aggregates`、`/api/acceleration/recommendations`、`/api/acceleration/refresh-schedules`、`/api/acceleration/benefit-report`、`/api/acceleration/tasks`、`/api/datasets/{dataset}/acceleration`
 - Audit：`/api/operation-logs`、`/api/login-logs`、`/api/query-logs`、`/api/export-logs`
 - Monitor：`/api/health`、`/api/metrics`
 
@@ -140,6 +144,7 @@ Authorization: Bearer <token>
 ## 说明
 
 - 生产环境应使用 Redis queue，并运行 queue worker。
+- 生产环境如启用加速自动刷新，需要运行 Laravel scheduler，例如每分钟执行 `php artisan schedule:run`。
 - 导入和导出依赖 MinIO/S3 disk。
 - 查询加速依赖 ClickHouse 和队列 worker；预聚合失败会先回退 ClickHouse 明细表，明细不可用时再回退原始数据源查询。
 - `/api/health*` 和 `/api/metrics` 当前为公开接口，生产环境建议在网关或 middleware 中限制访问。

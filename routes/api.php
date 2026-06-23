@@ -1,7 +1,10 @@
 <?php
 
 use App\Modules\Acceleration\Controllers\AccelerationAggregateController;
+use App\Modules\Acceleration\Controllers\AccelerationBenefitReportController;
 use App\Modules\Acceleration\Controllers\AccelerationProfileController;
+use App\Modules\Acceleration\Controllers\AccelerationRecommendationController;
+use App\Modules\Acceleration\Controllers\AccelerationRefreshScheduleController;
 use App\Modules\Acceleration\Controllers\AccelerationTaskController;
 use App\Modules\Acceleration\Controllers\DatasetAccelerationAggregateController;
 use App\Modules\Acceleration\Controllers\DatasetAccelerationController;
@@ -68,6 +71,20 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::prefix('acceleration')->group(function (): void {
         Route::get('tasks', [AccelerationTaskController::class, 'index']);
         Route::get('tasks/{task}', [AccelerationTaskController::class, 'show']);
+        Route::get('benefit-report', [AccelerationBenefitReportController::class, 'index']);
+        Route::get('benefit-report/datasets/{dataset}', [AccelerationBenefitReportController::class, 'dataset']);
+        Route::get('benefit-report/charts/{chart}', [AccelerationBenefitReportController::class, 'chart']);
+        Route::post('recommendations/generate', [AccelerationRecommendationController::class, 'generate']);
+        Route::post('recommendations/{recommendation}/accept', [AccelerationRecommendationController::class, 'accept']);
+        Route::post('recommendations/{recommendation}/reject', [AccelerationRecommendationController::class, 'reject']);
+        Route::get('recommendations', [AccelerationRecommendationController::class, 'index']);
+        Route::get('recommendations/{recommendation}', [AccelerationRecommendationController::class, 'show']);
+        Route::post('refresh-schedules/{schedule}/enable', [AccelerationRefreshScheduleController::class, 'enable']);
+        Route::post('refresh-schedules/{schedule}/disable', [AccelerationRefreshScheduleController::class, 'disable']);
+        Route::post('refresh-schedules/{schedule}/run-now', [AccelerationRefreshScheduleController::class, 'runNow']);
+        Route::apiResource('refresh-schedules', AccelerationRefreshScheduleController::class)->parameters([
+            'refresh-schedules' => 'schedule',
+        ]);
         Route::post('aggregates/{aggregate}/build', [AccelerationAggregateController::class, 'build']);
         Route::post('aggregates/{aggregate}/refresh', [AccelerationAggregateController::class, 'refresh']);
         Route::post('aggregates/{aggregate}/disable', [AccelerationAggregateController::class, 'disable']);
