@@ -203,6 +203,16 @@ class DatasetTest extends TestCase
                 //
             }
 
+            public function databases(ConnectionInterface $connection, DataSource $dataSource): array
+            {
+                return [
+                    [
+                        'database_name' => $dataSource->database_name,
+                        'name' => $dataSource->database_name,
+                    ],
+                ];
+            }
+
             public function tables(ConnectionInterface $connection, DataSource $dataSource): array
             {
                 return [
@@ -213,6 +223,11 @@ class DatasetTest extends TestCase
                         'row_count_estimate' => 10,
                     ],
                 ];
+            }
+
+            public function views(ConnectionInterface $connection, DataSource $dataSource): array
+            {
+                return [];
             }
 
             public function fields(ConnectionInterface $connection, DataSource $dataSource, string $tableName): array
@@ -252,6 +267,43 @@ class DatasetTest extends TestCase
                         'ordinal_position' => 3,
                     ],
                 ];
+            }
+
+            public function preview(ConnectionInterface $connection, DataSource $dataSource, string $tableName, int $limit = 100): array
+            {
+                return [
+                    'columns' => ['id', 'amount', 'ordered_at'],
+                    'rows' => [],
+                    'limit' => $limit,
+                ];
+            }
+
+            public function explain(ConnectionInterface $connection, DataSource $dataSource, string $sql, array $bindings = []): array
+            {
+                return [];
+            }
+
+            public function materializedViews(ConnectionInterface $connection, DataSource $dataSource): array
+            {
+                return [];
+            }
+
+            public function materializedView(ConnectionInterface $connection, DataSource $dataSource, string $name): ?array
+            {
+                return null;
+            }
+
+            public function refreshMaterializedView(ConnectionInterface $connection, DataSource $dataSource, string $name): array
+            {
+                return [
+                    'refreshed' => false,
+                    'message' => 'Unsupported.',
+                ];
+            }
+
+            public function dialect(): string
+            {
+                return 'mysql';
             }
         };
 

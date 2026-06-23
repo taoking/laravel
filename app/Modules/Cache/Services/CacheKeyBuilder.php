@@ -9,6 +9,16 @@ class CacheKeyBuilder
         return "bi:data_source:{$dataSourceId}:tables";
     }
 
+    public function dataSourceDatabases(int $dataSourceId): string
+    {
+        return "bi:data_source:{$dataSourceId}:databases";
+    }
+
+    public function dataSourceViews(int $dataSourceId): string
+    {
+        return "bi:data_source:{$dataSourceId}:views";
+    }
+
     public function dataSourceFields(int $dataSourceId, string $tableName): string
     {
         return "bi:data_source:{$dataSourceId}:table:{$tableName}:fields";
@@ -24,11 +34,12 @@ class CacheKeyBuilder
         return "bi:chart:{$chartId}:config";
     }
 
-    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null): string
+    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null): string
     {
         $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
+        $source = $this->sourceSegment($engineType, $dataSourceId);
 
-        return "bi:chart:{$chartId}:query:{$scope}:{$acceleration}:{$queryHash}";
+        return "bi:chart:{$chartId}:query:{$scope}:{$source}:{$acceleration}:{$queryHash}";
     }
 
     public function chartQueryIndex(int $chartId): string
@@ -51,11 +62,20 @@ class CacheKeyBuilder
         return "bi:user:{$userId}:data_permissions";
     }
 
-    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null): string
+    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null): string
     {
         $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
+        $source = $this->sourceSegment($engineType, $dataSourceId);
 
-        return "bi:query:{$scope}:{$acceleration}:{$queryHash}";
+        return "bi:query:{$scope}:{$source}:{$acceleration}:{$queryHash}";
+    }
+
+    private function sourceSegment(?string $engineType, ?int $dataSourceId): string
+    {
+        $engine = $engineType !== null && $engineType !== '' ? $engineType : 'unknown';
+        $source = $dataSourceId !== null ? (string) $dataSourceId : 'none';
+
+        return "engine:{$engine}:ds:{$source}";
     }
 
     private function accelerationSegment(bool $hit, ?int $profileId, int $version, ?int $aggregateDefinitionId = null): string

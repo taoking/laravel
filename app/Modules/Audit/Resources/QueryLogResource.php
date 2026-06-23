@@ -28,6 +28,8 @@ class QueryLogResource extends JsonResource
             'is_slow' => $this->is_slow,
             'status' => $this->status,
             'error_message' => $this->error_message,
+            'engine_type' => $this->engine_type,
+            'data_source_type' => $this->data_source_type,
             'acceleration_hit' => $this->acceleration_hit,
             'acceleration_profile_id' => $this->acceleration_profile_id,
             'acceleration_engine' => $this->acceleration_engine,

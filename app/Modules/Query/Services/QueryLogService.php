@@ -15,6 +15,8 @@ class QueryLogService
      */
     public function success(Dataset $dataset, ?User $user, CompiledQuery $query, int $elapsedMs, int $rowCount, bool $cached, array $context = []): void
     {
+        $dataset->loadMissing('dataSource');
+
         QueryLog::query()->create([
             'tenant_id' => $dataset->tenant_id,
             'user_id' => $user?->id,
@@ -29,7 +31,7 @@ class QueryLogService
             'cached' => $cached,
             'is_slow' => $this->isSlow($elapsedMs),
             'status' => 'success',
-            ...$this->accelerationAttributes($context),
+            ...$this->accelerationAttributes($dataset, $context),
         ]);
     }
 
@@ -38,6 +40,8 @@ class QueryLogService
      */
     public function failure(Dataset $dataset, ?User $user, CompiledQuery $query, Throwable $exception, int $elapsedMs = 0, array $context = []): void
     {
+        $dataset->loadMissing('dataSource');
+
         QueryLog::query()->create([
             'tenant_id' => $dataset->tenant_id,
             'user_id' => $user?->id,
@@ -53,7 +57,7 @@ class QueryLogService
             'is_slow' => $this->isSlow($elapsedMs),
             'status' => 'failed',
             'error_message' => $exception->getMessage(),
-            ...$this->accelerationAttributes($context),
+            ...$this->accelerationAttributes($dataset, $context),
         ]);
     }
 
@@ -66,9 +70,13 @@ class QueryLogService
      * @param  array<string, mixed>  $context
      * @return array<string, mixed>
      */
-    private function accelerationAttributes(array $context): array
+    private function accelerationAttributes(Dataset $dataset, array $context): array
     {
+        $dataSourceType = $context['data_source_type'] ?? $dataset->dataSource?->type;
+
         return [
+            'engine_type' => $context['engine_type'] ?? $context['acceleration_engine'] ?? $dataSourceType,
+            'data_source_type' => $dataSourceType,
             'acceleration_hit' => (bool) ($context['acceleration_hit'] ?? false),
             'acceleration_profile_id' => $context['acceleration_profile_id'] ?? null,
             'acceleration_engine' => $context['acceleration_engine'] ?? null,

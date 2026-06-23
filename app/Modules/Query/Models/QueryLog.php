@@ -34,6 +34,8 @@ class QueryLog extends Model
         'is_slow',
         'status',
         'error_message',
+        'engine_type',
+        'data_source_type',
         'acceleration_hit',
         'acceleration_profile_id',
         'acceleration_engine',

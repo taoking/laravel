@@ -385,3 +385,49 @@ php artisan migrate --pretend --database=sqlite
 - 导入生成的物理表写入当前应用数据库；导入元数据会生成 MySQL 类型的数据源记录。
 - 仪表盘 PDF 为可用的轻量版 PDF 文本导出，不是像素级页面截图。
 - Grafana/Loki 在计划中属于部署层增强，当前代码提供 Prometheus metrics 和健康检查接口，方便后续接入。
+
+## Phase 10.4 StarRocks / Doris 一等 OLAP 数据源
+
+目标：将 StarRocks / Doris 作为 `data_sources.type` 直连 OLAP 数据源接入，而不是作为 ClickHouse acceleration profile 的同步目标。
+
+主要产物：
+
+- 数据源类型：新增 `starrocks`、`doris`，默认 MySQL 协议端口 `9030`，仍允许用户覆盖端口。
+- Driver：新增 `StarRocksMetadataDriver`、`DorisMetadataDriver`、`MySqlProtocolOlapMetadataDriver`，复用 MySQL 协议读取数据库、表、视图、字段、Explain 和物化视图元数据。
+- Dialect：新增 `SqlDialectInterface`、`MySqlDialect`、`StarRocksDialect`、`DorisDialect`、`SqlDialectManager`，Query 编译器按数据源选择方言。
+- Query 链路：StarRocks / Doris 复用现有 QueryService、权限校验、字段白名单、行级权限、列权限和参数绑定流程。
+- Query Log：新增 migration `2026_06_17_154400_add_engine_fields_to_query_logs_table.php`，记录 `engine_type`、`data_source_type`。
+- Cache Key：图表查询和普通查询缓存 key 增加 `engine:{engine_type}:ds:{data_source_id}` 段。
+- Explain API：新增 `POST /api/datasets/{dataset}/explain`、`POST /api/charts/{chart}/explain`，只对后端生成 SQL 执行诊断。
+- 物化视图 API：新增列表、详情、刷新接口，第一版不开放创建 DDL。
+- 前端：数据源页面支持 MySQL / StarRocks / Doris 类型选择、数据库/视图/物化视图展示；查询日志页面支持 `engine_type` 筛选。
+- 文档：新增 `docs/bi-olap-starrocks-doris.md`，README 和 `.env.example` 已更新。
+
+新增 API：
+
+```text
+GET  /api/data-sources/{data_source}/databases
+GET  /api/data-sources/{data_source}/views
+POST /api/data-sources/{data_source}/tables/{table}/preview
+GET  /api/data-sources/{data_source}/materialized-views
+GET  /api/data-sources/{data_source}/materialized-views/{name}
+POST /api/data-sources/{data_source}/materialized-views/{name}/refresh
+POST /api/datasets/{dataset}/explain
+POST /api/charts/{chart}/explain
+```
+
+验收：
+
+- 已新增 Feature 测试 `tests/Feature/OlapDataSourceTest.php`，覆盖 StarRocks / Doris 创建、物化视图、查询日志引擎字段和 Explain。
+- 已执行 PHP lint、`php artisan migrate --pretend --database=sqlite`、`php artisan route:list --path=api`、`php artisan test`、`vendor/bin/pint --test`、`npm run build`。
+- 全量测试：68 tests，574 assertions，全部通过。
+- API routes：140 条。
+- 前端 build：通过，存在 Vite 单 chunk 体积提示。
+- 主 `docker-compose.yml` 不新增 StarRocks / Doris 容器；生产建议连接外部 FE 查询入口。
+
+当前边界：
+
+- 不实现 StarRocks / Doris 集群部署、节点管理、Routine Load、Stream Load、Kafka/Flink/CDC。
+- 不将 StarRocks / Doris 强行接入 ClickHouse acceleration profile。
+- 物化视图第一版只做展示和刷新，查询改写由 OLAP 引擎优化器完成。
+- 方言第一版使用 MySQL 协议兼容函数；复杂函数差异可继续在 dialect 类中扩展。

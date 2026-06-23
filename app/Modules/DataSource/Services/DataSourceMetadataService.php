@@ -56,6 +56,22 @@ class DataSourceMetadataService
     /**
      * @return list<array<string, mixed>>
      */
+    public function databases(DataSource $dataSource): array
+    {
+        return Cache::remember($this->databasesCacheKey($dataSource), now()->addMinutes(10), function () use ($dataSource): array {
+            $connection = $this->connectionFactory->make($dataSource);
+
+            try {
+                return $this->driverManager->driver($dataSource)->databases($connection, $dataSource);
+            } finally {
+                $this->connectionFactory->disconnect($dataSource);
+            }
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
     public function tables(DataSource $dataSource): array
     {
         return Cache::remember($this->tablesCacheKey($dataSource), now()->addMinutes(10), function () use ($dataSource): array {
@@ -63,6 +79,22 @@ class DataSourceMetadataService
 
             try {
                 return $this->driverManager->driver($dataSource)->tables($connection, $dataSource);
+            } finally {
+                $this->connectionFactory->disconnect($dataSource);
+            }
+        });
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function views(DataSource $dataSource): array
+    {
+        return Cache::remember($this->viewsCacheKey($dataSource), now()->addMinutes(10), function () use ($dataSource): array {
+            $connection = $this->connectionFactory->make($dataSource);
+
+            try {
+                return $this->driverManager->driver($dataSource)->views($connection, $dataSource);
             } finally {
                 $this->connectionFactory->disconnect($dataSource);
             }
@@ -89,6 +121,95 @@ class DataSourceMetadataService
                 $this->connectionFactory->disconnect($dataSource);
             }
         });
+    }
+
+    /**
+     * @return array{columns: list<string>, rows: list<array<string, mixed>>, limit: int}
+     */
+    public function preview(DataSource $dataSource, string $tableName, int $limit = 100): array
+    {
+        if (! IdentifierGuard::isSafe($tableName)) {
+            throw ValidationException::withMessages([
+                'table' => ['The table name is not allowed.'],
+            ]);
+        }
+
+        $connection = $this->connectionFactory->make($dataSource);
+
+        try {
+            return $this->driverManager->driver($dataSource)->preview($connection, $dataSource, $tableName, $limit);
+        } finally {
+            $this->connectionFactory->disconnect($dataSource);
+        }
+    }
+
+    /**
+     * @param  list<mixed>  $bindings
+     * @return list<array<string, mixed>>
+     */
+    public function explain(DataSource $dataSource, string $sql, array $bindings = []): array
+    {
+        $connection = $this->connectionFactory->make($dataSource);
+
+        try {
+            return $this->driverManager->driver($dataSource)->explain($connection, $dataSource, $sql, $bindings);
+        } finally {
+            $this->connectionFactory->disconnect($dataSource);
+        }
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function materializedViews(DataSource $dataSource): array
+    {
+        $connection = $this->connectionFactory->make($dataSource);
+
+        try {
+            return $this->driverManager->driver($dataSource)->materializedViews($connection, $dataSource);
+        } finally {
+            $this->connectionFactory->disconnect($dataSource);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function materializedView(DataSource $dataSource, string $name): ?array
+    {
+        if (! IdentifierGuard::isSafe($name)) {
+            throw ValidationException::withMessages([
+                'name' => ['The materialized view name is not allowed.'],
+            ]);
+        }
+
+        $connection = $this->connectionFactory->make($dataSource);
+
+        try {
+            return $this->driverManager->driver($dataSource)->materializedView($connection, $dataSource, $name);
+        } finally {
+            $this->connectionFactory->disconnect($dataSource);
+        }
+    }
+
+    /**
+     * @return array{refreshed: bool, message: string}
+     */
+    public function refreshMaterializedView(DataSource $dataSource, string $name): array
+    {
+        if (! IdentifierGuard::isSafe($name)) {
+            throw ValidationException::withMessages([
+                'name' => ['The materialized view name is not allowed.'],
+            ]);
+        }
+
+        $connection = $this->connectionFactory->make($dataSource);
+
+        try {
+            return $this->driverManager->driver($dataSource)->refreshMaterializedView($connection, $dataSource, $name);
+        } finally {
+            $this->connectionFactory->disconnect($dataSource);
+        }
     }
 
     /**
@@ -178,7 +299,9 @@ class DataSourceMetadataService
 
     public function forget(DataSource $dataSource): void
     {
+        Cache::forget($this->databasesCacheKey($dataSource));
         Cache::forget($this->tablesCacheKey($dataSource));
+        Cache::forget($this->viewsCacheKey($dataSource));
 
         DataSourceTable::query()
             ->where('data_source_id', $dataSource->id)
@@ -189,6 +312,16 @@ class DataSourceMetadataService
     private function tablesCacheKey(DataSource $dataSource): string
     {
         return $this->keyBuilder->dataSourceTables((int) $dataSource->id);
+    }
+
+    private function databasesCacheKey(DataSource $dataSource): string
+    {
+        return $this->keyBuilder->dataSourceDatabases((int) $dataSource->id);
+    }
+
+    private function viewsCacheKey(DataSource $dataSource): string
+    {
+        return $this->keyBuilder->dataSourceViews((int) $dataSource->id);
     }
 
     private function fieldsCacheKey(DataSource $dataSource, string $tableName): string

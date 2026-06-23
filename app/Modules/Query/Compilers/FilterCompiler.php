@@ -3,18 +3,17 @@
 namespace App\Modules\Query\Compilers;
 
 use App\Modules\Dataset\Models\DatasetField;
+use App\Modules\Query\Dialects\SqlDialectInterface;
 use App\Modules\Query\DTO\FilterDTO;
 
 class FilterCompiler
 {
-    public function __construct(private readonly SqlIdentifier $identifier) {}
-
     /**
      * @return array{sql: string, bindings: list<mixed>}
      */
-    public function compile(FilterDTO $filter, DatasetField $field): array
+    public function compile(FilterDTO $filter, DatasetField $field, SqlDialectInterface $dialect): array
     {
-        $column = $this->identifier->quote($field->field_name);
+        $column = $dialect->quoteIdentifier($field->field_name);
 
         return match ($filter->operator) {
             '=' => ['sql' => "{$column} = ?", 'bindings' => [$filter->value]],

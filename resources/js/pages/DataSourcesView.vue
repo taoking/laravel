@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { Database, Play, Plus, RefreshCw, Save, Trash2 } from '@lucide/vue';
 
 import DataTable from '../components/DataTable.vue';
@@ -10,8 +10,11 @@ import { dataSourceApi } from '../services/api';
 import { itemsFrom } from '../services/http';
 
 const rows = ref([]);
+const databases = ref([]);
 const tables = ref([]);
+const views = ref([]);
 const fields = ref([]);
+const materializedViews = ref([]);
 const selected = ref(null);
 const selectedTable = ref('');
 const loading = ref(false);
@@ -35,6 +38,12 @@ const form = reactive({
     status: 'active',
 });
 
+const typeOptions = [
+    { value: 'mysql', label: 'MySQL', port: 3306 },
+    { value: 'starrocks', label: 'StarRocks', port: 9030 },
+    { value: 'doris', label: 'Doris', port: 9030 },
+];
+
 const columns = [
     { key: 'name', label: '名称' },
     { key: 'type', label: '类型' },
@@ -54,6 +63,19 @@ const tableColumns = [
     { key: 'actions', label: '操作' },
 ];
 
+const databaseColumns = [
+    { key: 'database_name', label: '数据库' },
+];
+
+const materializedViewColumns = [
+    { key: 'name', label: '名称' },
+    { key: 'database_name', label: '数据库' },
+    { key: 'table_type', label: '类型' },
+    { key: 'status', label: '状态' },
+    { key: 'last_refresh_at', label: '最近刷新' },
+    { key: 'actions', label: '操作' },
+];
+
 const fieldColumns = [
     { key: 'field_name', label: '字段' },
     { key: 'field_comment', label: '说明' },
@@ -64,6 +86,11 @@ const fieldColumns = [
 ];
 
 const selectedTitle = computed(() => selected.value ? `${selected.value.name} 元数据` : '请选择数据源查看元数据');
+const selectedIsOlap = computed(() => ['starrocks', 'doris'].includes(selected.value?.type));
+
+function defaultPort(type) {
+    return typeOptions.find((option) => option.value === type)?.port ?? 3306;
+}
 
 function resetForm() {
     Object.assign(form, {
@@ -166,8 +193,11 @@ async function remove(row) {
     await dataSourceApi.remove(row.id);
     if (selected.value?.id === row.id) {
         selected.value = null;
+        databases.value = [];
         tables.value = [];
+        views.value = [];
         fields.value = [];
+        materializedViews.value = [];
     }
     await load();
 }
@@ -202,11 +232,24 @@ async function sync(row) {
 async function select(row) {
     selected.value = row;
     selectedTable.value = '';
+    databases.value = [];
+    views.value = [];
     fields.value = [];
+    materializedViews.value = [];
 
     try {
-        const result = await dataSourceApi.tables(row.id);
-        tables.value = result.data ?? [];
+        const [tableResult, databaseResult, viewResult] = await Promise.all([
+            dataSourceApi.tables(row.id),
+            dataSourceApi.databases(row.id).catch(() => ({ data: [] })),
+            dataSourceApi.views(row.id).catch(() => ({ data: [] })),
+        ]);
+        tables.value = tableResult.data ?? [];
+        databases.value = databaseResult.data ?? [];
+        views.value = viewResult.data ?? [];
+
+        if (['starrocks', 'doris'].includes(row.type)) {
+            await loadMaterializedViews(row);
+        }
     } catch (exception) {
         error.value = exception.message ?? '表列表加载失败';
     }
@@ -223,12 +266,48 @@ async function loadFields(tableName) {
     }
 }
 
+async function loadMaterializedViews(row = selected.value) {
+    if (!row || !['starrocks', 'doris'].includes(row.type)) {
+        materializedViews.value = [];
+        return;
+    }
+
+    try {
+        const result = await dataSourceApi.materializedViews(row.id);
+        materializedViews.value = result.data ?? [];
+    } catch (exception) {
+        error.value = exception.message ?? '物化视图加载失败';
+    }
+}
+
+async function refreshMaterializedView(row) {
+    if (!selected.value) {
+        return;
+    }
+
+    try {
+        const result = await dataSourceApi.refreshMaterializedView(selected.value.id, row.name);
+        notice.value = result.data?.message ?? '物化视图刷新已提交';
+        await loadMaterializedViews();
+    } catch (exception) {
+        error.value = exception.message ?? '物化视图刷新失败';
+    }
+}
+
+watch(() => form.type, (type, previousType) => {
+    const previousDefault = defaultPort(previousType);
+
+    if (!form.port || Number(form.port) === previousDefault) {
+        form.port = defaultPort(type);
+    }
+});
+
 onMounted(load);
 </script>
 
 <template>
     <div class="page-stack">
-        <PageHeader title="数据源管理" subtitle="配置 MySQL 数据源，执行连接测试、元数据同步并查看表字段。">
+        <PageHeader title="数据源管理" subtitle="配置 MySQL、StarRocks、Doris 数据源，执行连接测试、元数据同步并查看表字段。">
             <button class="tool-button" type="button" @click="load">
                 <RefreshCw :size="16" />
                 <span>刷新</span>
@@ -250,7 +329,12 @@ onMounted(load);
                 </div>
                 <div class="form-grid two">
                     <label><span>名称</span><input v-model="form.name" required></label>
-                    <label><span>类型</span><select v-model="form.type"><option value="mysql">mysql</option></select></label>
+                    <label>
+                        <span>类型</span>
+                        <select v-model="form.type">
+                            <option v-for="option in typeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                        </select>
+                    </label>
                     <label><span>主机</span><input v-model="form.host" required></label>
                     <label><span>端口</span><input v-model.number="form.port" type="number" min="1" max="65535" required></label>
                     <label><span>数据库</span><input v-model="form.database_name" required></label>
@@ -318,6 +402,39 @@ onMounted(load);
                     </template>
                 </DataTable>
             </div>
+        </section>
+
+        <section v-if="selected" class="surface">
+            <div class="section-heading">
+                <h3>库与视图</h3>
+                <span class="muted">{{ databases.length }} 个库 / {{ views.length }} 个视图</span>
+            </div>
+            <div class="split-grid">
+                <DataTable :columns="databaseColumns" :rows="databases" />
+                <DataTable :columns="tableColumns" :rows="views">
+                    <template #cell-actions="{ row }">
+                        <button class="tool-button compact" type="button" @click="loadFields(row.table_name)">字段</button>
+                    </template>
+                </DataTable>
+            </div>
+        </section>
+
+        <section v-if="selectedIsOlap" class="surface">
+            <div class="section-heading">
+                <h3>物化视图</h3>
+                <button class="tool-button compact" type="button" @click="loadMaterializedViews()">
+                    <RefreshCw :size="14" />
+                    <span>刷新</span>
+                </button>
+            </div>
+            <DataTable :columns="materializedViewColumns" :rows="materializedViews">
+                <template #cell-status="{ value }">
+                    <StatusBadge :value="value ?? '-'" />
+                </template>
+                <template #cell-actions="{ row }">
+                    <button class="tool-button compact" type="button" @click="refreshMaterializedView(row)">刷新视图</button>
+                </template>
+            </DataTable>
         </section>
     </div>
 </template>

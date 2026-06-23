@@ -12,7 +12,7 @@ class QueryDriverManager
     public function driver(DataSource $dataSource): DatabaseDriverInterface
     {
         return match ($dataSource->type) {
-            'mysql' => app(MySqlQueryDriver::class),
+            'mysql', 'starrocks', 'doris' => app(MySqlQueryDriver::class),
             default => throw new InvalidArgumentException("Unsupported query data source type [{$dataSource->type}]."),
         };
     }

@@ -4,13 +4,14 @@ namespace App\Modules\Query\Compilers;
 
 use App\Models\User;
 use App\Modules\Dataset\Models\Dataset;
+use App\Modules\Query\Dialects\SqlDialectManager;
 use App\Modules\Query\DTO\CompiledQuery;
 use App\Modules\Query\DTO\QueryRequestDTO;
 
 class SqlCompiler
 {
     public function __construct(
-        private readonly SqlIdentifier $identifier,
+        private readonly SqlDialectManager $dialectManager,
         private readonly DimensionCompiler $dimensionCompiler,
         private readonly MetricCompiler $metricCompiler,
         private readonly FilterCompiler $filterCompiler,
@@ -20,7 +21,8 @@ class SqlCompiler
 
     public function compile(Dataset $dataset, QueryRequestDTO $query, ?User $user = null): CompiledQuery
     {
-        $dataset->loadMissing('fields');
+        $dataset->loadMissing(['dataSource', 'fields']);
+        $dialect = $this->dialectManager->dialect($dataset->dataSource);
         $fieldsByName = $dataset->fields->keyBy('field_name');
         $selects = [];
         $groupBys = [];
@@ -29,31 +31,31 @@ class SqlCompiler
         $columns = [];
 
         foreach ($query->dimensions as $dimension) {
-            $compiled = $this->dimensionCompiler->compile($dimension, $fieldsByName->get($dimension->field));
+            $compiled = $this->dimensionCompiler->compile($dimension, $fieldsByName->get($dimension->field), $dialect);
             $selects[] = $compiled['select'];
             $groupBys[] = $compiled['group_by'];
             $columns[] = $compiled['column'];
         }
 
         foreach ($query->metrics as $metric) {
-            $compiled = $this->metricCompiler->compile($metric, $fieldsByName->get($metric->field));
+            $compiled = $this->metricCompiler->compile($metric, $fieldsByName->get($metric->field), $dialect);
             $selects[] = $compiled['select'];
             $columns[] = $compiled['column'];
         }
 
         foreach ($query->filters as $filter) {
-            $compiled = $this->filterCompiler->compile($filter, $fieldsByName->get($filter->field));
+            $compiled = $this->filterCompiler->compile($filter, $fieldsByName->get($filter->field), $dialect);
             $wheres[] = $compiled['sql'];
             $bindings = array_merge($bindings, $compiled['bindings']);
         }
 
-        $permissionConditions = $this->permissionConditionCompiler->compile($dataset, $user);
+        $permissionConditions = $this->permissionConditionCompiler->compile($dataset, $user, $dialect);
         $wheres = array_merge($wheres, $permissionConditions['conditions']);
         $bindings = array_merge($bindings, $permissionConditions['bindings']);
 
         $sqlParts = [
             'select '.implode(', ', $selects),
-            'from '.$this->identifier->quote($dataset->main_table),
+            'from '.$dialect->quoteIdentifier($dataset->main_table),
         ];
 
         if ($wheres !== []) {
@@ -66,18 +68,18 @@ class SqlCompiler
 
         if ($query->sorts !== []) {
             $sqlParts[] = 'order by '.collect($query->sorts)
-                ->map(fn ($sort): string => $this->sortCompiler->compile($sort))
+                ->map(fn ($sort): string => $this->sortCompiler->compile($sort, $dialect))
                 ->implode(', ');
         }
 
-        $sqlParts[] = "limit {$query->limit} offset {$query->offset}";
+        $sqlParts[] = $dialect->compileLimit($query->limit, $query->offset);
         $sql = implode(' ', $sqlParts);
 
         return new CompiledQuery(
             sql: $sql,
             bindings: $bindings,
             columns: $columns,
-            hash: sha1($dataset->id.'|'.$sql.'|'.json_encode($bindings, JSON_THROW_ON_ERROR)),
+            hash: sha1($dataset->id.'|'.$dataset->data_source_id.'|'.$dialect->getName().'|'.$sql.'|'.json_encode($bindings, JSON_THROW_ON_ERROR)),
         );
     }
 }

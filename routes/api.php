@@ -20,6 +20,7 @@ use App\Modules\DataPermission\Controllers\DataPermissionRuleController;
 use App\Modules\DataPermission\Controllers\ResourcePermissionController;
 use App\Modules\Dataset\Controllers\DatasetController;
 use App\Modules\DataSource\Controllers\DataSourceController;
+use App\Modules\DataSource\Controllers\OlapMaterializedViewController;
 use App\Modules\Export\Controllers\ExportTaskController;
 use App\Modules\Import\Controllers\ImportTaskController;
 use App\Modules\Monitor\Controllers\HealthController;
@@ -27,6 +28,7 @@ use App\Modules\Monitor\Controllers\MetricsController;
 use App\Modules\Permission\Controllers\PermissionController;
 use App\Modules\Permission\Controllers\RoleController;
 use App\Modules\Query\Controllers\QueryController;
+use App\Modules\Query\Controllers\QueryExplainController;
 use App\Modules\User\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,14 +53,21 @@ Route::get('metrics', MetricsController::class);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('data-sources/{data_source}/test', [DataSourceController::class, 'test']);
     Route::post('data-sources/{data_source}/sync', [DataSourceController::class, 'sync']);
+    Route::get('data-sources/{data_source}/databases', [DataSourceController::class, 'databases']);
     Route::get('data-sources/{data_source}/tables', [DataSourceController::class, 'tables']);
+    Route::get('data-sources/{data_source}/views', [DataSourceController::class, 'views']);
+    Route::post('data-sources/{data_source}/tables/{table}/preview', [DataSourceController::class, 'preview']);
     Route::get('data-sources/{data_source}/tables/{table}/fields', [DataSourceController::class, 'fields']);
+    Route::get('data-sources/{data_source}/materialized-views', [OlapMaterializedViewController::class, 'index']);
+    Route::get('data-sources/{data_source}/materialized-views/{name}', [OlapMaterializedViewController::class, 'show']);
+    Route::post('data-sources/{data_source}/materialized-views/{name}/refresh', [OlapMaterializedViewController::class, 'refresh']);
     Route::apiResource('data-sources', DataSourceController::class);
 
     Route::post('datasets/{dataset}/sync-fields', [DatasetController::class, 'syncFields']);
     Route::get('datasets/{dataset}/fields', [DatasetController::class, 'fields']);
     Route::put('datasets/{dataset}/fields/{field}', [DatasetController::class, 'updateField']);
     Route::post('datasets/{dataset}/preview', [DatasetController::class, 'preview']);
+    Route::post('datasets/{dataset}/explain', [QueryExplainController::class, 'dataset']);
     Route::get('datasets/{dataset}/acceleration', [DatasetAccelerationController::class, 'index']);
     Route::post('datasets/{dataset}/acceleration/build', [DatasetAccelerationController::class, 'build']);
     Route::get('datasets/{dataset}/acceleration/columns', [DatasetAccelerationController::class, 'columns']);
@@ -100,6 +109,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::post('charts/preview', [ChartController::class, 'preview']);
     Route::post('charts/{chart}/data', [ChartController::class, 'data']);
+    Route::post('charts/{chart}/explain', [QueryExplainController::class, 'chart']);
     Route::apiResource('charts', ChartController::class);
 
     Route::post('dashboards/{dashboard}/widgets', [DashboardController::class, 'storeWidget']);

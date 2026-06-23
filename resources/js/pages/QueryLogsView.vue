@@ -13,6 +13,7 @@ const filters = reactive({
     dataset_id: '',
     chart_id: '',
     dashboard_id: '',
+    engine_type: '',
     page_size: 20,
 });
 
@@ -27,6 +28,8 @@ const columns = [
     { key: 'dataset_id', label: '数据集' },
     { key: 'chart_id', label: '图表' },
     { key: 'dashboard_id', label: '仪表盘' },
+    { key: 'engine_type', label: '引擎' },
+    { key: 'data_source_type', label: '数据源' },
     { key: 'elapsed_ms', label: '耗时 ms' },
     { key: 'row_count', label: '行数' },
     { key: 'cached', label: '缓存' },
@@ -71,6 +74,13 @@ onMounted(load);
             <input v-model="filters.dataset_id" type="number" min="1" placeholder="数据集 ID">
             <input v-model="filters.chart_id" type="number" min="1" placeholder="图表 ID">
             <input v-model="filters.dashboard_id" type="number" min="1" placeholder="仪表盘 ID">
+            <select v-model="filters.engine_type">
+                <option value="">全部引擎</option>
+                <option value="mysql">mysql</option>
+                <option value="starrocks">starrocks</option>
+                <option value="doris">doris</option>
+                <option value="clickhouse">clickhouse</option>
+            </select>
             <select v-model="filters.status">
                 <option value="">全部状态</option>
                 <option value="success">success</option>
@@ -99,6 +109,12 @@ onMounted(load);
                 </template>
                 <template #cell-status="{ value }">
                     <StatusBadge :value="value" />
+                </template>
+                <template #cell-engine_type="{ value }">
+                    <StatusBadge :value="value ?? '-'" />
+                </template>
+                <template #cell-data_source_type="{ value }">
+                    <StatusBadge :value="value ?? '-'" />
                 </template>
                 <template #cell-sql="{ value }">
                     <code class="inline-code">{{ String(value ?? '').slice(0, 140) }}</code>

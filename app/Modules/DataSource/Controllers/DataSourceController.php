@@ -80,6 +80,22 @@ class DataSourceController extends Controller
         );
     }
 
+    public function databases(DataSource $dataSource, DataSourceMetadataService $metadataService): JsonResponse
+    {
+        return ApiResponse::success($metadataService->databases($dataSource));
+    }
+
+    public function views(DataSource $dataSource, Request $request, DataSourceMetadataService $metadataService): JsonResponse
+    {
+        $views = $metadataService->views($dataSource);
+
+        return ApiResponse::success(
+            DataSourceTableResource::collection(
+                collect($views)->mapInto(DataSourceTable::class),
+            )->resolve($request),
+        );
+    }
+
     public function fields(TableFieldsRequest $request, DataSource $dataSource, string $table, DataSourceMetadataService $metadataService): JsonResponse
     {
         $fields = $metadataService->fields($dataSource, $table);
@@ -89,5 +105,12 @@ class DataSourceController extends Controller
                 collect($fields)->mapInto(DataSourceField::class),
             )->resolve($request),
         );
+    }
+
+    public function preview(Request $request, DataSource $dataSource, string $table, DataSourceMetadataService $metadataService): JsonResponse
+    {
+        $limit = min(max($request->integer('limit', 100), 1), 1000);
+
+        return ApiResponse::success($metadataService->preview($dataSource, $table, $limit));
     }
 }

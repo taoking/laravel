@@ -24,8 +24,14 @@ export const dataSourceApi = {
     ...resource('/data-sources'),
     test: (id) => http.post(`/data-sources/${id}/test`),
     sync: (id) => http.post(`/data-sources/${id}/sync`),
+    databases: (id) => http.get(`/data-sources/${id}/databases`),
     tables: (id) => http.get(`/data-sources/${id}/tables`),
+    views: (id) => http.get(`/data-sources/${id}/views`),
     fields: (id, table) => http.get(`/data-sources/${id}/tables/${encodeURIComponent(table)}/fields`),
+    previewTable: (id, table, payload = {}) => http.post(`/data-sources/${id}/tables/${encodeURIComponent(table)}/preview`, payload),
+    materializedViews: (id) => http.get(`/data-sources/${id}/materialized-views`),
+    materializedView: (id, name) => http.get(`/data-sources/${id}/materialized-views/${encodeURIComponent(name)}`),
+    refreshMaterializedView: (id, name) => http.post(`/data-sources/${id}/materialized-views/${encodeURIComponent(name)}/refresh`),
 };
 
 export const datasetApi = {
@@ -34,12 +40,14 @@ export const datasetApi = {
     fields: (id) => http.get(`/datasets/${id}/fields`),
     updateField: (datasetId, fieldId, payload) => http.put(`/datasets/${datasetId}/fields/${fieldId}`, payload),
     preview: (id, payload) => http.post(`/datasets/${id}/preview`, payload),
+    explain: (id, payload) => http.post(`/datasets/${id}/explain`, payload),
 };
 
 export const chartApi = {
     ...resource('/charts'),
     preview: (payload) => http.post('/charts/preview', payload),
     data: (id, payload) => http.post(`/charts/${id}/data`, payload),
+    explain: (id, payload) => http.post(`/charts/${id}/explain`, payload),
 };
 
 export const dashboardApi = {

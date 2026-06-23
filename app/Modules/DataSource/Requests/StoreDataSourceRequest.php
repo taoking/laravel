@@ -20,7 +20,7 @@ class StoreDataSourceRequest extends FormRequest
         return [
             'tenant_id' => ['nullable', 'integer', 'min:1'],
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['nullable', Rule::in(['mysql'])],
+            'type' => ['nullable', Rule::in(['mysql', 'starrocks', 'doris'])],
             'host' => ['required', 'string', 'max:255'],
             'port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'database_name' => ['required', 'string', 'max:255'],
@@ -30,6 +30,7 @@ class StoreDataSourceRequest extends FormRequest
             'timezone' => ['nullable', 'string', 'max:64'],
             'options_json' => ['nullable', 'array'],
             'options_json.timeout' => ['nullable', 'integer', 'min:1', 'max:30'],
+            'options_json.ssl_enabled' => ['nullable', 'boolean'],
             'status' => ['nullable', Rule::in(['active', 'disabled'])],
         ];
     }

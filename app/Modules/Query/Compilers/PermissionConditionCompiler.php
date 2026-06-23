@@ -5,6 +5,7 @@ namespace App\Modules\Query\Compilers;
 use App\Models\User;
 use App\Modules\DataPermission\Services\DataPermissionService;
 use App\Modules\Dataset\Models\Dataset;
+use App\Modules\Query\Dialects\SqlDialectInterface;
 use App\Modules\Query\DTO\FilterDTO;
 
 class PermissionConditionCompiler
@@ -17,7 +18,7 @@ class PermissionConditionCompiler
     /**
      * @return array{conditions: list<string>, bindings: list<mixed>}
      */
-    public function compile(Dataset $dataset, ?User $user): array
+    public function compile(Dataset $dataset, ?User $user, SqlDialectInterface $dialect): array
     {
         $fieldsByName = $dataset->fields->keyBy('field_name');
         $conditions = [];
@@ -33,6 +34,7 @@ class PermissionConditionCompiler
             $compiled = $this->filterCompiler->compile(
                 new FilterDTO($rule->field_name, $rule->operator, $rule->ruleValue()),
                 $field,
+                $dialect,
             );
             $conditions[] = $compiled['sql'];
             $bindings = array_merge($bindings, $compiled['bindings']);

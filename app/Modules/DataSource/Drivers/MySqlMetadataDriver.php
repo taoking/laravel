@@ -17,6 +17,18 @@ class MySqlMetadataDriver implements DatabaseDriverInterface
     /**
      * @return list<array<string, mixed>>
      */
+    public function databases(ConnectionInterface $connection, DataSource $dataSource): array
+    {
+        return collect($connection->select('show databases'))
+            ->map(fn (object|array $row): ?array => $this->databaseRow($row))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
     public function tables(ConnectionInterface $connection, DataSource $dataSource): array
     {
         $rows = $connection->select(
@@ -41,6 +53,17 @@ SQL,
                 'row_count_estimate' => $row->row_count_estimate !== null ? (int) $row->row_count_estimate : null,
             ])
             ->filter(fn (array $table): bool => IdentifierGuard::isSafe($table['table_name']))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function views(ConnectionInterface $connection, DataSource $dataSource): array
+    {
+        return collect($this->tables($connection, $dataSource))
+            ->filter(fn (array $table): bool => strtoupper((string) ($table['table_type'] ?? '')) === 'VIEW')
             ->values()
             ->all();
     }
@@ -90,16 +113,147 @@ SQL,
             ->all();
     }
 
-    private function normalizeType(string $dataType): string
+    /**
+     * @return array{columns: list<string>, rows: list<array<string, mixed>>, limit: int}
+     */
+    public function preview(ConnectionInterface $connection, DataSource $dataSource, string $tableName, int $limit = 100): array
+    {
+        if (! IdentifierGuard::isSafe($tableName)) {
+            throw new InvalidArgumentException('Unsafe table name.');
+        }
+
+        $limit = min(max($limit, 1), 1000);
+        $fields = $this->fields($connection, $dataSource, $tableName);
+        $columns = collect($fields)
+            ->pluck('field_name')
+            ->take(50)
+            ->values()
+            ->all();
+
+        if ($columns === []) {
+            return [
+                'columns' => [],
+                'rows' => [],
+                'limit' => $limit,
+            ];
+        }
+
+        $selectSql = collect($columns)
+            ->map(fn (string $field): string => $this->quoteIdentifier($field))
+            ->implode(', ');
+        $sql = sprintf('select %s from %s limit %d', $selectSql, $this->quoteIdentifier($tableName), $limit);
+
+        return [
+            'columns' => $columns,
+            'rows' => collect($connection->select($sql))
+                ->map(fn (object|array $row): array => (array) $row)
+                ->values()
+                ->all(),
+            'limit' => $limit,
+        ];
+    }
+
+    /**
+     * @param  list<mixed>  $bindings
+     * @return list<array<string, mixed>>
+     */
+    public function explain(ConnectionInterface $connection, DataSource $dataSource, string $sql, array $bindings = []): array
+    {
+        $this->assertSafeSelect($sql);
+
+        return collect($connection->select('explain '.$sql, $bindings))
+            ->map(fn (object|array $row): array => (array) $row)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function materializedViews(ConnectionInterface $connection, DataSource $dataSource): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function materializedView(ConnectionInterface $connection, DataSource $dataSource, string $name): ?array
+    {
+        if (! IdentifierGuard::isSafe($name)) {
+            throw new InvalidArgumentException('Unsafe materialized view name.');
+        }
+
+        return collect($this->materializedViews($connection, $dataSource))
+            ->first(fn (array $view): bool => ($view['name'] ?? null) === $name);
+    }
+
+    /**
+     * @return array{refreshed: bool, message: string}
+     */
+    public function refreshMaterializedView(ConnectionInterface $connection, DataSource $dataSource, string $name): array
+    {
+        if (! IdentifierGuard::isSafe($name)) {
+            throw new InvalidArgumentException('Unsafe materialized view name.');
+        }
+
+        return [
+            'refreshed' => false,
+            'message' => 'Materialized view refresh is not supported by this data source driver.',
+        ];
+    }
+
+    public function dialect(): string
+    {
+        return 'mysql';
+    }
+
+    protected function normalizeType(string $dataType): string
     {
         return match (strtolower($dataType)) {
             'tinyint', 'smallint', 'mediumint', 'int', 'integer', 'bigint' => 'integer',
-            'decimal', 'numeric', 'float', 'double', 'real' => 'decimal',
+            'decimal', 'numeric' => 'decimal',
+            'float', 'double', 'real' => 'float',
             'date' => 'date',
             'datetime', 'timestamp', 'time', 'year' => 'datetime',
             'json' => 'json',
             'bit', 'bool', 'boolean' => 'boolean',
             default => 'string',
         };
+    }
+
+    protected function quoteIdentifier(string $identifier): string
+    {
+        if (! IdentifierGuard::isSafe($identifier)) {
+            throw new InvalidArgumentException("Unsafe SQL identifier [{$identifier}].");
+        }
+
+        return '`'.$identifier.'`';
+    }
+
+    private function databaseRow(object|array $row): ?array
+    {
+        $values = array_values((array) $row);
+        $database = isset($values[0]) ? (string) $values[0] : null;
+
+        if ($database === null || ! IdentifierGuard::isSafe($database)) {
+            return null;
+        }
+
+        return [
+            'database_name' => $database,
+            'name' => $database,
+        ];
+    }
+
+    private function assertSafeSelect(string $sql): void
+    {
+        if (preg_match('/\A\s*select\b/i', $sql) !== 1) {
+            throw new InvalidArgumentException('Only SELECT queries can be explained.');
+        }
+
+        if (preg_match('/\b(drop|delete|update|insert|alter|truncate)\b/i', $sql) === 1) {
+            throw new InvalidArgumentException('The query contains a forbidden SQL keyword.');
+        }
     }
 }

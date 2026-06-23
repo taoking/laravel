@@ -30,7 +30,7 @@ class DataSourceService
     {
         return DB::transaction(function () use ($payload, $actor): DataSource {
             $payload['type'] ??= 'mysql';
-            $payload['port'] ??= 3306;
+            $payload['port'] ??= $this->defaultPort((string) $payload['type']);
             $payload['charset'] ??= 'utf8mb4';
             $payload['timezone'] ??= '+00:00';
             $payload['status'] ??= 'active';
@@ -77,5 +77,13 @@ class DataSourceService
             $dataSource->tables()->delete();
             $dataSource->delete();
         });
+    }
+
+    private function defaultPort(string $type): int
+    {
+        return match ($type) {
+            'starrocks', 'doris' => 9030,
+            default => 3306,
+        };
     }
 }

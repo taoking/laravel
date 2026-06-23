@@ -3,25 +3,22 @@
 namespace App\Modules\Query\Compilers;
 
 use App\Modules\Dataset\Models\DatasetField;
+use App\Modules\Query\Dialects\SqlDialectInterface;
 use App\Modules\Query\DTO\MetricDTO;
 
 class MetricCompiler
 {
-    public function __construct(private readonly SqlIdentifier $identifier) {}
-
     /**
      * @return array{select: string, alias: string, column: array{name: string, label: string, type: string}}
      */
-    public function compile(MetricDTO $metric, DatasetField $field): array
+    public function compile(MetricDTO $metric, DatasetField $field, SqlDialectInterface $dialect): array
     {
         $aggregate = $metric->aggregate ?? ($field->default_aggregate !== 'none' ? $field->default_aggregate : 'count');
         $alias = $metric->alias ?? "{$metric->field}_{$aggregate}";
-        $expression = $aggregate === 'countDistinct'
-            ? sprintf('count(distinct %s)', $this->identifier->quote($field->field_name))
-            : sprintf('%s(%s)', $aggregate, $this->identifier->quote($field->field_name));
+        $expression = $dialect->compileAggregate($aggregate, $dialect->quoteIdentifier($field->field_name));
 
         return [
-            'select' => "{$expression} as ".$this->identifier->quote($alias),
+            'select' => "{$expression} as ".$dialect->quoteIdentifier($alias),
             'alias' => $alias,
             'column' => [
                 'name' => $alias,

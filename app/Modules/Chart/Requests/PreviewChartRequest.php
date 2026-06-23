@@ -22,7 +22,7 @@ class PreviewChartRequest extends StoreChartRequest
             'config_json.dimensions.*.alias' => ['nullable', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'config_json.metrics' => ['nullable', 'array'],
             'config_json.metrics.*.field' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
-            'config_json.metrics.*.aggregate' => ['nullable', 'string', Rule::in(['sum', 'avg', 'count', 'max', 'min'])],
+            'config_json.metrics.*.aggregate' => ['nullable', 'string', Rule::in(['sum', 'avg', 'count', 'countDistinct', 'max', 'min'])],
             'config_json.metrics.*.alias' => ['nullable', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'config_json.filters' => ['nullable', 'array'],
             'config_json.filters.*.field' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],

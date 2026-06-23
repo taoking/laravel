@@ -45,6 +45,7 @@ class QueryService
         $this->validator->validate($dataset, $query, $user);
 
         $compiledQuery = $this->sqlCompiler->compile($dataset, $query, $user);
+        $sourceContext = $this->sourceContext($dataset);
         $plan = $this->accelerationRouter->plan($dataset, $query, $user);
         $aggregateDecision = $this->aggregateRouter->decide($plan);
         $aggregateFallbackReason = null;
@@ -56,6 +57,7 @@ class QueryService
                 $aggregateQuery = $this->aggregateRouter->compile($plan, $aggregateDecision->definition);
                 $context = [
                     ...$cacheContext,
+                    ...$sourceContext,
                     ...$this->aggregateContext($aggregateDecision, true),
                     'fallback_used' => false,
                     'detail_fallback_used' => false,
@@ -116,6 +118,7 @@ class QueryService
                 if (! $aggregateDecision->fallbackAllowed) {
                     $this->logService->failure($dataset, $user, $aggregateQuery ?? $compiledQuery, $exception, context: [
                         ...$cacheContext,
+                        ...$sourceContext,
                         ...$this->aggregateContext($aggregateDecision, false),
                         'fallback_used' => false,
                         'fallback_reason' => $exception->getMessage(),
@@ -135,6 +138,7 @@ class QueryService
                 $acceleratedQuery = $this->accelerationExecutor->compile($plan, $decision->profile);
                 $context = [
                     ...$cacheContext,
+                    ...$sourceContext,
                     ...$this->accelerationContext($decision, true),
                     ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, true),
                 ];
@@ -193,6 +197,7 @@ class QueryService
                 if (! $decision->fallbackAllowed) {
                     $this->logService->failure($dataset, $user, $compiledQuery, $exception, context: [
                         ...$cacheContext,
+                        ...$sourceContext,
                         ...$this->accelerationContext($decision, false),
                         ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, true),
                         'fallback_used' => false,
@@ -204,6 +209,7 @@ class QueryService
 
                 return $this->executeSource($dataset, $query, $user, $compiledQuery, [
                     ...$cacheContext,
+                    ...$sourceContext,
                     ...$this->accelerationContext($decision, false),
                     ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, true),
                     'fallback_used' => true,
@@ -214,6 +220,7 @@ class QueryService
 
         return $this->executeSource($dataset, $query, $user, $compiledQuery, [
             ...$cacheContext,
+            ...$sourceContext,
             ...$this->accelerationContext($decision, false),
             ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, false),
             'fallback_used' => $aggregateFallbackReason !== null,
@@ -229,6 +236,11 @@ class QueryService
      */
     private function executeSource(Dataset $dataset, QueryRequestDTO $query, ?User $user, CompiledQuery $compiledQuery, array $cacheContext): array
     {
+        $cacheContext = [
+            ...$cacheContext,
+            ...$this->sourceContext($dataset),
+        ];
+
         if ($query->useCache) {
             $cached = $this->cacheService->get($compiledQuery, $user, $cacheContext);
 
@@ -283,13 +295,19 @@ class QueryService
      */
     private function accelerationContext(AccelerationRouteDecision $decision, bool $hit): array
     {
-        return [
+        $context = [
             'acceleration_hit' => $hit,
             'acceleration_profile_id' => $decision->profile?->id,
             'acceleration_engine' => $decision->engineType,
             'acceleration_mode' => $decision->mode,
             'acceleration_version' => $decision->profile?->version ?? 0,
         ];
+
+        if ($decision->engineType !== null) {
+            $context['engine_type'] = $decision->engineType;
+        }
+
+        return $context;
     }
 
     /**
@@ -298,6 +316,7 @@ class QueryService
     private function aggregateContext(AggregateRouteDecision $decision, bool $hit): array
     {
         return [
+            'engine_type' => $decision->profile?->engine_type ?? 'clickhouse',
             'acceleration_hit' => $hit,
             'acceleration_profile_id' => $decision->profile?->id,
             'acceleration_engine' => $decision->profile?->engine_type ?? 'clickhouse',
@@ -335,6 +354,9 @@ class QueryService
     private function metaFromContext(array $context): array
     {
         return [
+            'engine_type' => $context['engine_type'] ?? null,
+            'data_source_type' => $context['data_source_type'] ?? null,
+            'data_source_id' => $context['data_source_id'] ?? null,
             'acceleration_hit' => (bool) ($context['acceleration_hit'] ?? false),
             'acceleration_profile_id' => $context['acceleration_profile_id'] ?? null,
             'acceleration_engine' => $context['acceleration_engine'] ?? null,
@@ -344,6 +366,20 @@ class QueryService
             'fallback_used' => (bool) ($context['fallback_used'] ?? false),
             'fallback_reason' => $context['fallback_reason'] ?? null,
             'detail_fallback_used' => (bool) ($context['detail_fallback_used'] ?? false),
+        ];
+    }
+
+    /**
+     * @return array{engine_type: string|null, data_source_type: string|null, data_source_id: int|null}
+     */
+    private function sourceContext(Dataset $dataset): array
+    {
+        $dataset->loadMissing('dataSource');
+
+        return [
+            'engine_type' => $dataset->dataSource?->type,
+            'data_source_type' => $dataset->dataSource?->type,
+            'data_source_id' => $dataset->dataSource?->id !== null ? (int) $dataset->dataSource->id : null,
         ];
     }
 

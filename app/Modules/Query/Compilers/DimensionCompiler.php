@@ -3,22 +3,21 @@
 namespace App\Modules\Query\Compilers;
 
 use App\Modules\Dataset\Models\DatasetField;
+use App\Modules\Query\Dialects\SqlDialectInterface;
 use App\Modules\Query\DTO\DimensionDTO;
 
 class DimensionCompiler
 {
-    public function __construct(private readonly SqlIdentifier $identifier) {}
-
     /**
      * @return array{select: string, group_by: string, alias: string, column: array{name: string, label: string, type: string}}
      */
-    public function compile(DimensionDTO $dimension, DatasetField $field): array
+    public function compile(DimensionDTO $dimension, DatasetField $field, SqlDialectInterface $dialect): array
     {
-        $expression = $this->expression($dimension, $field);
+        $expression = $this->expression($dimension, $field, $dialect);
         $alias = $dimension->alias ?? $dimension->field;
 
         return [
-            'select' => "{$expression} as ".$this->identifier->quote($alias),
+            'select' => "{$expression} as ".$dialect->quoteIdentifier($alias),
             'group_by' => $expression,
             'alias' => $alias,
             'column' => [
@@ -29,19 +28,12 @@ class DimensionCompiler
         ];
     }
 
-    private function expression(DimensionDTO $dimension, DatasetField $field): string
+    private function expression(DimensionDTO $dimension, DatasetField $field, SqlDialectInterface $dialect): string
     {
-        $quotedField = $this->identifier->quote($field->field_name);
+        $quotedField = $dialect->quoteIdentifier($field->field_name);
 
-        return match ($dimension->timeGranularity) {
-            'year' => "year({$quotedField})",
-            'quarter' => "concat(year({$quotedField}), '-Q', quarter({$quotedField}))",
-            'month' => "date_format({$quotedField}, '%Y-%m')",
-            'week' => "yearweek({$quotedField}, 3)",
-            'day' => "date_format({$quotedField}, '%Y-%m-%d')",
-            'hour' => "date_format({$quotedField}, '%Y-%m-%d %H:00:00')",
-            'minute' => "date_format({$quotedField}, '%Y-%m-%d %H:%i:00')",
-            default => $quotedField,
-        };
+        return $dimension->timeGranularity !== null
+            ? $dialect->compileDateGrain($quotedField, $dimension->timeGranularity)
+            : $quotedField;
     }
 }

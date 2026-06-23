@@ -5,7 +5,7 @@ namespace App\Modules\Query\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ExecuteQueryRequest extends FormRequest
+class ExplainDatasetRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,7 +18,6 @@ class ExecuteQueryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'dataset_id' => ['required', 'integer', 'exists:datasets,id'],
             'dimensions' => ['nullable', 'array'],
             'dimensions.*.field' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'dimensions.*.time_granularity' => ['nullable', 'string', Rule::in(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute'])],
@@ -36,7 +35,6 @@ class ExecuteQueryRequest extends FormRequest
             'sorts.*.direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'offset' => ['nullable', 'integer', 'min:0'],
-            'use_cache' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -2,14 +2,13 @@
 
 namespace App\Modules\Query\Compilers;
 
+use App\Modules\Query\Dialects\SqlDialectInterface;
 use App\Modules\Query\DTO\SortDTO;
 
 class SortCompiler
 {
-    public function __construct(private readonly SqlIdentifier $identifier) {}
-
-    public function compile(SortDTO $sort): string
+    public function compile(SortDTO $sort, SqlDialectInterface $dialect): string
     {
-        return $this->identifier->quote($sort->field).' '.$sort->direction;
+        return $dialect->quoteIdentifier($sort->field).' '.$sort->direction;
     }
 }
