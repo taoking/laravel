@@ -3,6 +3,8 @@
 namespace App\Modules\Dataset\Models;
 
 use App\Models\User;
+use App\Modules\Acceleration\Models\AccelerationAggregateDefinition;
+use App\Modules\Acceleration\Models\AccelerationProfile;
 use App\Modules\DataSource\Models\DataSource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -70,6 +72,22 @@ class Dataset extends Model
     public function filters(): HasMany
     {
         return $this->hasMany(DatasetFilter::class);
+    }
+
+    /**
+     * @return HasMany<AccelerationProfile, $this>
+     */
+    public function accelerationProfiles(): HasMany
+    {
+        return $this->hasMany(AccelerationProfile::class)->latest('id');
+    }
+
+    /**
+     * @return HasMany<AccelerationAggregateDefinition, $this>
+     */
+    public function accelerationAggregateDefinitions(): HasMany
+    {
+        return $this->hasMany(AccelerationAggregateDefinition::class)->latest('id');
     }
 
     /**

@@ -53,12 +53,18 @@ class QueryCacheService
     {
         $scope = $user !== null ? 'user:'.$user->id : 'guest';
         $chartId = $context['chart_id'] ?? null;
+        $accelerationHit = (bool) ($context['acceleration_hit'] ?? false);
+        $profileId = is_numeric($context['acceleration_profile_id'] ?? null) ? (int) $context['acceleration_profile_id'] : null;
+        $version = is_numeric($context['acceleration_version'] ?? null) ? (int) $context['acceleration_version'] : 0;
+        $aggregateDefinitionId = ($accelerationHit && ($context['acceleration_mode'] ?? null) === 'aggregate_table' && is_numeric($context['aggregate_definition_id'] ?? null))
+            ? (int) $context['aggregate_definition_id']
+            : null;
 
         if (is_numeric($chartId)) {
-            return $this->keyBuilder->chartQuery((int) $chartId, $query->hash, $scope);
+            return $this->keyBuilder->chartQuery((int) $chartId, $query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId);
         }
 
-        return $this->keyBuilder->query($query->hash, $scope);
+        return $this->keyBuilder->query($query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId);
     }
 
     /**

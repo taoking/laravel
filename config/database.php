@@ -64,6 +64,17 @@ return [
             ]) : [],
         ],
 
+        'clickhouse' => [
+            'driver' => 'clickhouse-http',
+            'scheme' => env('BI_CLICKHOUSE_SCHEME', 'http'),
+            'host' => env('BI_CLICKHOUSE_HOST', '127.0.0.1'),
+            'port' => env('BI_CLICKHOUSE_PORT', 8123),
+            'database' => env('BI_CLICKHOUSE_DATABASE', 'bi_accelerator'),
+            'username' => env('BI_CLICKHOUSE_USERNAME', 'default'),
+            'password' => env('BI_CLICKHOUSE_PASSWORD', ''),
+            'timeout' => env('BI_CLICKHOUSE_TIMEOUT', 30),
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 
 class QueryRequestValidator
 {
-    private const AGGREGATES = ['sum', 'avg', 'count', 'max', 'min'];
+    private const AGGREGATES = ['sum', 'avg', 'count', 'countDistinct', 'max', 'min'];
 
     private const OPERATORS = ['=', '!=', '>', '>=', '<', '<=', 'in', 'not_in', 'like', 'not_like', 'between', 'is_null', 'is_not_null'];
 

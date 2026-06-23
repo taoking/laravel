@@ -15,6 +15,13 @@ x-app-environment: &app-environment
   MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
   MINIO_BUCKET: ${MINIO_BUCKET:-bi-platform}
   MINIO_USE_PATH_STYLE_ENDPOINT: true
+  BI_ACCELERATION_ENABLED: ${BI_ACCELERATION_ENABLED:-true}
+  BI_ACCELERATION_ENGINE: ${BI_ACCELERATION_ENGINE:-clickhouse}
+  BI_CLICKHOUSE_HOST: ${BI_CLICKHOUSE_HOST:-clickhouse}
+  BI_CLICKHOUSE_PORT: ${BI_CLICKHOUSE_PORT:-8123}
+  BI_CLICKHOUSE_DATABASE: ${BI_CLICKHOUSE_DATABASE:-bi_accelerator}
+  BI_CLICKHOUSE_USERNAME: ${BI_CLICKHOUSE_USERNAME:-default}
+  BI_CLICKHOUSE_PASSWORD: ${BI_CLICKHOUSE_PASSWORD:-}
 
 services:
   nginx:
@@ -77,6 +84,19 @@ services:
     volumes:
       - minio-data:/data
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "${BI_CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${BI_CLICKHOUSE_NATIVE_PORT:-9000}:9000"
+    environment:
+      CLICKHOUSE_DB: ${BI_CLICKHOUSE_DATABASE:-bi_accelerator}
+      CLICKHOUSE_USER: ${BI_CLICKHOUSE_USERNAME:-default}
+      CLICKHOUSE_PASSWORD: ${BI_CLICKHOUSE_PASSWORD:-}
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./docker/clickhouse/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml:ro
+
   queue-worker:
     build:
       context: .
@@ -120,3 +140,4 @@ volumes:
   mysql-data:
   redis-data:
   minio-data:
+  clickhouse-data:

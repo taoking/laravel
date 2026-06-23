@@ -24,9 +24,11 @@ class CacheKeyBuilder
         return "bi:chart:{$chartId}:config";
     }
 
-    public function chartQuery(int $chartId, string $queryHash, string $scope): string
+    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null): string
     {
-        return "bi:chart:{$chartId}:query:{$scope}:{$queryHash}";
+        $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
+
+        return "bi:chart:{$chartId}:query:{$scope}:{$acceleration}:{$queryHash}";
     }
 
     public function chartQueryIndex(int $chartId): string
@@ -49,8 +51,22 @@ class CacheKeyBuilder
         return "bi:user:{$userId}:data_permissions";
     }
 
-    public function query(string $queryHash, string $scope): string
+    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null): string
     {
-        return "bi:query:{$scope}:{$queryHash}";
+        $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
+
+        return "bi:query:{$scope}:{$acceleration}:{$queryHash}";
+    }
+
+    private function accelerationSegment(bool $hit, ?int $profileId, int $version, ?int $aggregateDefinitionId = null): string
+    {
+        if ($hit && $aggregateDefinitionId !== null) {
+            return "agg:{$aggregateDefinitionId}:v:{$version}";
+        }
+
+        $state = $hit ? 'hit' : 'raw';
+        $profile = $profileId !== null ? (string) $profileId : 'none';
+
+        return "acc:{$state}:profile:{$profile}:v:{$version}";
     }
 }

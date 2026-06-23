@@ -36,6 +36,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - 资源权限、行级数据权限、列级字段权限。
 - 操作日志、登录日志、查询日志、导出日志。
 - 健康检查和 Prometheus metrics。
+- BI 查询加速：ClickHouse 明细表、预聚合表、加速 profile、同步任务、自动路由、fallback 和命中日志。
 - Vue 管理端：登录、主布局、菜单路由、数据源、数据集、图表、仪表盘、导入导出、查询日志、权限管理、系统监控。
 
 ## 文档入口
@@ -43,6 +44,9 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - [Plan 执行日志](docs/PLAN_EXECUTION_LOG.md)：记录 Phase 1 到 Phase 13 的实现过程、产物和验收结果。
 - [项目使用说明](docs/PROJECT_USAGE.md)：包含 Docker 启动、本地运行、前端管理端、API 认证、主要接口示例、测试和注意事项。
 - [功能页面文档介绍](docs/FEATURE_PAGES.md)：按前端页面/工作台说明已实现功能、接口和交互。
+- [BI 查询加速方案](docs/bi-acceleration.md)：说明 ClickHouse 加速层、profile、同步任务、查询路由、fallback、缓存 key 和边界。
+- [ClickHouse 查询加速最小闭环](docs/bi-acceleration-clickhouse.md)：Phase 10.1 的 ClickHouse 明细表加速闭环、API 和验收边界。
+- [预聚合表 / 物化视图加速](docs/bi-acceleration-aggregate.md)：Phase 10.2 的聚合定义、构建、命中、回退、缓存和日志边界。
 - [原始开发计划](plan.md)：完整项目规划。
 
 ## 快速启动
@@ -63,6 +67,7 @@ npm run build
 管理端: http://localhost:8080
 API: http://localhost:8080/api
 MinIO Console: http://localhost:9001
+ClickHouse HTTP: http://localhost:8123
 ```
 
 MinIO 默认账号：
@@ -88,8 +93,8 @@ php artisan migrate --pretend --database=sqlite
 当前验证基线：
 
 ```text
-48 tests, 394 assertions
-90 API routes
+59 tests, 491 assertions
+116 API routes
 ```
 
 ## API 认证
@@ -126,6 +131,7 @@ Authorization: Bearer <token>
 - Imports：`/api/import-tasks`
 - Exports：`/api/export-tasks`
 - Data Permissions：`/api/resource-permissions`、`/api/data-permission-rules`、`/api/column-permission-rules`
+- Acceleration：`/api/acceleration/profiles`、`/api/acceleration/aggregates`、`/api/acceleration/tasks`、`/api/datasets/{dataset}/acceleration`
 - Audit：`/api/operation-logs`、`/api/login-logs`、`/api/query-logs`、`/api/export-logs`
 - Monitor：`/api/health`、`/api/metrics`
 
@@ -135,5 +141,6 @@ Authorization: Bearer <token>
 
 - 生产环境应使用 Redis queue，并运行 queue worker。
 - 导入和导出依赖 MinIO/S3 disk。
+- 查询加速依赖 ClickHouse 和队列 worker；预聚合失败会先回退 ClickHouse 明细表，明细不可用时再回退原始数据源查询。
 - `/api/health*` 和 `/api/metrics` 当前为公开接口，生产环境建议在网关或 middleware 中限制访问。
 - 图表查询默认启用缓存；配置变更、数据集字段变更会清理相关缓存。

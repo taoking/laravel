@@ -1,5 +1,10 @@
 <?php
 
+use App\Modules\Acceleration\Controllers\AccelerationAggregateController;
+use App\Modules\Acceleration\Controllers\AccelerationProfileController;
+use App\Modules\Acceleration\Controllers\AccelerationTaskController;
+use App\Modules\Acceleration\Controllers\DatasetAccelerationAggregateController;
+use App\Modules\Acceleration\Controllers\DatasetAccelerationController;
 use App\Modules\Audit\Controllers\ExportLogController;
 use App\Modules\Audit\Controllers\LoginLogController;
 use App\Modules\Audit\Controllers\OperationLogController;
@@ -51,9 +56,30 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('datasets/{dataset}/fields', [DatasetController::class, 'fields']);
     Route::put('datasets/{dataset}/fields/{field}', [DatasetController::class, 'updateField']);
     Route::post('datasets/{dataset}/preview', [DatasetController::class, 'preview']);
+    Route::get('datasets/{dataset}/acceleration', [DatasetAccelerationController::class, 'index']);
+    Route::post('datasets/{dataset}/acceleration/build', [DatasetAccelerationController::class, 'build']);
+    Route::get('datasets/{dataset}/acceleration/columns', [DatasetAccelerationController::class, 'columns']);
+    Route::get('datasets/{dataset}/acceleration/aggregates', [DatasetAccelerationAggregateController::class, 'index']);
+    Route::post('datasets/{dataset}/acceleration/aggregates', [DatasetAccelerationAggregateController::class, 'store']);
     Route::apiResource('datasets', DatasetController::class);
 
     Route::post('query/execute', [QueryController::class, 'execute']);
+
+    Route::prefix('acceleration')->group(function (): void {
+        Route::get('tasks', [AccelerationTaskController::class, 'index']);
+        Route::get('tasks/{task}', [AccelerationTaskController::class, 'show']);
+        Route::post('aggregates/{aggregate}/build', [AccelerationAggregateController::class, 'build']);
+        Route::post('aggregates/{aggregate}/refresh', [AccelerationAggregateController::class, 'refresh']);
+        Route::post('aggregates/{aggregate}/disable', [AccelerationAggregateController::class, 'disable']);
+        Route::post('aggregates/{aggregate}/activate', [AccelerationAggregateController::class, 'activate']);
+        Route::apiResource('aggregates', AccelerationAggregateController::class);
+        Route::post('profiles/{profile}/test', [AccelerationProfileController::class, 'test']);
+        Route::post('profiles/{profile}/build', [AccelerationProfileController::class, 'build']);
+        Route::post('profiles/{profile}/refresh', [AccelerationProfileController::class, 'refresh']);
+        Route::post('profiles/{profile}/disable', [AccelerationProfileController::class, 'disable']);
+        Route::post('profiles/{profile}/activate', [AccelerationProfileController::class, 'activate']);
+        Route::apiResource('profiles', AccelerationProfileController::class);
+    });
 
     Route::post('charts/preview', [ChartController::class, 'preview']);
     Route::post('charts/{chart}/data', [ChartController::class, 'data']);

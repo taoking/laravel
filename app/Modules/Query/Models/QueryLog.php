@@ -3,6 +3,8 @@
 namespace App\Modules\Query\Models;
 
 use App\Models\User;
+use App\Modules\Acceleration\Models\AccelerationAggregateDefinition;
+use App\Modules\Acceleration\Models\AccelerationProfile;
 use App\Modules\Chart\Models\Chart;
 use App\Modules\Dashboard\Models\Dashboard;
 use App\Modules\Dataset\Models\Dataset;
@@ -32,6 +34,17 @@ class QueryLog extends Model
         'is_slow',
         'status',
         'error_message',
+        'acceleration_hit',
+        'acceleration_profile_id',
+        'acceleration_engine',
+        'acceleration_mode',
+        'fallback_used',
+        'fallback_reason',
+        'source_duration_ms',
+        'accelerated_duration_ms',
+        'aggregate_definition_id',
+        'aggregate_table',
+        'detail_fallback_used',
     ];
 
     /**
@@ -43,6 +56,9 @@ class QueryLog extends Model
             'bindings_json' => 'array',
             'cached' => 'boolean',
             'is_slow' => 'boolean',
+            'acceleration_hit' => 'boolean',
+            'fallback_used' => 'boolean',
+            'detail_fallback_used' => 'boolean',
         ];
     }
 
@@ -76,5 +92,21 @@ class QueryLog extends Model
     public function dashboard(): BelongsTo
     {
         return $this->belongsTo(Dashboard::class);
+    }
+
+    /**
+     * @return BelongsTo<AccelerationProfile, $this>
+     */
+    public function accelerationProfile(): BelongsTo
+    {
+        return $this->belongsTo(AccelerationProfile::class);
+    }
+
+    /**
+     * @return BelongsTo<AccelerationAggregateDefinition, $this>
+     */
+    public function aggregateDefinition(): BelongsTo
+    {
+        return $this->belongsTo(AccelerationAggregateDefinition::class, 'aggregate_definition_id');
     }
 }

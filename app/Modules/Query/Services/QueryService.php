@@ -3,9 +3,15 @@
 namespace App\Modules\Query\Services;
 
 use App\Models\User;
+use App\Modules\Acceleration\DTO\AccelerationRouteDecision;
+use App\Modules\Acceleration\DTO\AggregateRouteDecision;
+use App\Modules\Acceleration\Services\AccelerationQueryExecutor;
+use App\Modules\Acceleration\Services\AccelerationQueryRouter;
+use App\Modules\Acceleration\Services\AggregateQueryRouter;
 use App\Modules\DataPermission\Services\DataPermissionService;
 use App\Modules\Dataset\Models\Dataset;
 use App\Modules\Query\Compilers\SqlCompiler;
+use App\Modules\Query\DTO\CompiledQuery;
 use App\Modules\Query\DTO\QueryRequestDTO;
 use App\Modules\Query\Validators\QueryRequestValidator;
 use Throwable;
@@ -19,6 +25,9 @@ class QueryService
         private readonly QueryExecutor $executor,
         private readonly QueryLogService $logService,
         private readonly DataPermissionService $dataPermissionService,
+        private readonly AggregateQueryRouter $aggregateRouter,
+        private readonly AccelerationQueryRouter $accelerationRouter,
+        private readonly AccelerationQueryExecutor $accelerationExecutor,
     ) {}
 
     /**
@@ -36,7 +45,190 @@ class QueryService
         $this->validator->validate($dataset, $query, $user);
 
         $compiledQuery = $this->sqlCompiler->compile($dataset, $query, $user);
+        $plan = $this->accelerationRouter->plan($dataset, $query, $user);
+        $aggregateDecision = $this->aggregateRouter->decide($plan);
+        $aggregateFallbackReason = null;
 
+        if ($aggregateDecision->useAggregate && $aggregateDecision->definition !== null) {
+            $aggregateQuery = null;
+
+            try {
+                $aggregateQuery = $this->aggregateRouter->compile($plan, $aggregateDecision->definition);
+                $context = [
+                    ...$cacheContext,
+                    ...$this->aggregateContext($aggregateDecision, true),
+                    'fallback_used' => false,
+                    'detail_fallback_used' => false,
+                ];
+
+                if ($query->useCache) {
+                    $cached = $this->cacheService->get($aggregateQuery, $user, $context);
+
+                    if ($cached !== null) {
+                        $this->logService->success($dataset, $user, $aggregateQuery, 0, count($cached['rows']), true, [
+                            ...$context,
+                            'accelerated_duration_ms' => 0,
+                        ]);
+
+                        return [
+                            'columns' => $cached['columns'],
+                            'rows' => $cached['rows'],
+                            'meta' => [
+                                ...$this->metaFromContext($context),
+                                'elapsed_ms' => 0,
+                                'cached' => true,
+                                'total' => count($cached['rows']),
+                                'accelerated_duration_ms' => 0,
+                            ],
+                        ];
+                    }
+                }
+
+                $execution = $this->aggregateRouter->execute($aggregateDecision->definition, $aggregateQuery);
+                $sourceDurationMs = $this->sourceComparisonDuration($dataset, $compiledQuery);
+                $result = [
+                    'columns' => $aggregateQuery->columns,
+                    'rows' => $execution->rows,
+                ];
+
+                if ($query->useCache) {
+                    $this->cacheService->put($aggregateQuery, $result, $user, $context);
+                }
+
+                $this->logService->success($dataset, $user, $aggregateQuery, $execution->elapsedMs, count($execution->rows), false, [
+                    ...$context,
+                    'source_duration_ms' => $sourceDurationMs,
+                    'accelerated_duration_ms' => $execution->elapsedMs,
+                ]);
+
+                return [
+                    ...$result,
+                    'meta' => [
+                        ...$this->metaFromContext($context),
+                        'elapsed_ms' => $execution->elapsedMs,
+                        'cached' => false,
+                        'total' => count($execution->rows),
+                        'source_duration_ms' => $sourceDurationMs,
+                        'accelerated_duration_ms' => $execution->elapsedMs,
+                    ],
+                ];
+            } catch (Throwable $exception) {
+                if (! $aggregateDecision->fallbackAllowed) {
+                    $this->logService->failure($dataset, $user, $aggregateQuery ?? $compiledQuery, $exception, context: [
+                        ...$cacheContext,
+                        ...$this->aggregateContext($aggregateDecision, false),
+                        'fallback_used' => false,
+                        'fallback_reason' => $exception->getMessage(),
+                    ]);
+
+                    throw $exception;
+                }
+
+                $aggregateFallbackReason = $exception->getMessage();
+            }
+        }
+
+        $decision = $this->accelerationRouter->decide($plan);
+
+        if ($decision->useAcceleration && $decision->profile !== null) {
+            try {
+                $acceleratedQuery = $this->accelerationExecutor->compile($plan, $decision->profile);
+                $context = [
+                    ...$cacheContext,
+                    ...$this->accelerationContext($decision, true),
+                    ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, true),
+                ];
+
+                if ($query->useCache) {
+                    $cached = $this->cacheService->get($acceleratedQuery, $user, $context);
+
+                    if ($cached !== null) {
+                        $this->logService->success($dataset, $user, $acceleratedQuery, 0, count($cached['rows']), true, [
+                            ...$context,
+                            'accelerated_duration_ms' => 0,
+                        ]);
+
+                        return [
+                            'columns' => $cached['columns'],
+                            'rows' => $cached['rows'],
+                            'meta' => [
+                                ...$this->metaFromContext($context),
+                                'elapsed_ms' => 0,
+                                'cached' => true,
+                                'total' => count($cached['rows']),
+                            ],
+                        ];
+                    }
+                }
+
+                $execution = $this->accelerationExecutor->execute($decision->profile, $acceleratedQuery);
+                $sourceDurationMs = $this->sourceComparisonDuration($dataset, $compiledQuery);
+                $result = [
+                    'columns' => $acceleratedQuery->columns,
+                    'rows' => $execution->rows,
+                ];
+
+                if ($query->useCache) {
+                    $this->cacheService->put($acceleratedQuery, $result, $user, $context);
+                }
+
+                $this->logService->success($dataset, $user, $acceleratedQuery, $execution->elapsedMs, count($execution->rows), false, [
+                    ...$context,
+                    'source_duration_ms' => $sourceDurationMs,
+                    'accelerated_duration_ms' => $execution->elapsedMs,
+                ]);
+
+                return [
+                    ...$result,
+                    'meta' => [
+                        ...$this->metaFromContext($context),
+                        'elapsed_ms' => $execution->elapsedMs,
+                        'cached' => false,
+                        'total' => count($execution->rows),
+                        'source_duration_ms' => $sourceDurationMs,
+                        'accelerated_duration_ms' => $execution->elapsedMs,
+                    ],
+                ];
+            } catch (Throwable $exception) {
+                if (! $decision->fallbackAllowed) {
+                    $this->logService->failure($dataset, $user, $compiledQuery, $exception, context: [
+                        ...$cacheContext,
+                        ...$this->accelerationContext($decision, false),
+                        ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, true),
+                        'fallback_used' => false,
+                        'fallback_reason' => $exception->getMessage(),
+                    ]);
+
+                    throw $exception;
+                }
+
+                return $this->executeSource($dataset, $query, $user, $compiledQuery, [
+                    ...$cacheContext,
+                    ...$this->accelerationContext($decision, false),
+                    ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, true),
+                    'fallback_used' => true,
+                    'fallback_reason' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return $this->executeSource($dataset, $query, $user, $compiledQuery, [
+            ...$cacheContext,
+            ...$this->accelerationContext($decision, false),
+            ...$this->aggregateFallbackContext($aggregateDecision, $aggregateFallbackReason, false),
+            'fallback_used' => $aggregateFallbackReason !== null,
+            'fallback_reason' => $aggregateFallbackReason !== null
+                ? 'aggregate_table: '.$aggregateFallbackReason.'; detail_table: '.$decision->reason
+                : $decision->reason,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $cacheContext
+     * @return array{columns: list<array{name: string, label: string, type: string}>, rows: list<array<string, mixed>>, meta: array<string, mixed>}
+     */
+    private function executeSource(Dataset $dataset, QueryRequestDTO $query, ?User $user, CompiledQuery $compiledQuery, array $cacheContext): array
+    {
         if ($query->useCache) {
             $cached = $this->cacheService->get($compiledQuery, $user, $cacheContext);
 
@@ -47,6 +239,7 @@ class QueryService
                     'columns' => $cached['columns'],
                     'rows' => $cached['rows'],
                     'meta' => [
+                        ...$this->metaFromContext($cacheContext),
                         'elapsed_ms' => 0,
                         'cached' => true,
                         'total' => count($cached['rows']),
@@ -77,10 +270,93 @@ class QueryService
         return [
             ...$result,
             'meta' => [
+                ...$this->metaFromContext($cacheContext),
                 'elapsed_ms' => $execution->elapsedMs,
                 'cached' => false,
                 'total' => count($execution->rows),
             ],
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function accelerationContext(AccelerationRouteDecision $decision, bool $hit): array
+    {
+        return [
+            'acceleration_hit' => $hit,
+            'acceleration_profile_id' => $decision->profile?->id,
+            'acceleration_engine' => $decision->engineType,
+            'acceleration_mode' => $decision->mode,
+            'acceleration_version' => $decision->profile?->version ?? 0,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function aggregateContext(AggregateRouteDecision $decision, bool $hit): array
+    {
+        return [
+            'acceleration_hit' => $hit,
+            'acceleration_profile_id' => $decision->profile?->id,
+            'acceleration_engine' => $decision->profile?->engine_type ?? 'clickhouse',
+            'acceleration_mode' => 'aggregate_table',
+            'acceleration_version' => $decision->definition?->version ?? 0,
+            'aggregate_definition_id' => $decision->definition?->id,
+            'aggregate_table' => $decision->definition?->target_table,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function aggregateFallbackContext(AggregateRouteDecision $decision, ?string $reason, bool $detailFallbackUsed): array
+    {
+        if ($reason === null || $decision->definition === null) {
+            return [
+                'detail_fallback_used' => false,
+            ];
+        }
+
+        return [
+            'aggregate_definition_id' => $decision->definition->id,
+            'aggregate_table' => $decision->definition->target_table,
+            'detail_fallback_used' => $detailFallbackUsed,
+            'fallback_used' => true,
+            'fallback_reason' => $reason,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    private function metaFromContext(array $context): array
+    {
+        return [
+            'acceleration_hit' => (bool) ($context['acceleration_hit'] ?? false),
+            'acceleration_profile_id' => $context['acceleration_profile_id'] ?? null,
+            'acceleration_engine' => $context['acceleration_engine'] ?? null,
+            'acceleration_mode' => $context['acceleration_mode'] ?? null,
+            'aggregate_definition_id' => $context['aggregate_definition_id'] ?? null,
+            'aggregate_table' => $context['aggregate_table'] ?? null,
+            'fallback_used' => (bool) ($context['fallback_used'] ?? false),
+            'fallback_reason' => $context['fallback_reason'] ?? null,
+            'detail_fallback_used' => (bool) ($context['detail_fallback_used'] ?? false),
+        ];
+    }
+
+    private function sourceComparisonDuration(Dataset $dataset, CompiledQuery $compiledQuery): ?int
+    {
+        if (! (bool) config('bi_acceleration.query.compare_original_query', false)) {
+            return null;
+        }
+
+        try {
+            return $this->executor->execute($dataset, $compiledQuery)->elapsedMs;
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

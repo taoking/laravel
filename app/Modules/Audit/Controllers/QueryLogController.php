@@ -20,6 +20,12 @@ class QueryLogController extends Controller
             ->when($request->filled('chart_id'), fn ($query) => $query->where('chart_id', $request->integer('chart_id')))
             ->when($request->filled('dashboard_id'), fn ($query) => $query->where('dashboard_id', $request->integer('dashboard_id')))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->when($request->filled('acceleration_hit'), fn ($query) => $query->where('acceleration_hit', $request->boolean('acceleration_hit')))
+            ->when($request->filled('fallback_used'), fn ($query) => $query->where('fallback_used', $request->boolean('fallback_used')))
+            ->when($request->filled('detail_fallback_used'), fn ($query) => $query->where('detail_fallback_used', $request->boolean('detail_fallback_used')))
+            ->when($request->filled('acceleration_engine'), fn ($query) => $query->where('acceleration_engine', $request->string('acceleration_engine')->toString()))
+            ->when($request->filled('acceleration_mode'), fn ($query) => $query->where('acceleration_mode', $request->string('acceleration_mode')->toString()))
+            ->when($request->filled('aggregate_definition_id'), fn ($query) => $query->where('aggregate_definition_id', $request->integer('aggregate_definition_id')))
             ->latest('id')
             ->paginate($pageSize);
 

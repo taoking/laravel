@@ -29,6 +29,7 @@ class QueryLogService
             'cached' => $cached,
             'is_slow' => $this->isSlow($elapsedMs),
             'status' => 'success',
+            ...$this->accelerationAttributes($context),
         ]);
     }
 
@@ -52,11 +53,33 @@ class QueryLogService
             'is_slow' => $this->isSlow($elapsedMs),
             'status' => 'failed',
             'error_message' => $exception->getMessage(),
+            ...$this->accelerationAttributes($context),
         ]);
     }
 
     private function isSlow(int $elapsedMs): bool
     {
         return $elapsedMs >= (int) config('audit.slow_query_threshold_ms', 3000);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    private function accelerationAttributes(array $context): array
+    {
+        return [
+            'acceleration_hit' => (bool) ($context['acceleration_hit'] ?? false),
+            'acceleration_profile_id' => $context['acceleration_profile_id'] ?? null,
+            'acceleration_engine' => $context['acceleration_engine'] ?? null,
+            'acceleration_mode' => $context['acceleration_mode'] ?? null,
+            'fallback_used' => (bool) ($context['fallback_used'] ?? false),
+            'fallback_reason' => $context['fallback_reason'] ?? null,
+            'source_duration_ms' => $context['source_duration_ms'] ?? null,
+            'accelerated_duration_ms' => $context['accelerated_duration_ms'] ?? null,
+            'aggregate_definition_id' => $context['aggregate_definition_id'] ?? null,
+            'aggregate_table' => $context['aggregate_table'] ?? null,
+            'detail_fallback_used' => (bool) ($context['detail_fallback_used'] ?? false),
+        ];
     }
 }

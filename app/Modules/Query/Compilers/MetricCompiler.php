@@ -16,7 +16,9 @@ class MetricCompiler
     {
         $aggregate = $metric->aggregate ?? ($field->default_aggregate !== 'none' ? $field->default_aggregate : 'count');
         $alias = $metric->alias ?? "{$metric->field}_{$aggregate}";
-        $expression = sprintf('%s(%s)', $aggregate, $this->identifier->quote($field->field_name));
+        $expression = $aggregate === 'countDistinct'
+            ? sprintf('count(distinct %s)', $this->identifier->quote($field->field_name))
+            : sprintf('%s(%s)', $aggregate, $this->identifier->quote($field->field_name));
 
         return [
             'select' => "{$expression} as ".$this->identifier->quote($alias),
@@ -31,7 +33,7 @@ class MetricCompiler
 
     private function metricType(string $aggregate, string $normalizedType): string
     {
-        if ($aggregate === 'count') {
+        if (in_array($aggregate, ['count', 'countDistinct'], true)) {
             return 'integer';
         }
 
