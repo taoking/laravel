@@ -42,15 +42,34 @@ class QueryRequestValidator
             ]);
         }
 
-        if ($query->dimensions === [] && $query->metrics === []) {
+        if ($query->dimensions === [] && $query->metrics === [] && $query->rawFields === []) {
             throw ValidationException::withMessages([
                 'metrics' => ['At least one dimension or metric is required.'],
+            ]);
+        }
+
+        if ($query->rawFields !== [] && ($query->dimensions !== [] || $query->metrics !== [])) {
+            throw ValidationException::withMessages([
+                'raw_fields' => ['Raw fields cannot be mixed with grouped dimensions or metrics.'],
             ]);
         }
 
         $fieldsByName = $dataset->fields->keyBy('field_name');
         $hiddenFields = $this->dataPermissionService->hiddenFields($dataset, $user);
         $selectAliases = [];
+
+        foreach ($query->rawFields as $fieldName) {
+            $field = $this->fieldPermissionValidator->assertFieldExists($dataset, $fieldsByName, $fieldName);
+            $this->assertFieldNotHidden($hiddenFields, $fieldName, 'raw_fields');
+
+            if (! $field->is_visible) {
+                throw ValidationException::withMessages([
+                    'raw_fields' => ["Field [{$fieldName}] is not visible."],
+                ]);
+            }
+
+            $selectAliases[] = $fieldName;
+        }
 
         foreach ($query->dimensions as $dimension) {
             $field = $this->fieldPermissionValidator->assertFieldExists($dataset, $fieldsByName, $dimension->field);

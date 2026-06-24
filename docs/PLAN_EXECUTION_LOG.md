@@ -4,7 +4,7 @@
 
 执行日期：2026-06-18  
 项目目录：`/Users/tao/workspace/code/laravel/laravel`  
-最终验证：`php artisan test` 通过，48 tests，394 assertions；`npm run build` 通过；`vendor/bin/pint` 通过；`php artisan route:list --path=api` 输出 90 条 API 路由；`php artisan migrate --pretend --database=sqlite` 通过。
+最终验证：`php artisan test` 通过，85 tests，769 assertions；`npm run build` 通过；`vendor/bin/pint --test` 通过；`php artisan route:list --path=api` 输出 192 条 API 路由；`php artisan migrate --pretend --database=sqlite` 通过。
 
 ## 总体执行原则
 
@@ -777,3 +777,79 @@ php artisan route:list --path=api
 - 元数据搜索接 Elasticsearch 或 Meilisearch。
 - 核心指标和高风险资产变更接审批、订阅通知和版本发布。
 - 大型图谱接图数据库或专用 DAG 可视化组件。
+
+## Prompt10 / Phase 13.5 查询内核增强
+
+目标：统一查询主链路，补齐 QueryOrchestrator、LogicalQueryPlan、PermissionCompiler、AccelerationDecisionPipeline、缓存 key、query_logs 和管理员 Debug API，确保图表、仪表盘、数据集预览、语义指标和加速路由使用一致的查询上下文。
+
+主要产物：
+
+- 新增 `QueryOrchestrator`、`QueryContext`、`QueryResult`、`QueryExecutionMetadata`。
+- 扩展 `LogicalQueryPlan`，记录 dataset、data source、query mode、raw fields、权限过滤、字段可见性、required fields 和 plan hash。
+- 新增 `PermissionCompiler`、`PermissionContext`、`PermissionCompileResult`，统一资源权限、行级权限、列级权限和 permission hash。
+- 新增 `AccelerationDecisionPipeline`、`AccelerationDecision`、`AccelerationCandidate`，统一 aggregate / detail / raw / olap_native 决策。
+- 数据集预览改为通过 `raw_fields` 复用查询链路。
+- 图表和仪表盘查询改为经 orchestrator 执行，并传递 request_source、chart_id、dashboard_id。
+- 缓存 key 增加 query mode、permission hash、metric versions、engine/data source、acceleration mode/version 分段。
+- query_logs 增加 `logical_plan_hash`、`raw_duration_ms`、`total_duration_ms`、`request_source`、`query_mode`、`permission_hash`、`permission_applied`。
+- StarRocks / Doris / ClickHouse 数据源记录为 `acceleration_mode=olap_native`，但不标记为 ClickHouse acceleration profile 命中。
+- 预聚合执行失败后懒加载 detail 加速决策，再回退 raw source。
+
+新增 Debug API：
+
+```text
+POST /api/query/debug
+POST /api/query/explain
+POST /api/permissions/debug-query
+POST /api/metrics/compile-debug
+POST /api/acceleration/debug-decision
+```
+
+新增文档：
+
+```text
+docs/bi-query-core.md
+```
+
+新增 migration：
+
+```text
+database/migrations/2026_06_24_183900_add_query_core_fields_to_query_logs_table.php
+database/migrations/2026_06_24_184000_add_query_context_fields_to_query_logs_table.php
+```
+
+新增/扩展测试：
+
+- `tests/Feature/QueryEngineTest.php`：覆盖 debug API admin-only、debug 返回计划/权限/决策/SQL/cache key、缓存 key 权限和指标版本分段、query_logs 新字段。
+- `tests/Feature/DataPermissionTest.php`：覆盖权限规则字段必须存在于 dataset。
+- `tests/Feature/DatasetTest.php`：覆盖数据集预览统一 SQL 编译输出。
+- `tests/Feature/AccelerationTest.php`：覆盖聚合失败后 detail fallback。
+- `tests/Feature/OlapDataSourceTest.php`：覆盖 OLAP 原生数据源 `olap_native` 日志和响应 metadata。
+
+运行过的命令：
+
+```text
+find app/Modules app/Support database/migrations routes tests/Feature -name '*.php' -print0 | xargs -0 -n1 php -l
+php artisan test tests/Feature/QueryEngineTest.php tests/Feature/DataPermissionTest.php tests/Feature/DatasetTest.php tests/Feature/ChartTest.php tests/Feature/SemanticLayerTest.php tests/Feature/AccelerationTest.php tests/Feature/OlapDataSourceTest.php
+php artisan test
+php artisan route:list --path=api
+php artisan migrate --pretend --database=sqlite
+vendor/bin/pint
+vendor/bin/pint --test
+npm run build
+```
+
+验收：
+
+- 已执行 `php artisan test`：85 tests，769 assertions，全部通过。
+- 已执行 `vendor/bin/pint --test`：通过。
+- 已执行 `npm run build`：通过，保留 Vite 单 chunk 体积提示。
+- 已执行 `php artisan route:list --path=api`：192 routes。
+- 已执行 `php artisan migrate --pretend --database=sqlite`：通过。
+
+当前边界：
+
+- `/api/query/explain` 当前返回非执行态查询计划和生成 SQL，不执行数据库原生 EXPLAIN。
+- `masked` 字段当前按隐藏字段处理，结果级脱敏策略留给后续阶段。
+- 自定义 SQL 数据集未纳入本阶段。
+- OLAP 原生数据源不做跨源 fallback。

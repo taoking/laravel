@@ -32,6 +32,8 @@ class ExecuteQueryRequest extends FormRequest
             'metrics.*.field' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'metrics.*.aggregate' => ['nullable', 'string', Rule::in(['sum', 'avg', 'count', 'countDistinct', 'max', 'min'])],
             'metrics.*.alias' => ['nullable', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
+            'raw_fields' => ['nullable', 'array'],
+            'raw_fields.*' => ['string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'filters' => ['nullable', 'array'],
             'filters.*.field' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'filters.*.operator' => ['required', 'string', Rule::in(['=', '!=', '>', '>=', '<', '<=', 'in', 'not_in', 'like', 'not_like', 'between', 'is_null', 'is_not_null'])],

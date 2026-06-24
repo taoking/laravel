@@ -2,6 +2,7 @@
 
 namespace App\Modules\DataPermission\Models;
 
+use App\Models\User;
 use App\Modules\Dataset\Models\Dataset;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,8 +45,16 @@ class DataPermissionRule extends Model
         return $this->belongsTo(Dataset::class);
     }
 
-    public function ruleValue(): mixed
+    public function ruleValue(?User $user = null): mixed
     {
+        if ($this->value_type === 'current_user_id') {
+            return $user?->id;
+        }
+
+        if ($this->value_type === 'current_user_departments') {
+            return $user?->department_id !== null ? [(int) $user->department_id] : [];
+        }
+
         if (is_array($this->value_json) && array_key_exists('value', $this->value_json)) {
             return $this->value_json['value'];
         }

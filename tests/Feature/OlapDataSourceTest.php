@@ -123,12 +123,18 @@ class OlapDataSourceTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.meta.engine_type', 'starrocks')
             ->assertJsonPath('data.meta.data_source_type', 'starrocks')
+            ->assertJsonPath('data.meta.acceleration_hit', false)
+            ->assertJsonPath('data.meta.acceleration_mode', 'olap_native')
+            ->assertJsonPath('data.meta.acceleration_engine', 'starrocks')
             ->assertJsonPath('data.rows.0.province', 'GD');
 
         $log = QueryLog::query()->firstOrFail();
 
         $this->assertSame('starrocks', $log->engine_type);
         $this->assertSame('starrocks', $log->data_source_type);
+        $this->assertFalse($log->acceleration_hit);
+        $this->assertSame('olap_native', $log->acceleration_mode);
+        $this->assertSame('starrocks', $log->acceleration_engine);
         $this->assertSame($expectedSql, $log->sql);
     }
 

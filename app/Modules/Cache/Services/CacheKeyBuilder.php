@@ -34,13 +34,15 @@ class CacheKeyBuilder
         return "bi:chart:{$chartId}:config";
     }
 
-    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null, ?string $metricVersionsHash = null): string
+    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null, ?string $metricVersionsHash = null, ?string $permissionHash = null, string $queryMode = 'raw_field', ?string $accelerationMode = null): string
     {
-        $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
+        $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId, $accelerationMode);
         $source = $this->sourceSegment($engineType, $dataSourceId);
         $semantic = $this->semanticSegment($metricVersionsHash);
+        $permission = $this->permissionSegment($permissionHash);
+        $mode = $this->modeSegment($queryMode);
 
-        return "bi:chart:{$chartId}:query:{$scope}:{$semantic}:{$source}:{$acceleration}:{$queryHash}";
+        return "bi:chart:{$chartId}:query:{$scope}:{$mode}:{$permission}:{$semantic}:{$source}:{$acceleration}:{$queryHash}";
     }
 
     public function chartQueryIndex(int $chartId): string
@@ -63,13 +65,15 @@ class CacheKeyBuilder
         return "bi:user:{$userId}:data_permissions";
     }
 
-    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null, ?string $metricVersionsHash = null): string
+    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null, ?string $metricVersionsHash = null, ?string $permissionHash = null, string $queryMode = 'raw_field', ?string $accelerationMode = null): string
     {
-        $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
+        $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId, $accelerationMode);
         $source = $this->sourceSegment($engineType, $dataSourceId);
         $semantic = $this->semanticSegment($metricVersionsHash);
+        $permission = $this->permissionSegment($permissionHash);
+        $mode = $this->modeSegment($queryMode);
 
-        return "bi:query:{$scope}:{$semantic}:{$source}:{$acceleration}:{$queryHash}";
+        return "bi:query:{$scope}:{$mode}:{$permission}:{$semantic}:{$source}:{$acceleration}:{$queryHash}";
     }
 
     private function semanticSegment(?string $metricVersionsHash): string
@@ -85,13 +89,23 @@ class CacheKeyBuilder
         return "engine:{$engine}:ds:{$source}";
     }
 
-    private function accelerationSegment(bool $hit, ?int $profileId, int $version, ?int $aggregateDefinitionId = null): string
+    private function permissionSegment(?string $permissionHash): string
+    {
+        return 'perm:'.($permissionHash !== null && $permissionHash !== '' ? $permissionHash : 'none');
+    }
+
+    private function modeSegment(string $queryMode): string
+    {
+        return 'mode:'.$queryMode;
+    }
+
+    private function accelerationSegment(bool $hit, ?int $profileId, int $version, ?int $aggregateDefinitionId = null, ?string $accelerationMode = null): string
     {
         if ($hit && $aggregateDefinitionId !== null) {
-            return "agg:{$aggregateDefinitionId}:v:{$version}";
+            return "acc:aggregate_table:agg:{$aggregateDefinitionId}:v:{$version}";
         }
 
-        $state = $hit ? 'hit' : 'raw';
+        $state = $accelerationMode !== null && $accelerationMode !== '' ? $accelerationMode : ($hit ? 'hit' : 'raw');
         $profile = $profileId !== null ? (string) $profileId : 'none';
 
         return "acc:{$state}:profile:{$profile}:v:{$version}";

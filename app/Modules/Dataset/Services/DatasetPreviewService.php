@@ -2,20 +2,20 @@
 
 namespace App\Modules\Dataset\Services;
 
+use App\Models\User;
 use App\Modules\Dataset\Models\Dataset;
-use App\Modules\DataSource\Services\DataSourceConnectionFactory;
-use App\Modules\DataSource\Services\IdentifierGuard;
+use App\Modules\Query\Services\QueryOrchestrator;
 use Illuminate\Validation\ValidationException;
 
 class DatasetPreviewService
 {
-    public function __construct(private readonly DataSourceConnectionFactory $connectionFactory) {}
+    public function __construct(private readonly QueryOrchestrator $queryOrchestrator) {}
 
     /**
      * @param  array<string, mixed>  $payload
      * @return array{columns: list<string>, rows: list<array<string, mixed>>, limit: int}
      */
-    public function preview(Dataset $dataset, array $payload = []): array
+    public function preview(Dataset $dataset, array $payload = [], ?User $actor = null): array
     {
         $dataset->loadMissing(['dataSource', 'fields']);
         $limit = min(max((int) ($payload['limit'] ?? 100), 1), 100);
@@ -40,46 +40,20 @@ class DatasetPreviewService
             ]);
         }
 
-        if (! IdentifierGuard::isSafe($dataset->main_table)) {
-            throw ValidationException::withMessages([
-                'main_table' => ['The table name is not allowed.'],
-            ]);
-        }
-
-        foreach ($fields as $field) {
-            if ($field->table_name !== $dataset->main_table || ! IdentifierGuard::isSafe($field->field_name)) {
-                throw ValidationException::withMessages([
-                    'fields' => ['The selected fields are not allowed.'],
-                ]);
-            }
-        }
-
         $columns = $fields->pluck('field_name')->values()->all();
-        $selectSql = collect($columns)
-            ->map(fn (string $fieldName): string => $this->quoteIdentifier($fieldName))
-            ->implode(', ');
-        $sql = sprintf('select %s from %s limit %d', $selectSql, $this->quoteIdentifier($dataset->main_table), $limit);
-
-        $connection = $this->connectionFactory->make($dataset->dataSource);
-
-        try {
-            $rows = collect($connection->select($sql))
-                ->map(fn (object|array $row): array => (array) $row)
-                ->values()
-                ->all();
-        } finally {
-            $this->connectionFactory->disconnect($dataset->dataSource);
-        }
+        $result = $this->queryOrchestrator->execute([
+            'dataset_id' => $dataset->id,
+            'raw_fields' => $columns,
+            'limit' => $limit,
+            'use_cache' => false,
+        ], $actor, [
+            'request_source' => 'dataset_preview',
+        ]);
 
         return [
             'columns' => $columns,
-            'rows' => $rows,
+            'rows' => $result['rows'],
             'limit' => $limit,
         ];
-    }
-
-    private function quoteIdentifier(string $identifier): string
-    {
-        return '`'.$identifier.'`';
     }
 }

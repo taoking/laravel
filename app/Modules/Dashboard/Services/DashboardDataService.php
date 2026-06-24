@@ -42,7 +42,7 @@ class DashboardDataService
                     'data' => $this->chartDataService->data($widget->chart, [
                         ...$widgetOverrides,
                         'filters' => array_merge($filters, $widgetFilters),
-                    ], $actor),
+                    ], $actor, (int) $widget->dashboard_id),
                 ];
             })
             ->values()

@@ -12,6 +12,10 @@ class AccelerationEligibilityChecker
 
     public function missReason(AccelerationProfile $profile, LogicalQueryPlan $plan): ?string
     {
+        if ($plan->query->rawFields !== []) {
+            return 'raw_fields_not_supported_by_detail_acceleration';
+        }
+
         if (! (bool) config('bi_acceleration.enabled', true)) {
             return 'acceleration_disabled';
         }

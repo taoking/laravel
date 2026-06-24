@@ -5,16 +5,20 @@ namespace App\Modules\Query\Services;
 use App\Models\User;
 use App\Modules\Acceleration\DTO\AccelerationRouteDecision;
 use App\Modules\Acceleration\DTO\AggregateRouteDecision;
+use App\Modules\Acceleration\Services\AccelerationDecisionPipeline;
 use App\Modules\Acceleration\Services\AccelerationQueryExecutor;
 use App\Modules\Acceleration\Services\AccelerationQueryRouter;
 use App\Modules\Acceleration\Services\AggregateQueryRouter;
-use App\Modules\DataPermission\Services\DataPermissionService;
+use App\Modules\DataPermission\DTO\PermissionCompileResult;
+use App\Modules\DataPermission\DTO\PermissionContext;
+use App\Modules\DataPermission\Services\PermissionCompiler;
 use App\Modules\Dataset\Models\Dataset;
 use App\Modules\Query\Compilers\SqlCompiler;
 use App\Modules\Query\DTO\CompiledQuery;
 use App\Modules\Query\DTO\QueryRequestDTO;
 use App\Modules\Query\Validators\QueryRequestValidator;
 use App\Modules\Semantic\Services\SemanticQueryCompiler;
+use Illuminate\Auth\Access\AuthorizationException;
 use Throwable;
 
 class QueryService
@@ -25,11 +29,12 @@ class QueryService
         private readonly QueryCacheService $cacheService,
         private readonly QueryExecutor $executor,
         private readonly QueryLogService $logService,
-        private readonly DataPermissionService $dataPermissionService,
         private readonly AggregateQueryRouter $aggregateRouter,
         private readonly AccelerationQueryRouter $accelerationRouter,
         private readonly AccelerationQueryExecutor $accelerationExecutor,
         private readonly SemanticQueryCompiler $semanticQueryCompiler,
+        private readonly PermissionCompiler $permissionCompiler,
+        private readonly AccelerationDecisionPipeline $decisionPipeline,
     ) {}
 
     /**
@@ -62,13 +67,42 @@ class QueryService
             ->with(['dataSource', 'fields'])
             ->findOrFail($query->datasetId);
 
-        $this->dataPermissionService->assertCanAccessDataset($dataset, $user);
+        $requestSource = is_string($cacheContext['request_source'] ?? null) ? $cacheContext['request_source'] : 'api';
+        $permission = $this->permissionCompiler->compile(new PermissionContext(
+            dataset: $dataset,
+            user: $user,
+            requestSource: $requestSource,
+            chartId: is_numeric($cacheContext['chart_id'] ?? null) ? (int) $cacheContext['chart_id'] : null,
+            dashboardId: is_numeric($cacheContext['dashboard_id'] ?? null) ? (int) $cacheContext['dashboard_id'] : null,
+        ));
+
+        if (! $permission->resourceAllowed) {
+            throw new AuthorizationException($permission->deniedReason ?? 'This action is unauthorized.');
+        }
+
         $this->validator->validate($dataset, $query, $user);
 
         $compiledQuery = $this->sqlCompiler->compile($dataset, $query, $user);
         $sourceContext = $this->sourceContext($dataset);
-        $plan = $this->accelerationRouter->plan($dataset, $query, $user);
-        $aggregateDecision = $this->aggregateRouter->decide($plan);
+        $plan = $this->accelerationRouter->plan(
+            dataset: $dataset,
+            query: $query,
+            user: $user,
+            permissionFilters: $permission->rowFilters,
+            permission: $permission,
+            requestSource: $requestSource,
+            semanticLayerUsed: (bool) ($cacheContext['semantic_layer_used'] ?? false),
+        );
+        $decisionPipelineResult = $this->decisionPipeline->decide($plan);
+        $aggregateDecision = $decisionPipelineResult->aggregateDecision;
+        $cacheContext = [
+            ...$cacheContext,
+            ...$this->permissionContext($permission),
+            'logical_plan_hash' => $plan->hash(),
+            'query_mode' => $plan->queryMode(),
+            'request_source' => $requestSource,
+            'acceleration_decision' => $decisionPipelineResult->toArray(),
+        ];
         $aggregateFallbackReason = null;
 
         if ($aggregateDecision->useAggregate && $aggregateDecision->definition !== null) {
@@ -91,6 +125,7 @@ class QueryService
                         $this->logService->success($dataset, $user, $aggregateQuery, 0, count($cached['rows']), true, [
                             ...$context,
                             'accelerated_duration_ms' => 0,
+                            'total_duration_ms' => 0,
                         ]);
 
                         return [
@@ -122,6 +157,7 @@ class QueryService
                     ...$context,
                     'source_duration_ms' => $sourceDurationMs,
                     'accelerated_duration_ms' => $execution->elapsedMs,
+                    'total_duration_ms' => $execution->elapsedMs,
                 ]);
 
                 return [
@@ -152,7 +188,11 @@ class QueryService
             }
         }
 
-        $decision = $this->accelerationRouter->decide($plan);
+        $decision = $decisionPipelineResult->detailDecision;
+
+        if ($aggregateFallbackReason !== null && $decision->reason === 'not_checked') {
+            $decision = $this->accelerationRouter->decide($plan);
+        }
 
         if ($decision->useAcceleration && $decision->profile !== null) {
             try {
@@ -171,6 +211,7 @@ class QueryService
                         $this->logService->success($dataset, $user, $acceleratedQuery, 0, count($cached['rows']), true, [
                             ...$context,
                             'accelerated_duration_ms' => 0,
+                            'total_duration_ms' => 0,
                         ]);
 
                         return [
@@ -201,6 +242,7 @@ class QueryService
                     ...$context,
                     'source_duration_ms' => $sourceDurationMs,
                     'accelerated_duration_ms' => $execution->elapsedMs,
+                    'total_duration_ms' => $execution->elapsedMs,
                 ]);
 
                 return [
@@ -266,7 +308,10 @@ class QueryService
             $cached = $this->cacheService->get($compiledQuery, $user, $cacheContext);
 
             if ($cached !== null) {
-                $this->logService->success($dataset, $user, $compiledQuery, 0, count($cached['rows']), true, $cacheContext);
+                $this->logService->success($dataset, $user, $compiledQuery, 0, count($cached['rows']), true, [
+                    ...$cacheContext,
+                    'total_duration_ms' => 0,
+                ]);
 
                 return [
                     'columns' => $cached['columns'],
@@ -298,7 +343,11 @@ class QueryService
             $this->cacheService->put($compiledQuery, $result, $user, $cacheContext);
         }
 
-        $this->logService->success($dataset, $user, $compiledQuery, $execution->elapsedMs, count($execution->rows), false, $cacheContext);
+        $this->logService->success($dataset, $user, $compiledQuery, $execution->elapsedMs, count($execution->rows), false, [
+            ...$cacheContext,
+            'raw_duration_ms' => $execution->elapsedMs,
+            'total_duration_ms' => $execution->elapsedMs,
+        ]);
 
         return [
             ...$result,
@@ -318,14 +367,20 @@ class QueryService
     {
         $context = [
             'acceleration_hit' => $hit,
-            'acceleration_profile_id' => $decision->profile?->id,
-            'acceleration_engine' => $decision->engineType,
-            'acceleration_mode' => $decision->mode,
             'acceleration_version' => $decision->profile?->version ?? 0,
         ];
 
+        if ($decision->profile?->id !== null) {
+            $context['acceleration_profile_id'] = $decision->profile->id;
+        }
+
         if ($decision->engineType !== null) {
             $context['engine_type'] = $decision->engineType;
+            $context['acceleration_engine'] = $decision->engineType;
+        }
+
+        if ($decision->mode !== null) {
+            $context['acceleration_mode'] = $decision->mode;
         }
 
         return $context;
@@ -375,6 +430,10 @@ class QueryService
     private function metaFromContext(array $context): array
     {
         return [
+            'request_source' => $context['request_source'] ?? null,
+            'query_mode' => $context['query_mode'] ?? null,
+            'permission_hash' => $context['permission_hash'] ?? null,
+            'logical_plan_hash' => $context['logical_plan_hash'] ?? null,
             'engine_type' => $context['engine_type'] ?? null,
             'data_source_type' => $context['data_source_type'] ?? null,
             'data_source_id' => $context['data_source_id'] ?? null,
@@ -401,10 +460,40 @@ class QueryService
     {
         $dataset->loadMissing('dataSource');
 
+        $dataSourceType = $dataset->dataSource?->type;
+
         return [
             'engine_type' => $dataset->dataSource?->type,
-            'data_source_type' => $dataset->dataSource?->type,
+            'data_source_type' => $dataSourceType,
             'data_source_id' => $dataset->dataSource?->id !== null ? (int) $dataset->dataSource->id : null,
+            ...($this->isOlapNative($dataSourceType) ? [
+                'acceleration_hit' => false,
+                'acceleration_engine' => $dataSourceType,
+                'acceleration_mode' => 'olap_native',
+            ] : []),
+        ];
+    }
+
+    private function isOlapNative(?string $dataSourceType): bool
+    {
+        return in_array($dataSourceType, ['starrocks', 'doris', 'clickhouse'], true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function permissionContext(PermissionCompileResult $permission): array
+    {
+        return [
+            'permission_hash' => $permission->permissionHash,
+            'permission_applied' => $permission->rowFilters !== [] || $permission->columnRules !== [],
+            'permission_filters' => array_map(fn ($filter): array => [
+                'field' => $filter->field,
+                'operator' => $filter->operator,
+                'value' => $filter->value,
+            ], $permission->rowFilters),
+            'hidden_fields' => $permission->hiddenFields,
+            'masked_fields' => $permission->maskedFields,
         ];
     }
 

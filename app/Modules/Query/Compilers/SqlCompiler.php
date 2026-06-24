@@ -30,6 +30,16 @@ class SqlCompiler
         $bindings = [];
         $columns = [];
 
+        foreach ($query->rawFields as $fieldName) {
+            $field = $fieldsByName->get($fieldName);
+            $selects[] = $dialect->quoteIdentifier($field->field_name).' as '.$dialect->quoteIdentifier($field->field_name);
+            $columns[] = [
+                'name' => $field->field_name,
+                'label' => $field->display_name,
+                'type' => $field->normalized_type,
+            ];
+        }
+
         foreach ($query->dimensions as $dimension) {
             $compiled = $this->dimensionCompiler->compile($dimension, $fieldsByName->get($dimension->field), $dialect);
             $selects[] = $compiled['select'];

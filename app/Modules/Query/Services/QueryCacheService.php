@@ -32,6 +32,11 @@ class QueryCacheService
         $this->indexChartKey($context, $key);
     }
 
+    public function keyFor(CompiledQuery $query, ?User $user = null, array $context = []): string
+    {
+        return $this->key($query, $user, $context);
+    }
+
     public function forgetChart(int $chartId): void
     {
         $indexKey = $this->keyBuilder->chartQueryIndex($chartId);
@@ -62,12 +67,15 @@ class QueryCacheService
         $engineType = is_string($context['engine_type'] ?? null) ? $context['engine_type'] : null;
         $dataSourceId = is_numeric($context['data_source_id'] ?? null) ? (int) $context['data_source_id'] : null;
         $metricVersionsHash = is_string($context['metric_versions_hash'] ?? null) ? $context['metric_versions_hash'] : null;
+        $permissionHash = is_string($context['permission_hash'] ?? null) ? $context['permission_hash'] : null;
+        $queryMode = is_string($context['query_mode'] ?? null) ? $context['query_mode'] : 'raw_field';
+        $accelerationMode = is_string($context['acceleration_mode'] ?? null) ? $context['acceleration_mode'] : null;
 
         if (is_numeric($chartId)) {
-            return $this->keyBuilder->chartQuery((int) $chartId, $query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId, $metricVersionsHash);
+            return $this->keyBuilder->chartQuery((int) $chartId, $query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId, $metricVersionsHash, $permissionHash, $queryMode, $accelerationMode);
         }
 
-        return $this->keyBuilder->query($query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId, $metricVersionsHash);
+        return $this->keyBuilder->query($query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId, $metricVersionsHash, $permissionHash, $queryMode, $accelerationMode);
     }
 
     /**

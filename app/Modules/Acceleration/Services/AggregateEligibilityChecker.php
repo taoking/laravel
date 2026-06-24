@@ -19,6 +19,10 @@ class AggregateEligibilityChecker
 
     public function missReason(AccelerationAggregateDefinition $definition, LogicalQueryPlan $plan): ?string
     {
+        if ($plan->query->rawFields !== []) {
+            return 'raw_fields_not_supported_by_aggregate';
+        }
+
         if (! (bool) config('bi_acceleration.enabled', true) || ! (bool) config('bi_acceleration.aggregate.enabled', true)) {
             return 'aggregate_acceleration_disabled';
         }

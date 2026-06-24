@@ -12,7 +12,7 @@ Laravel BI Platform 是一个后端 API 与 Vue 管理端同仓的轻量 BI 平�
 
 - 数据源：支持 MySQL、StarRocks、Doris，提供连接测试、库表字段发现、元数据同步和物化视图元数据查询。
 - 数据集：支持单表数据集、字段同步、字段语义配置、预览和查询解释。
-- 查询引擎：支持维度、指标、过滤、排序、分页、缓存、语义层字段和 SQL explain。
+- 查询引擎：支持统一查询编排、维度、指标、过滤、排序、分页、缓存、语义层字段、数据权限编译、加速决策、查询日志、Debug API 和 SQL explain。
 - 图表与仪表盘：支持图表配置、图表数据查询、仪表盘组件编排、全局筛选和公开分享。
 - 语义层：支持指标分类、指标库、维度、公式校验、版本、依赖、使用记录和影响分析。
 - 元数据治理：支持资产目录、血缘、影响分析、标签、使用统计、删除前风险拦截和自动同步。
@@ -218,24 +218,31 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Request[POST /api/query/execute] --> Validate[ExecuteQueryRequest 校验]
-    Validate --> Permission[数据集和字段权限检查]
-    Permission --> Semantic{是否使用语义指标/维度}
+    Request[POST /api/query/execute] --> Orchestrator[QueryOrchestrator]
+    Orchestrator --> Semantic{是否使用语义指标/维度}
     Semantic -->|是| ResolveSemantic[解析指标、维度、版本]
-    Semantic -->|否| BuildQuery[构建查询 DTO]
+    Semantic -->|否| BuildQuery[构建 QueryRequestDTO]
     ResolveSemantic --> BuildQuery
-    BuildQuery --> CacheCheck{use_cache 且缓存命中}
+    BuildQuery --> Permission[PermissionCompiler]
+    Permission --> Validate[字段、权限、DSL 校验]
+    Validate --> Plan[LogicalQueryPlan]
+    Plan --> Decision[AccelerationDecisionPipeline]
+    Decision --> CacheCheck{use_cache 且缓存命中}
     CacheCheck -->|是| CacheReturn[返回缓存结果]
-    CacheCheck -->|否| Accel{是否命中加速}
+    CacheCheck -->|否| Accel{执行路径}
     Accel -->|预聚合| Aggregate[查询聚合表]
     Accel -->|明细| Detail[查询 ClickHouse 明细表]
+    Accel -->|OLAP 原生| Olap[查询 StarRocks / Doris / ClickHouse 数据源]
     Accel -->|未命中/失败| Source[查询原始数据源]
     Aggregate --> Log[写 query_logs]
     Detail --> Log
+    Olap --> Log
     Source --> Log
     CacheReturn --> Log
     Log --> Response[统一 API 响应]
 ```
+
+查询内核细节见 [BI 查询内核](bi-query-core.md)。
 
 ### 5.3 导入流程
 
@@ -442,8 +449,8 @@ php artisan optimize:clear
 当前验证基线：
 
 ```text
-81 tests, 720 assertions
-187 API routes
+85 tests, 769 assertions
+192 API routes
 ```
 
 ### 6.5 BI 自定义命令
@@ -641,7 +648,9 @@ Authorization: Bearer <token>
 | PUT | `/api/datasets/{dataset}/fields/{field}` | 更新字段语义 | `field_alias?`, `display_name?`, `normalized_type?`, `semantic_type?`, `is_dimension?`, `is_metric?`, `is_visible?`, `is_filterable?`, `default_aggregate?`, `sort_order?` |
 | POST | `/api/datasets/{dataset}/preview` | 数据集预览 | `limit?`, `fields[]?` |
 | POST | `/api/datasets/{dataset}/explain` | 数据集查询 Explain | 查询 DSL |
-| POST | `/api/query/execute` | 执行动态查询 | `dataset_id`, `dimensions[]?`, `metrics[]?`, `semantic_metrics[]?`, `semantic_dimensions[]?`, `filters[]?`, `sorts[]?`, `limit?`, `offset?`, `use_cache?` |
+| POST | `/api/query/execute` | 执行动态查询 | `dataset_id`, `dimensions[]?`, `metrics[]?`, `semantic_metrics[]?`, `semantic_dimensions[]?`, `raw_fields[]?`, `filters[]?`, `sorts[]?`, `limit?`, `offset?`, `use_cache?` |
+| POST | `/api/query/debug` | 管理员查询 Debug | 查询 DSL 或 `chart_id` |
+| POST | `/api/query/explain` | 管理员查询计划说明，不默认执行 SQL | 查询 DSL |
 
 查询 DSL 支持：
 
@@ -651,6 +660,7 @@ Authorization: Bearer <token>
 | `dimensions[].time_granularity` | `year/quarter/month/week/day/hour/minute` |
 | `metrics[].field` | 指标字段名 |
 | `metrics[].aggregate` | `sum/avg/count/countDistinct/max/min` |
+| `raw_fields[]` | 直接预览/选择物理字段，不能和维度指标混用 |
 | `filters[].operator` | `=`, `!=`, `>`, `>=`, `<`, `<=`, `in`, `not_in`, `like`, `not_like`, `between`, `is_null`, `is_not_null` |
 | `sorts[].direction` | `asc/desc` |
 | `limit` | 1 到 1000 |
@@ -675,6 +685,7 @@ Authorization: Bearer <token>
 | GET | `/api/datasets/{dataset}/metrics` | 数据集指标列表 | 无 |
 | POST | `/api/datasets/{dataset}/metrics/init-from-fields` | 从字段初始化指标 | 无 |
 | GET | `/api/datasets/{dataset}/semantic-layer` | 数据集语义层总览 | 无 |
+| POST | `/api/metrics/compile-debug` | 管理员语义指标编译 Debug | `dataset_id`, `metrics[]`, `dimensions[]?` |
 
 公式限制：
 
@@ -736,6 +747,7 @@ Authorization: Bearer <token>
 | CRUD | `/api/resource-permissions` | 资源权限 | `resource_type`, `resource_id`, `subject_type`, `subject_id`, `permission_type` |
 | CRUD | `/api/data-permission-rules` | 行级权限 | `dataset_id`, `subject_type`, `subject_id`, `field_name`, `operator`, `value_type?`, `value_json?`, `status?` |
 | CRUD | `/api/column-permission-rules` | 列级权限 | `dataset_id`, `subject_type`, `subject_id`, `field_name`, `permission_type` |
+| POST | `/api/permissions/debug-query` | 管理员权限编译 Debug | `dataset_id`, `chart_id?`, `dashboard_id?` |
 | GET | `/api/operation-logs` | 操作日志 | 过滤参数 |
 | GET | `/api/login-logs` | 登录日志 | 过滤参数 |
 | GET | `/api/query-logs` | 查询日志 | 过滤参数 |
@@ -777,6 +789,7 @@ Authorization: Bearer <token>
 | GET | `/api/acceleration/benefit-report` | 加速收益汇总 | `date?`, `days?` |
 | GET | `/api/acceleration/benefit-report/datasets/{dataset}` | 数据集收益 | `date?`, `days?` |
 | GET | `/api/acceleration/benefit-report/charts/{chart}` | 图表收益 | `date?`, `days?` |
+| POST | `/api/acceleration/debug-decision` | 管理员加速决策 Debug | 查询 DSL |
 
 ### 8.10 元数据治理
 

@@ -2,6 +2,7 @@
 
 use App\Modules\Acceleration\Controllers\AccelerationAggregateController;
 use App\Modules\Acceleration\Controllers\AccelerationBenefitReportController;
+use App\Modules\Acceleration\Controllers\AccelerationDebugController;
 use App\Modules\Acceleration\Controllers\AccelerationProfileController;
 use App\Modules\Acceleration\Controllers\AccelerationRecommendationController;
 use App\Modules\Acceleration\Controllers\AccelerationRefreshScheduleController;
@@ -17,6 +18,7 @@ use App\Modules\Chart\Controllers\ChartController;
 use App\Modules\Dashboard\Controllers\DashboardController;
 use App\Modules\DataPermission\Controllers\ColumnPermissionRuleController;
 use App\Modules\DataPermission\Controllers\DataPermissionRuleController;
+use App\Modules\DataPermission\Controllers\PermissionDebugController;
 use App\Modules\DataPermission\Controllers\ResourcePermissionController;
 use App\Modules\Dataset\Controllers\DatasetController;
 use App\Modules\DataSource\Controllers\DataSourceController;
@@ -35,10 +37,12 @@ use App\Modules\Monitor\Controllers\MetricsController;
 use App\Modules\Permission\Controllers\PermissionController;
 use App\Modules\Permission\Controllers\RoleController;
 use App\Modules\Query\Controllers\QueryController;
+use App\Modules\Query\Controllers\QueryDebugController;
 use App\Modules\Query\Controllers\QueryExplainController;
 use App\Modules\Semantic\Controllers\DatasetSemanticController;
 use App\Modules\Semantic\Controllers\DimensionController;
 use App\Modules\Semantic\Controllers\MetricCategoryController;
+use App\Modules\Semantic\Controllers\MetricCompileDebugController;
 use App\Modules\Semantic\Controllers\MetricController;
 use App\Modules\User\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -92,8 +96,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('datasets', DatasetController::class);
 
     Route::post('query/execute', [QueryController::class, 'execute']);
+    Route::post('query/debug', [QueryDebugController::class, 'debug']);
+    Route::post('query/explain', [QueryDebugController::class, 'explain']);
 
     Route::post('semantic-metrics/validate-formula', [MetricController::class, 'validateFormula']);
+    Route::post('metrics/compile-debug', MetricCompileDebugController::class);
     Route::post('semantic-metrics/{metric}/activate', [MetricController::class, 'activate']);
     Route::post('semantic-metrics/{metric}/deprecate', [MetricController::class, 'deprecate']);
     Route::post('semantic-metrics/{metric}/archive', [MetricController::class, 'archive']);
@@ -110,6 +117,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('dimensions', DimensionController::class);
 
     Route::prefix('acceleration')->group(function (): void {
+        Route::post('debug-decision', AccelerationDebugController::class);
         Route::get('tasks', [AccelerationTaskController::class, 'index']);
         Route::get('tasks/{task}', [AccelerationTaskController::class, 'show']);
         Route::get('benefit-report', [AccelerationBenefitReportController::class, 'index']);
@@ -159,6 +167,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('export-tasks', ExportTaskController::class)->only(['index', 'store', 'show']);
 
     Route::apiResource('resource-permissions', ResourcePermissionController::class);
+    Route::post('permissions/debug-query', PermissionDebugController::class);
     Route::apiResource('data-permission-rules', DataPermissionRuleController::class);
     Route::apiResource('column-permission-rules', ColumnPermissionRuleController::class);
 

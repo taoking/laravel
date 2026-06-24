@@ -30,7 +30,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - 数据集建模、字段分类、维度/指标配置。
 - BI 语义层：指标分类、指标库、维度管理、公式校验、版本、血缘依赖、使用记录和影响分析。
 - BI 数据治理：元数据目录、数据血缘、影响分析、资产标签和使用统计。
-- 动态 SQL 查询引擎、查询缓存、查询日志。
+- 统一 BI 查询内核：动态 SQL、语义指标编译、数据权限编译、查询缓存、查询日志和 debug API。
 - 图表配置、图表数据预览和查询。
 - 仪表盘编排、全局筛选、组件布局、公开分享。
 - CSV/XLSX 文件导入，自动生成物理表和数据集。
@@ -48,6 +48,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - [Plan 执行日志](docs/PLAN_EXECUTION_LOG.md)：记录 Phase 1 到 Phase 14 的实现过程、产物和验收结果。
 - [项目使用说明](docs/PROJECT_USAGE.md)：包含 Docker 启动、本地运行、前端管理端、API 认证、主要接口示例、测试和注意事项。
 - [功能页面文档介绍](docs/FEATURE_PAGES.md)：按前端页面/工作台说明已实现功能、接口和交互。
+- [BI 查询内核](docs/bi-query-core.md)：说明 QueryOrchestrator、LogicalQueryPlan、权限编译、加速决策、缓存 key、query_logs 和 Debug API。
 - [BI 查询加速方案](docs/bi-acceleration.md)：说明 ClickHouse 加速层、profile、同步任务、查询路由、fallback、缓存 key 和边界。
 - [ClickHouse 查询加速最小闭环](docs/bi-acceleration-clickhouse.md)：Phase 10.1 的 ClickHouse 明细表加速闭环、API 和验收边界。
 - [预聚合表 / 物化视图加速](docs/bi-acceleration-aggregate.md)：Phase 10.2 的聚合定义、构建、命中、回退、缓存和日志边界。
@@ -107,8 +108,8 @@ php artisan bi:metadata:usage-stats --dry-run
 当前验证基线：
 
 ```text
-81 tests, 720 assertions
-187 API routes
+85 tests, 769 assertions
+192 API routes
 ```
 
 ## API 认证
@@ -140,6 +141,7 @@ Authorization: Bearer <token>
 - Data Sources：`/api/data-sources`
 - Datasets：`/api/datasets`
 - Query：`/api/query/execute`
+- Query Debug：`/api/query/debug`、`/api/query/explain`、`/api/permissions/debug-query`、`/api/metrics/compile-debug`、`/api/acceleration/debug-decision`
 - Explain：`/api/datasets/{dataset}/explain`、`/api/charts/{chart}/explain`
 - Semantic Layer：`/api/metric-categories`、`/api/semantic-metrics`、`/api/dimensions`、`/api/datasets/{dataset}/semantic-layer`
 - Metadata Governance：`/api/metadata/assets`、`/api/metadata/search`、`/api/metadata/lineage/*`、`/api/metadata/impact/analyze`、`/api/metadata/tags`、`/api/metadata/usage-stats`

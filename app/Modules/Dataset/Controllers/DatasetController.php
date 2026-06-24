@@ -82,6 +82,6 @@ class DatasetController extends Controller
 
     public function preview(PreviewDatasetRequest $request, Dataset $dataset, DatasetPreviewService $previewService): JsonResponse
     {
-        return ApiResponse::success($previewService->preview($dataset, $request->validated()));
+        return ApiResponse::success($previewService->preview($dataset, $request->validated(), $request->user()));
     }
 }

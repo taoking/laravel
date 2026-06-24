@@ -102,7 +102,7 @@ class DatasetTest extends TestCase
         $connection
             ->shouldReceive('select')
             ->once()
-            ->with('select `id`, `amount` from `orders` limit 2')
+            ->with('select `id` as `id`, `amount` as `amount` from `orders` limit 2 offset 0', [])
             ->andReturn([
                 (object) ['id' => 1, 'amount' => '12.50'],
                 (object) ['id' => 2, 'amount' => '7.00'],

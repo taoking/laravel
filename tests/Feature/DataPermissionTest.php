@@ -131,6 +131,34 @@ class DataPermissionTest extends TestCase
             ->assertJsonPath('code', 40001);
     }
 
+    public function test_permission_rules_reject_fields_outside_dataset(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $dataset = $this->createDataset();
+
+        $this->postJson('/api/data-permission-rules', [
+            'dataset_id' => $dataset->id,
+            'subject_type' => 'user',
+            'subject_id' => $user->id,
+            'field_name' => 'unsafe_field',
+            'operator' => '=',
+            'value_json' => 'GD',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 40001);
+
+        $this->postJson('/api/column-permission-rules', [
+            'dataset_id' => $dataset->id,
+            'subject_type' => 'user',
+            'subject_id' => $user->id,
+            'field_name' => 'unsafe_field',
+            'permission_type' => 'hidden',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 40001);
+    }
+
     /**
      * @return array<string, mixed>
      */

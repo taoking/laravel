@@ -8,7 +8,10 @@ use App\Modules\Dataset\Models\DatasetField;
 use App\Modules\DataSource\Models\DataSource;
 use App\Modules\DataSource\Services\DataSourceConnectionFactory;
 use App\Modules\DataSource\Services\DataSourcePasswordEncryptor;
+use App\Modules\Permission\Models\Role;
+use App\Modules\Query\DTO\CompiledQuery;
 use App\Modules\Query\Models\QueryLog;
+use App\Modules\Query\Services\QueryCacheService;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -70,7 +73,15 @@ class QueryEngineTest extends TestCase
             'status' => 'success',
         ]);
 
-        $this->assertSame([2026, 'GD', 'BJ'], QueryLog::query()->firstOrFail()->bindings_json);
+        $log = QueryLog::query()->firstOrFail();
+        $this->assertSame([2026, 'GD', 'BJ'], $log->bindings_json);
+        $this->assertSame('api', $log->request_source);
+        $this->assertSame('raw_field', $log->query_mode);
+        $this->assertNotEmpty($log->logical_plan_hash);
+        $this->assertNotEmpty($log->permission_hash);
+        $this->assertFalse($log->permission_applied);
+        $this->assertIsInt($log->raw_duration_ms);
+        $this->assertIsInt($log->total_duration_ms);
     }
 
     public function test_query_engine_supports_required_metric_aggregates(): void
@@ -175,6 +186,107 @@ class QueryEngineTest extends TestCase
         $this->postJson('/api/query/execute', [])
             ->assertUnauthorized()
             ->assertJsonPath('code', 40100);
+    }
+
+    public function test_query_debug_endpoints_require_admin_role(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        foreach ([
+            '/api/query/debug',
+            '/api/query/explain',
+            '/api/permissions/debug-query',
+            '/api/metrics/compile-debug',
+            '/api/acceleration/debug-decision',
+        ] as $uri) {
+            $this->postJson($uri, [])
+                ->assertForbidden()
+                ->assertJsonPath('code', 40300);
+        }
+    }
+
+    public function test_query_debug_returns_plan_permission_decision_sql_and_cache_key(): void
+    {
+        $admin = User::factory()->create();
+        $role = Role::query()->create([
+            'name' => 'Administrator',
+            'code' => 'admin',
+        ]);
+        $admin->roles()->attach($role->id);
+        Sanctum::actingAs($admin);
+
+        $dataset = $this->createDataset();
+        $expectedSql = 'select `province` as `province`, sum(`amount`) as `amount_sum` from `orders` group by `province` limit 25 offset 0';
+
+        $response = $this->postJson('/api/query/debug', [
+            'dataset_id' => $dataset->id,
+            'dimensions' => [
+                ['field' => 'province'],
+            ],
+            'metrics' => [
+                ['field' => 'amount', 'aggregate' => 'sum', 'alias' => 'amount_sum'],
+            ],
+            'limit' => 25,
+            'use_cache' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('code', 0)
+            ->assertJsonPath('data.context.request_source', 'query_debug')
+            ->assertJsonPath('data.context.query_mode', 'raw_field')
+            ->assertJsonPath('data.context.debug_enabled', true)
+            ->assertJsonPath('data.permission_compile_result.resource_allowed', true)
+            ->assertJsonPath('data.logical_plan.dataset_id', $dataset->id)
+            ->assertJsonPath('data.logical_plan.query_mode', 'raw_field')
+            ->assertJsonPath('data.acceleration_decision.acceleration_mode', 'raw')
+            ->assertJsonPath('data.generated_sql', $expectedSql)
+            ->assertJsonPath('data.bindings', []);
+
+        $this->assertNotEmpty($response->json('data.logical_plan.hash'));
+        $this->assertNotEmpty($response->json('data.permission_compile_result.permission_hash'));
+        $this->assertStringContainsString('mode:raw_field', $response->json('data.cache_key'));
+        $this->assertStringContainsString('perm:', $response->json('data.cache_key'));
+        $this->assertStringContainsString('acc:raw', $response->json('data.cache_key'));
+    }
+
+    public function test_query_cache_key_includes_permission_metric_and_acceleration_segments(): void
+    {
+        $user = User::factory()->create();
+        $query = new CompiledQuery(
+            sql: 'select 1',
+            bindings: [],
+            columns: [],
+            hash: 'query-hash',
+        );
+
+        $key = app(QueryCacheService::class)->keyFor($query, $user, [
+            'permission_hash' => 'permission-v1',
+            'query_mode' => 'semantic_metric',
+            'metric_versions_hash' => 'metric-v2',
+            'engine_type' => 'clickhouse',
+            'data_source_id' => 9,
+            'acceleration_hit' => true,
+            'acceleration_mode' => 'detail_table',
+            'acceleration_profile_id' => 3,
+            'acceleration_version' => 7,
+        ]);
+        $otherPermissionKey = app(QueryCacheService::class)->keyFor($query, $user, [
+            'permission_hash' => 'permission-v2',
+            'query_mode' => 'semantic_metric',
+            'metric_versions_hash' => 'metric-v2',
+            'engine_type' => 'clickhouse',
+            'data_source_id' => 9,
+            'acceleration_hit' => true,
+            'acceleration_mode' => 'detail_table',
+            'acceleration_profile_id' => 3,
+            'acceleration_version' => 7,
+        ]);
+
+        $this->assertStringContainsString('mode:semantic_metric', $key);
+        $this->assertStringContainsString('perm:permission-v1', $key);
+        $this->assertStringContainsString('semantic:metric-v2', $key);
+        $this->assertStringContainsString('engine:clickhouse:ds:9', $key);
+        $this->assertStringContainsString('acc:detail_table:profile:3:v:7', $key);
+        $this->assertNotSame($key, $otherPermissionKey);
     }
 
     private function createDataset(): Dataset

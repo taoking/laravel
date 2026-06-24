@@ -11,6 +11,7 @@ use App\Modules\Dataset\Models\Dataset;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 
 class DataPermissionService
 {
@@ -63,6 +64,8 @@ class DataPermissionService
      */
     public function createDataRule(array $payload): DataPermissionRule
     {
+        $this->assertDatasetFieldExists((int) $payload['dataset_id'], (string) $payload['field_name']);
+
         $payload['value_json'] = $this->normalizeValueJson($payload['value_json'] ?? null);
         $payload['value_type'] ??= 'static';
         $payload['status'] ??= 'active';
@@ -78,6 +81,11 @@ class DataPermissionService
      */
     public function updateDataRule(DataPermissionRule $rule, array $payload): DataPermissionRule
     {
+        $this->assertDatasetFieldExists(
+            (int) ($payload['dataset_id'] ?? $rule->dataset_id),
+            (string) ($payload['field_name'] ?? $rule->field_name),
+        );
+
         if (array_key_exists('value_json', $payload)) {
             $payload['value_json'] = $this->normalizeValueJson($payload['value_json']);
         }
@@ -104,6 +112,8 @@ class DataPermissionService
      */
     public function createColumnRule(array $payload): ColumnPermissionRule
     {
+        $this->assertDatasetFieldExists((int) $payload['dataset_id'], (string) $payload['field_name']);
+
         $rule = ColumnPermissionRule::query()->create($payload);
         $this->datasetCacheService->forget((int) $rule->dataset_id);
 
@@ -115,6 +125,11 @@ class DataPermissionService
      */
     public function updateColumnRule(ColumnPermissionRule $rule, array $payload): ColumnPermissionRule
     {
+        $this->assertDatasetFieldExists(
+            (int) ($payload['dataset_id'] ?? $rule->dataset_id),
+            (string) ($payload['field_name'] ?? $rule->field_name),
+        );
+
         $oldDatasetId = (int) $rule->dataset_id;
         $rule->fill($payload);
         $rule->save();
@@ -186,6 +201,32 @@ class DataPermissionService
      */
     public function hiddenFields(Dataset $dataset, ?User $user): array
     {
+        return collect($this->columnRules($dataset, $user))
+            ->filter(fn (ColumnPermissionRule $rule): bool => in_array($rule->permission_type, ['hidden', 'masked'], true))
+            ->pluck('field_name')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function maskedFields(Dataset $dataset, ?User $user): array
+    {
+        return collect($this->columnRules($dataset, $user))
+            ->filter(fn (ColumnPermissionRule $rule): bool => $rule->permission_type === 'masked')
+            ->pluck('field_name')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<ColumnPermissionRule>
+     */
+    public function columnRules(Dataset $dataset, ?User $user): array
+    {
         $subjects = $this->subjectResolver->subjects($user);
 
         if ($subjects === []) {
@@ -196,9 +237,8 @@ class DataPermissionService
             ->where('dataset_id', $dataset->id)
             ->whereIn('permission_type', ['hidden', 'masked'])
             ->where(fn (Builder $query) => $this->applySubjectScope($query, $subjects))
-            ->pluck('field_name')
-            ->unique()
-            ->values()
+            ->orderBy('id')
+            ->get()
             ->all();
     }
 
@@ -235,5 +275,16 @@ class DataPermissionService
         }
 
         return ['value' => $value];
+    }
+
+    private function assertDatasetFieldExists(int $datasetId, string $fieldName): void
+    {
+        $dataset = Dataset::query()->with('fields')->find($datasetId);
+
+        if ($dataset === null || ! $dataset->fields->contains('field_name', $fieldName)) {
+            throw ValidationException::withMessages([
+                'field_name' => ['The permission field must be part of the selected dataset.'],
+            ]);
+        }
     }
 }

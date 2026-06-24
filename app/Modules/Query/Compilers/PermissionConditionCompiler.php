@@ -32,7 +32,7 @@ class PermissionConditionCompiler
             }
 
             $compiled = $this->filterCompiler->compile(
-                new FilterDTO($rule->field_name, $rule->operator, $rule->ruleValue()),
+                new FilterDTO($rule->field_name, $rule->operator, $rule->ruleValue($user)),
                 $field,
                 $dialect,
             );

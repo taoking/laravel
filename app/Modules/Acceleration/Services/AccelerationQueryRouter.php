@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Acceleration\DTO\AccelerationRouteDecision;
 use App\Modules\Acceleration\DTO\LogicalQueryPlan;
 use App\Modules\Acceleration\Models\AccelerationProfile;
+use App\Modules\DataPermission\DTO\PermissionCompileResult;
 use App\Modules\DataPermission\Services\DataPermissionService;
 use App\Modules\Dataset\Models\Dataset;
 use App\Modules\Query\DTO\FilterDTO;
@@ -18,14 +19,17 @@ class AccelerationQueryRouter
         private readonly AccelerationEligibilityChecker $eligibilityChecker,
     ) {}
 
-    public function plan(Dataset $dataset, QueryRequestDTO $query, ?User $user): LogicalQueryPlan
+    /**
+     * @param  list<FilterDTO>|null  $permissionFilters
+     */
+    public function plan(Dataset $dataset, QueryRequestDTO $query, ?User $user, ?array $permissionFilters = null, ?PermissionCompileResult $permission = null, string $requestSource = 'api', bool $semanticLayerUsed = false): LogicalQueryPlan
     {
-        $permissionFilters = collect($this->dataPermissionService->rowRules($dataset, $user))
-            ->map(fn ($rule): FilterDTO => new FilterDTO($rule->field_name, $rule->operator, $rule->ruleValue()))
+        $permissionFilters ??= collect($this->dataPermissionService->rowRules($dataset, $user))
+            ->map(fn ($rule): FilterDTO => new FilterDTO($rule->field_name, $rule->operator, $rule->ruleValue($user)))
             ->values()
             ->all();
 
-        return new LogicalQueryPlan($dataset, $query, $user, $permissionFilters);
+        return new LogicalQueryPlan($dataset, $query, $user, $permissionFilters, $permission, $requestSource, $semanticLayerUsed);
     }
 
     public function decide(LogicalQueryPlan $plan): AccelerationRouteDecision
