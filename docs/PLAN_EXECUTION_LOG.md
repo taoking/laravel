@@ -4,7 +4,7 @@
 
 执行日期：2026-06-18  
 项目目录：`/Users/tao/workspace/code/laravel/laravel`  
-最终验证：`php artisan test` 通过，85 tests，769 assertions；`npm run build` 通过；`vendor/bin/pint --test` 通过；`php artisan route:list --path=api` 输出 192 条 API 路由；`php artisan migrate --pretend --database=sqlite` 通过。
+最新验证：`php artisan test` 通过，87 tests，801 assertions；`npm run build` 通过；`vendor/bin/pint --test` 通过；`php artisan route:list --path=api` 输出 192 条 API 路由；SQLite migrate + Demo seed 通过；Docker MySQL + ClickHouse Demo seed 通过。
 
 ## 总体执行原则
 
@@ -853,3 +853,51 @@ npm run build
 - `masked` 字段当前按隐藏字段处理，结果级脱敏策略留给后续阶段。
 - 自定义 SQL 数据集未纳入本阶段。
 - OLAP 原生数据源不做跨源 fallback。
+
+## Prompt11 / Phase 18 Demo 测试数据与基础验收
+
+目标：生成可演示的电商销售 BI 数据，提供一键初始化命令，启动 Docker 后端与前端构建产物，验证核心 API、图表、仪表盘、权限、查询日志和 ClickHouse 加速链路，并输出验收报告。
+
+主要产物：
+
+- 新增 `database/seeders/DemoBiSeeder.php`，生成 `sales_orders`、Demo 用户、角色权限、数据源、数据集、语义指标/维度、10 个图表、仪表盘和 viewer 数据权限。
+- 新增 `php artisan bi:demo:seed {--orders=10000} {--fresh} {--skip-large-data}`，支持重复执行和摘要输出。
+- 新增 `tests/Feature/DemoBiSeederTest.php`，覆盖 Seeder 幂等、图表查询和 viewer 行/列权限。
+- ClickHouse 可用时自动构建 `demo_sales_orders_detail` 明细加速表和 `demo_sales_orders_monthly_province_agg` 月度省份聚合表；不可用时跳过并输出原因。
+- 新增 `docs/demo-acceptance-report.md`，更新 README 和使用文档的 Demo 启动说明。
+
+本阶段修复：
+
+- Docker PHP 镜像升级到 PHP 8.4，并固定 Redis PECL 安装版本，匹配 Composer 依赖的 PHP 版本要求。
+- 修复 MySQL 迁移中过长索引/外键名和长枚举索引导致的 key length 问题。
+- 修复 ClickHouse ORDER BY / partition key 中 Nullable 字段导致的建表失败。
+- 修复 Vite 开发服务器 host/origin/HMR 配置，构建产物可通过 Nginx 服务。
+- 处理 Nginx 502、MySQL 本地卷账号不一致等本地联调问题。
+
+运行过的命令：
+
+```text
+php artisan test tests/Feature/DemoBiSeederTest.php
+php artisan test
+vendor/bin/pint --test
+npm run build
+php artisan route:list --path=api
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_prompt11_verify.sqlite php artisan migrate --force
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_prompt11_verify.sqlite php artisan bi:demo:seed --orders=120 --skip-large-data
+docker compose up -d mysql redis php-fpm nginx queue-worker scheduler clickhouse
+docker compose exec -T php-fpm php artisan migrate --force
+docker compose exec -T php-fpm php artisan bi:demo:seed --fresh --orders=5000
+docker compose exec -T php-fpm php artisan bi:metadata:sync --all --dry-run
+docker compose exec -T php-fpm php artisan bi:metadata:lineage:rebuild --all --dry-run
+docker compose exec -T php-fpm php artisan bi:metadata:usage-stats --dry-run
+docker compose exec -T php-fpm php artisan bi:acceleration:benefit-report --days=1
+```
+
+验收：
+
+- Demo seed 生成 5000 行真实 MySQL 订单数据，10 个图表、1 个仪表盘、9 个指标、10 个维度。
+- ClickHouse 明细加速构建 5000 行，月度省份聚合构建 3247 行。
+- API 烟测通过：健康检查、登录、数据源、数据集、图表数据、仪表盘数据、viewer 权限、隐藏字段拦截、查询日志和加速配置。
+- 前端 `npm run build` 通过，`http://127.0.0.1:8080/login` 可返回构建后的 SPA HTML。
+- 数据质量模块尚未实现，本阶段仅保留少量异常 Demo 数据，不创建质量规则。
+- 本机未安装 Playwright/Chromium，未执行完整浏览器自动化；已完成 HTTP 页面烟测和 API 链路烟测。

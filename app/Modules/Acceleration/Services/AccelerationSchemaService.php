@@ -25,19 +25,25 @@ class AccelerationSchemaService
         return $dataset->fields
             ->filter(fn (DatasetField $field): bool => IdentifierGuard::isSafe($field->field_name))
             ->values()
-            ->map(fn (DatasetField $field): array => [
-                'dataset_field_id' => $field->id,
-                'source_field_name' => $field->field_name,
-                'target_field_name' => $field->field_name,
-                'source_type' => $field->normalized_type,
-                'target_type' => $this->typeMapper->clickHouseType($field),
-                'is_dimension' => (bool) $field->is_dimension,
-                'is_metric' => (bool) $field->is_metric,
-                'aggregate_functions_json' => $field->is_metric ? $this->aggregateFunctions($field) : [],
-                'is_partition_key' => $partitionField?->id === $field->id,
-                'is_order_key' => $orderFields->contains(fn (DatasetField $orderField): bool => $orderField->id === $field->id),
-                'is_nullable' => true,
-            ])
+            ->map(function (DatasetField $field) use ($partitionField, $orderFields): array {
+                $isPartitionKey = $partitionField?->id === $field->id;
+                $isOrderKey = $orderFields->contains(fn (DatasetField $orderField): bool => $orderField->id === $field->id);
+                $isNullable = ! ($isPartitionKey || $isOrderKey);
+
+                return [
+                    'dataset_field_id' => $field->id,
+                    'source_field_name' => $field->field_name,
+                    'target_field_name' => $field->field_name,
+                    'source_type' => $field->normalized_type,
+                    'target_type' => $this->typeMapper->clickHouseType($field, $isNullable),
+                    'is_dimension' => (bool) $field->is_dimension,
+                    'is_metric' => (bool) $field->is_metric,
+                    'aggregate_functions_json' => $field->is_metric ? $this->aggregateFunctions($field) : [],
+                    'is_partition_key' => $isPartitionKey,
+                    'is_order_key' => $isOrderKey,
+                    'is_nullable' => $isNullable,
+                ];
+            })
             ->all();
     }
 

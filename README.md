@@ -7,7 +7,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 ## 技术栈
 
 - Laravel 13
-- PHP 8.3+
+- PHP 8.4.1+
 - Vue 3
 - Vue Router
 - Pinia
@@ -97,6 +97,7 @@ vendor/bin/pint
 npm run build
 php artisan route:list --path=api
 php artisan migrate --pretend --database=sqlite
+php artisan bi:demo:seed --orders=10000
 php artisan bi:acceleration:recommend --dry-run
 php artisan bi:acceleration:refresh-due --dry-run
 php artisan bi:acceleration:benefit-report
@@ -108,9 +109,62 @@ php artisan bi:metadata:usage-stats --dry-run
 当前验证基线：
 
 ```text
-85 tests, 769 assertions
+87 tests, 801 assertions
 192 API routes
 ```
+
+## Demo 数据
+
+初始化电商销售分析 Demo：
+
+```bash
+php artisan migrate
+php artisan bi:demo:seed --orders=10000
+```
+
+可选参数：
+
+```bash
+php artisan bi:demo:seed --orders=5000
+php artisan bi:demo:seed --orders=200 --skip-large-data
+php artisan bi:demo:seed --fresh --orders=10000
+```
+
+Demo 账号：
+
+```text
+admin@example.com / password
+analyst@example.com / password
+viewer@example.com / password
+```
+
+Demo 内容：
+
+- 物理表：`sales_orders`
+- 数据源：`Demo MySQL Sales`
+- 数据集：`销售订单数据集`
+- 指标：销售额、订单数、销量、退款金额、成本、利润、客单价、利润率、退款率
+- 图表：销售额指标卡、销售趋势、省份销售额、产品分类销售占比等 10 个图表
+- 仪表盘：`电商销售分析看板`
+- 权限：`viewer@example.com` 只能查看 `province = 广东`，并隐藏 `customer_name`
+- ClickHouse：当前数据库为 MySQL 且 ClickHouse 可连接时，Seeder 会尝试构建明细加速表 `demo_sales_orders_detail` 和月度省份聚合表 `demo_sales_orders_monthly_province_agg`；不可用时会跳过并在命令输出中说明。
+
+Demo 看板入口：
+
+```text
+登录页: /login
+仪表盘: /dashboards
+查询日志: /query-logs
+```
+
+本地管理端：
+
+```bash
+php artisan serve --host=127.0.0.1 --port=8000
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+访问 `http://127.0.0.1:8000/login` 登录后进入图表和仪表盘页面。
 
 ## API 认证
 
@@ -167,3 +221,4 @@ Authorization: Bearer <token>
 - 语义层公式只支持指标编码、数字、四则运算和括号；不支持 SQL 片段、函数调用或跨数据集指标。
 - `/api/health*` 和 `/api/metrics` 当前为公开接口，生产环境建议在网关或 middleware 中限制访问。
 - 图表查询默认启用缓存；配置变更、数据集字段变更会清理相关缓存。
+- Demo 初始化命令会创建 `sales_orders` 和演示元数据；`--fresh` 只清理明确命名的 Demo 对象和 Demo 表。

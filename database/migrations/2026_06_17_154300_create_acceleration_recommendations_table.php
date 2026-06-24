@@ -32,7 +32,7 @@ return new class extends Migration
             $table->unsignedBigInteger('estimated_benefit_score')->default(0)->index();
             $table->json('source_query_log_ids_json')->nullable();
             $table->foreignId('created_profile_id')->nullable()->constrained('acceleration_profiles')->nullOnDelete();
-            $table->foreignId('created_aggregate_definition_id')->nullable()->constrained('acceleration_aggregate_definitions')->nullOnDelete();
+            $table->unsignedBigInteger('created_aggregate_definition_id')->nullable();
             $table->foreignId('accepted_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('accepted_at')->nullable();
             $table->foreignId('rejected_by')->nullable()->constrained('users')->nullOnDelete();
@@ -41,6 +41,11 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['dataset_id', 'recommendation_type', 'status'], 'acc_recs_dataset_type_status_index');
+            $table->index('created_aggregate_definition_id', 'acc_recs_created_agg_def_index');
+            $table->foreign('created_aggregate_definition_id', 'acc_recs_created_agg_def_foreign')
+                ->references('id')
+                ->on('acceleration_aggregate_definitions')
+                ->nullOnDelete();
         });
     }
 

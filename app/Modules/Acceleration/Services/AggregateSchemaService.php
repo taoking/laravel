@@ -50,7 +50,7 @@ class AggregateSchemaService
                 'column_role' => 'dimension',
                 'aggregate_function' => 'none',
                 'source_type' => $field->normalized_type,
-                'target_type' => $detailColumn->target_type ?: $this->typeMapper->clickHouseType($field),
+                'target_type' => $this->nonNullableType($detailColumn->target_type ?: $this->typeMapper->clickHouseType($field)),
             ];
         }
 
@@ -123,6 +123,11 @@ class AggregateSchemaService
             'year' => 'UInt16',
             default => 'Date',
         };
+    }
+
+    private function nonNullableType(string $type): string
+    {
+        return preg_match('/^Nullable\((.*)\)$/', $type, $matches) === 1 ? $matches[1] : $type;
     }
 
     private function metricTargetType(DatasetField $field, AccelerationColumn $detailColumn, string $aggregate): string

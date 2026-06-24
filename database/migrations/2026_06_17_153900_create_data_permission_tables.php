@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('resource_permissions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('tenant_id')->nullable()->index();
-            $table->string('resource_type')->index();
+            $table->string('resource_type', 64)->index();
             $table->unsignedBigInteger('resource_id')->index();
-            $table->string('subject_type')->index();
+            $table->string('subject_type', 32)->index();
             $table->unsignedBigInteger('subject_id')->index();
-            $table->string('permission_type')->index();
+            $table->string('permission_type', 32)->index();
             $table->timestamps();
 
             $table->unique(['resource_type', 'resource_id', 'subject_type', 'subject_id', 'permission_type'], 'resource_permissions_unique');
@@ -28,13 +28,13 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('tenant_id')->nullable()->index();
             $table->foreignId('dataset_id')->constrained()->cascadeOnDelete();
-            $table->string('subject_type')->index();
+            $table->string('subject_type', 32)->index();
             $table->unsignedBigInteger('subject_id')->index();
-            $table->string('field_name');
-            $table->string('operator');
-            $table->string('value_type')->default('static');
+            $table->string('field_name', 128);
+            $table->string('operator', 32);
+            $table->string('value_type', 32)->default('static');
             $table->json('value_json')->nullable();
-            $table->string('status')->default('active')->index();
+            $table->string('status', 32)->default('active')->index();
             $table->timestamps();
 
             $table->index(['dataset_id', 'status']);
@@ -44,10 +44,10 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('tenant_id')->nullable()->index();
             $table->foreignId('dataset_id')->constrained()->cascadeOnDelete();
-            $table->string('subject_type')->index();
+            $table->string('subject_type', 32)->index();
             $table->unsignedBigInteger('subject_id')->index();
-            $table->string('field_name');
-            $table->string('permission_type')->index();
+            $table->string('field_name', 128);
+            $table->string('permission_type', 32)->index();
             $table->timestamps();
 
             $table->unique(['dataset_id', 'subject_type', 'subject_id', 'field_name', 'permission_type'], 'column_permissions_unique');

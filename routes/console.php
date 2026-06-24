@@ -5,6 +5,7 @@ use App\Modules\Acceleration\Services\AccelerationRecommendationService;
 use App\Modules\Acceleration\Services\AccelerationRefreshRunner;
 use App\Modules\Metadata\Services\MetadataSyncService;
 use App\Modules\Metadata\Services\MetadataUsageStatService;
+use Database\Seeders\DemoBiSeeder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -12,6 +13,42 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('bi:demo:seed {--orders=10000} {--fresh} {--skip-large-data}', function () {
+    $result = app(DemoBiSeeder::class)->seed(
+        orders: (int) $this->option('orders'),
+        fresh: (bool) $this->option('fresh'),
+        skipLargeData: (bool) $this->option('skip-large-data'),
+    );
+
+    $this->info('BI demo seed complete.');
+    $this->line('Demo users created/updated: '.$result['users']);
+    $this->line('Sales orders target: '.$result['orders_target']);
+    $this->line('Sales orders created: '.$result['orders_created']);
+    $this->line('Sales orders total: '.$result['orders_total']);
+    $this->line('Data source: '.$result['data_source']);
+    $this->line('Dataset: '.$result['dataset']);
+    $this->line('Metrics created/updated: '.$result['metrics']);
+    $this->line('Dimensions created/updated: '.$result['dimensions']);
+    $this->line('Charts created/updated: '.$result['charts']);
+    $this->line('Dashboard: '.$result['dashboard']);
+    $this->line('Quality rules created: '.$result['quality_rules'].' (quality module not implemented)');
+    $this->line('ClickHouse acceleration: '.$result['clickhouse_acceleration_status']);
+
+    if ($result['clickhouse_detail_rows'] !== null) {
+        $this->line('ClickHouse detail rows: '.$result['clickhouse_detail_rows']);
+    }
+
+    if ($result['clickhouse_aggregate_rows'] !== null) {
+        $this->line('ClickHouse aggregate rows: '.$result['clickhouse_aggregate_rows']);
+    }
+
+    if ($result['clickhouse_acceleration_error'] !== null) {
+        $this->warn('ClickHouse acceleration error: '.$result['clickhouse_acceleration_error']);
+    }
+
+    return 0;
+})->purpose('Seed BI demo users, sales orders, metadata, charts and dashboard');
 
 Artisan::command('bi:acceleration:recommend {--days=7} {--dataset=} {--dry-run}', function () {
     $service = app(AccelerationRecommendationService::class);

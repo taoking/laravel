@@ -25,7 +25,7 @@ Laravel BI Platform 是一个后端 API 与 Vue 管理端同仓的轻量 BI 平�
 
 后端：
 
-- PHP 8.3+
+- PHP 8.4.1+
 - Laravel 13
 - Laravel Sanctum
 - Laravel Queue / Scheduler
@@ -449,7 +449,7 @@ php artisan optimize:clear
 当前验证基线：
 
 ```text
-85 tests, 769 assertions
+87 tests, 801 assertions
 192 API routes
 ```
 

@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -17,7 +17,8 @@ RUN apt-get update \
         pcntl \
         pdo_mysql \
         zip \
-    && pecl install redis \
+    && pecl channel-update pecl.php.net \
+    && pecl install redis-6.3.0 \
     && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*
 

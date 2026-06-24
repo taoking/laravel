@@ -19,6 +19,11 @@ export default defineConfig({
         vue(),
     ],
     server: {
+        host: '0.0.0.0',
+        origin: process.env.VITE_DEV_SERVER_ORIGIN || 'http://127.0.0.1:5173',
+        hmr: {
+            host: process.env.VITE_HMR_HOST || '127.0.0.1',
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

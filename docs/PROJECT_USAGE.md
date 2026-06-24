@@ -8,7 +8,7 @@
 
 推荐环境：
 
-- PHP 8.3+
+- PHP 8.4.1+
 - Composer 2
 - Node.js 20+
 - npm 10+
@@ -66,7 +66,13 @@ docker compose exec php-fpm php artisan migrate
 docker compose exec php-fpm php artisan db:seed
 ```
 
-7. 访问服务。
+7. 可选：初始化 Demo 数据。
+
+```bash
+docker compose exec php-fpm php artisan bi:demo:seed --orders=10000
+```
+
+8. 访问服务。
 
 ```text
 管理端: http://localhost:8080
@@ -127,6 +133,64 @@ npm run build
 - 其他前端路径由 `routes/web.php` catch-all 返回 Vue SPA。
 - SPA 路由排除了 Session/CSRF middleware；管理端认证使用 Sanctum Bearer token，不依赖服务端 session。
 - `public/hot` 存在时 Laravel 会读取 Vite 开发服务器资源；停止 Vite 后如需使用构建产物，应确保 `public/hot` 不存在。
+
+## Demo 电商销售分析
+
+Demo 初始化命令：
+
+```bash
+php artisan migrate
+php artisan bi:demo:seed --orders=10000
+```
+
+快速测试可减少数据量：
+
+```bash
+php artisan bi:demo:seed --orders=200 --skip-large-data
+```
+
+重置 Demo 对象和 Demo 表：
+
+```bash
+php artisan bi:demo:seed --fresh --orders=10000
+```
+
+生成内容：
+
+- `sales_orders` 订单明细表。
+- `Demo MySQL Sales` 数据源，指向当前 MySQL 应用库。
+- `销售订单数据集`，包含维度、指标字段配置。
+- 9 个语义指标和 10 个语义维度。
+- 10 个 Demo 图表。
+- `电商销售分析看板` 仪表盘。
+- `viewer@example.com` 的行级权限和列级隐藏字段示例。
+- 当前数据库为 MySQL 且 ClickHouse 可连接时，会尝试生成明细加速表 `demo_sales_orders_detail` 和月度省份聚合表 `demo_sales_orders_monthly_province_agg`；SQLite 或 ClickHouse 不可用时自动跳过。
+
+测试账号：
+
+```text
+admin@example.com / password
+analyst@example.com / password
+viewer@example.com / password
+```
+
+Demo 页面路径：
+
+```text
+登录页: /login
+数据源: /data-sources
+数据集: /datasets
+图表: /charts
+仪表盘: /dashboards
+查询日志: /query-logs
+```
+
+注意：
+
+- Demo 查询需要 `Demo MySQL Sales` 能连接到包含 `sales_orders` 的当前 MySQL 库。
+- 测试环境使用 sqlite 时，Seeder 仍可执行并生成元数据，但真实图表查询建议在 MySQL 环境验证。
+- 数据质量模块尚未实现，因此 Demo 只在数据中保留少量质量问题，不创建质量规则。
+- 如果同时启用 MinIO 和 ClickHouse，注意 `.env` 中 `MINIO_API_PORT` 与 `BI_CLICKHOUSE_NATIVE_PORT` 不要都映射到宿主机 `9000`。
 
 ## 本地非 Docker 运行
 

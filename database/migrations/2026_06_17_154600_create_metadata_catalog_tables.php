@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('metadata_assets', function (Blueprint $table) {
             $table->id();
-            $table->string('asset_type');
+            $table->string('asset_type', 64);
             $table->unsignedBigInteger('asset_id');
             $table->string('name');
             $table->string('code')->nullable();
             $table->text('description')->nullable();
             $table->foreignId('data_source_id')->nullable()->constrained('data_sources')->nullOnDelete();
             $table->foreignId('dataset_id')->nullable()->constrained('datasets')->nullOnDelete();
-            $table->string('status')->default('active');
+            $table->string('status', 32)->default('active');
             $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->json('tags_json')->nullable();
             $table->json('properties_json')->nullable();
@@ -36,13 +36,13 @@ return new class extends Migration
 
         Schema::create('metadata_lineage_relations', function (Blueprint $table) {
             $table->id();
-            $table->string('source_asset_type');
+            $table->string('source_asset_type', 64);
             $table->unsignedBigInteger('source_asset_id');
-            $table->string('target_asset_type');
+            $table->string('target_asset_type', 64);
             $table->unsignedBigInteger('target_asset_id');
-            $table->string('relation_type');
+            $table->string('relation_type', 64);
             $table->json('relation_detail_json')->nullable();
-            $table->string('confidence')->default('high');
+            $table->string('confidence', 32)->default('high');
             $table->boolean('created_by_system')->default(true);
             $table->timestamps();
 
@@ -68,7 +68,7 @@ return new class extends Migration
 
         Schema::create('metadata_asset_tags', function (Blueprint $table) {
             $table->id();
-            $table->string('asset_type');
+            $table->string('asset_type', 64);
             $table->unsignedBigInteger('asset_id');
             $table->foreignId('tag_id')->constrained('metadata_tags')->cascadeOnDelete();
             $table->timestamps();
@@ -79,7 +79,7 @@ return new class extends Migration
 
         Schema::create('metadata_usage_stats', function (Blueprint $table) {
             $table->id();
-            $table->string('asset_type');
+            $table->string('asset_type', 64);
             $table->unsignedBigInteger('asset_id');
             $table->date('usage_date');
             $table->unsignedInteger('query_count')->default(0);
@@ -98,11 +98,11 @@ return new class extends Migration
 
         Schema::create('impact_analysis_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('asset_type');
+            $table->string('asset_type', 64);
             $table->unsignedBigInteger('asset_id');
-            $table->string('change_type');
+            $table->string('change_type', 64);
             $table->json('impact_result_json');
-            $table->string('risk_level');
+            $table->string('risk_level', 32);
             $table->foreignId('analyzed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
