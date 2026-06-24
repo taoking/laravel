@@ -2,6 +2,8 @@
 
 本文档说明如何启动、配置、验证和使用 Laravel BI Platform 管理端与后端 API。
 
+完整技术架构、流程图、接口清单和表结构见 [项目详细文档](PROJECT_DOCUMENTATION.md)。
+
 ## 运行环境
 
 推荐环境：
@@ -678,7 +680,7 @@ php artisan test
 当前通过基线：
 
 ```text
-48 tests, 394 assertions
+81 tests, 720 assertions
 ```
 
 ## 注意事项

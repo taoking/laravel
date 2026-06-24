@@ -44,6 +44,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 
 ## 文档入口
 
+- [项目详细文档](docs/PROJECT_DOCUMENTATION.md)：总览技术架构、流程图、接口文档、表结构、启动关闭、运维命令和使用说明。
 - [Plan 执行日志](docs/PLAN_EXECUTION_LOG.md)：记录 Phase 1 到 Phase 14 的实现过程、产物和验收结果。
 - [项目使用说明](docs/PROJECT_USAGE.md)：包含 Docker 启动、本地运行、前端管理端、API 认证、主要接口示例、测试和注意事项。
 - [功能页面文档介绍](docs/FEATURE_PAGES.md)：按前端页面/工作台说明已实现功能、接口和交互。
