@@ -1,6 +1,6 @@
 # Laravel BI Platform
 
-Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平台，覆盖数据源接入、数据集建模、动态查询、图表配置、仪表盘、导入导出、缓存、数据权限、审计日志、监控指标和管理端页面。
+Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平台，覆盖数据源接入、数据集建模、语义层指标库、动态查询、图表配置、仪表盘、导入导出、缓存、数据权限、审计日志、监控指标和管理端页面。
 
 当前仓库包含 Laravel 后端 API 和内置于 Laravel Vite 的 Vue 3 管理端。
 
@@ -28,6 +28,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - 用户、角色、权限和组织部门。
 - MySQL、StarRocks、Doris 数据源管理、连接测试、元数据同步。
 - 数据集建模、字段分类、维度/指标配置。
+- BI 语义层：指标分类、指标库、维度管理、公式校验、版本、血缘依赖、使用记录和影响分析。
 - 动态 SQL 查询引擎、查询缓存、查询日志。
 - 图表配置、图表数据预览和查询。
 - 仪表盘编排、全局筛选、组件布局、公开分享。
@@ -50,6 +51,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 - [预聚合表 / 物化视图加速](docs/bi-acceleration-aggregate.md)：Phase 10.2 的聚合定义、构建、命中、回退、缓存和日志边界。
 - [查询日志推荐、自动刷新和收益统计](docs/bi-acceleration-recommendation.md)：Phase 10.3 的推荐规则、刷新计划、收益报表、命令和生产边界。
 - [StarRocks / Doris 一等 OLAP 数据源](docs/bi-olap-starrocks-doris.md)：Phase 10.4 的直连 OLAP 数据源、SQL 方言、Explain、查询日志和物化视图边界。
+- [BI 语义层 / 指标库 / 口径治理](docs/bi-semantic-layer.md)：Phase 11 的指标、维度、公式、版本、血缘、影响分析和查询接入边界。
 - [原始开发计划](plan.md)：完整项目规划。
 
 ## 快速启动
@@ -99,8 +101,8 @@ php artisan bi:acceleration:benefit-report
 当前验证基线：
 
 ```text
-68 tests, 574 assertions
-140 API routes
+74 tests, 641 assertions
+168 API routes
 ```
 
 ## API 认证
@@ -133,6 +135,7 @@ Authorization: Bearer <token>
 - Datasets：`/api/datasets`
 - Query：`/api/query/execute`
 - Explain：`/api/datasets/{dataset}/explain`、`/api/charts/{chart}/explain`
+- Semantic Layer：`/api/metric-categories`、`/api/semantic-metrics`、`/api/dimensions`、`/api/datasets/{dataset}/semantic-layer`
 - Charts：`/api/charts`
 - Dashboards：`/api/dashboards`
 - Imports：`/api/import-tasks`
@@ -152,5 +155,6 @@ Authorization: Bearer <token>
 - 导入和导出依赖 MinIO/S3 disk。
 - 查询加速依赖 ClickHouse 和队列 worker；预聚合失败会先回退 ClickHouse 明细表，明细不可用时再回退原始数据源查询。
 - StarRocks / Doris 作为直连 OLAP 数据源使用，不依赖主 docker-compose；推荐连接外部 FE 查询入口，数据同步由独立 ETL / CDC 链路负责。
+- 语义层公式只支持指标编码、数字、四则运算和括号；不支持 SQL 片段、函数调用或跨数据集指标。
 - `/api/health*` 和 `/api/metrics` 当前为公开接口，生产环境建议在网关或 middleware 中限制访问。
 - 图表查询默认启用缓存；配置变更、数据集字段变更会清理相关缓存。

@@ -12,6 +12,7 @@ import LoginView from '../pages/LoginView.vue';
 import MonitorView from '../pages/MonitorView.vue';
 import PermissionsView from '../pages/PermissionsView.vue';
 import QueryLogsView from '../pages/QueryLogsView.vue';
+import SemanticLayerView from '../pages/SemanticLayerView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const router = createRouter({
@@ -31,6 +32,7 @@ const router = createRouter({
                 { path: '', name: 'overview', component: DashboardOverviewView },
                 { path: 'data-sources', name: 'data-sources', component: DataSourcesView },
                 { path: 'datasets', name: 'datasets', component: DatasetsView },
+                { path: 'semantic-layer', name: 'semantic-layer', component: SemanticLayerView },
                 { path: 'charts', name: 'charts', component: ChartsView },
                 { path: 'dashboards', name: 'dashboards', component: DashboardsView },
                 { path: 'imports', name: 'imports', component: ImportTasksView },

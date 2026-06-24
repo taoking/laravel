@@ -10,6 +10,7 @@
 首页概览
 数据源
 数据集
+语义层
 图表配置
 仪表盘
 导入任务
@@ -285,6 +286,39 @@
 - `meta.cached`：是否命中缓存。
 - `meta.total`：结果行数。
 
+## 语义层页面
+
+页面目标：维护统一指标库、维度定义、公式口径和指标影响分析。
+
+主要区域：
+
+- 数据集和状态筛选。
+- 指标分类表单和列表。
+- 指标表单、公式校验、状态流转和影响分析。
+- 维度表单和列表。
+- 从数据集字段初始化指标和维度。
+
+可用接口：
+
+- `GET /api/metric-categories`
+- `POST /api/metric-categories`
+- `GET /api/semantic-metrics`
+- `POST /api/semantic-metrics`
+- `POST /api/semantic-metrics/validate-formula`
+- `GET /api/semantic-metrics/{metric}/impact`
+- `GET /api/dimensions`
+- `POST /api/dimensions`
+- `GET /api/datasets/{dataset}/semantic-layer`
+- `POST /api/datasets/{dataset}/metrics/init-from-fields`
+- `POST /api/datasets/{dataset}/dimensions/init-from-fields`
+
+交互说明：
+
+- 指标编码和维度编码只允许安全标识符。
+- 复合指标公式使用指标编码引用其他 active 指标。
+- 图表页面可选择语义维度和语义指标，保存后会记录指标使用关系。
+- 查询日志页面可筛选语义层查询。
+
 ## 图表管理页
 
 页面目标：配置图表类型、图表字段映射、查询条件和样式参数。
@@ -313,6 +347,7 @@
 - 图表类型。
 - 维度配置。
 - 指标配置。
+- 语义维度和语义指标快速配置。
 - 过滤条件。
 - 排序。
 - 样式 JSON。
@@ -333,6 +368,7 @@
 - 保存前可调用 preview 验证配置。
 - 图表数据默认使用缓存。
 - 图表配置修改后会清理该图表查询缓存。
+- 使用语义指标保存图表时，会同步指标使用记录用于影响分析。
 
 ## 仪表盘页面
 
@@ -673,6 +709,7 @@ monitor.view
 - `DashboardOverviewView.vue`：首页概览。
 - `DataSourcesView.vue`：数据源管理。
 - `DatasetsView.vue`：数据集管理。
+- `SemanticLayerView.vue`：语义层、指标库、维度和影响分析。
 - `ChartsView.vue`：图表配置与预览。
 - `DashboardsView.vue`：仪表盘和组件管理。
 - `ImportTasksView.vue`：导入任务。

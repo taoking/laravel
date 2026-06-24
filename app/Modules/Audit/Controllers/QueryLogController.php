@@ -23,6 +23,7 @@ class QueryLogController extends Controller
             ->when($request->filled('acceleration_hit'), fn ($query) => $query->where('acceleration_hit', $request->boolean('acceleration_hit')))
             ->when($request->filled('fallback_used'), fn ($query) => $query->where('fallback_used', $request->boolean('fallback_used')))
             ->when($request->filled('detail_fallback_used'), fn ($query) => $query->where('detail_fallback_used', $request->boolean('detail_fallback_used')))
+            ->when($request->filled('semantic_layer_used'), fn ($query) => $query->where('semantic_layer_used', $request->boolean('semantic_layer_used')))
             ->when($request->filled('engine_type'), fn ($query) => $query->where('engine_type', $request->string('engine_type')->toString()))
             ->when($request->filled('data_source_type'), fn ($query) => $query->where('data_source_type', $request->string('data_source_type')->toString()))
             ->when($request->filled('acceleration_engine'), fn ($query) => $query->where('acceleration_engine', $request->string('acceleration_engine')->toString()))

@@ -61,12 +61,13 @@ class QueryCacheService
             : null;
         $engineType = is_string($context['engine_type'] ?? null) ? $context['engine_type'] : null;
         $dataSourceId = is_numeric($context['data_source_id'] ?? null) ? (int) $context['data_source_id'] : null;
+        $metricVersionsHash = is_string($context['metric_versions_hash'] ?? null) ? $context['metric_versions_hash'] : null;
 
         if (is_numeric($chartId)) {
-            return $this->keyBuilder->chartQuery((int) $chartId, $query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId);
+            return $this->keyBuilder->chartQuery((int) $chartId, $query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId, $metricVersionsHash);
         }
 
-        return $this->keyBuilder->query($query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId);
+        return $this->keyBuilder->query($query->hash, $scope, $accelerationHit, $profileId, $version, $aggregateDefinitionId, $engineType, $dataSourceId, $metricVersionsHash);
     }
 
     /**

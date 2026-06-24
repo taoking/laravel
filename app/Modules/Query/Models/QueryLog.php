@@ -36,6 +36,10 @@ class QueryLog extends Model
         'error_message',
         'engine_type',
         'data_source_type',
+        'semantic_layer_used',
+        'semantic_metrics_json',
+        'semantic_dimensions_json',
+        'metric_versions_json',
         'acceleration_hit',
         'acceleration_profile_id',
         'acceleration_engine',
@@ -61,6 +65,10 @@ class QueryLog extends Model
             'acceleration_hit' => 'boolean',
             'fallback_used' => 'boolean',
             'detail_fallback_used' => 'boolean',
+            'semantic_layer_used' => 'boolean',
+            'semantic_metrics_json' => 'array',
+            'semantic_dimensions_json' => 'array',
+            'metric_versions_json' => 'array',
         ];
     }
 

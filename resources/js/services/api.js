@@ -50,6 +50,29 @@ export const chartApi = {
     explain: (id, payload) => http.post(`/charts/${id}/explain`, payload),
 };
 
+export const semanticApi = {
+    categories: resource('/metric-categories'),
+    metrics: {
+        ...resource('/semantic-metrics'),
+        activate: (id) => http.post(`/semantic-metrics/${id}/activate`),
+        deprecate: (id) => http.post(`/semantic-metrics/${id}/deprecate`),
+        archive: (id) => http.post(`/semantic-metrics/${id}/archive`),
+        versions: (id) => http.get(`/semantic-metrics/${id}/versions`),
+        dependencies: (id) => http.get(`/semantic-metrics/${id}/dependencies`),
+        usages: (id) => http.get(`/semantic-metrics/${id}/usages`),
+        impact: (id) => http.get(`/semantic-metrics/${id}/impact`),
+        validateFormula: (payload) => http.post('/semantic-metrics/validate-formula', payload),
+    },
+    dimensions: {
+        ...resource('/dimensions'),
+        dataset: (datasetId) => http.get(`/datasets/${datasetId}/dimensions`),
+        initFromFields: (datasetId) => http.post(`/datasets/${datasetId}/dimensions/init-from-fields`),
+    },
+    datasetMetrics: (datasetId) => http.get(`/datasets/${datasetId}/metrics`),
+    initMetricsFromFields: (datasetId) => http.post(`/datasets/${datasetId}/metrics/init-from-fields`),
+    semanticLayer: (datasetId) => http.get(`/datasets/${datasetId}/semantic-layer`),
+};
+
 export const dashboardApi = {
     ...resource('/dashboards'),
     createWidget: (dashboardId, payload) => http.post(`/dashboards/${dashboardId}/widgets`, payload),

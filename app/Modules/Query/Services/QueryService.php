@@ -14,6 +14,7 @@ use App\Modules\Query\Compilers\SqlCompiler;
 use App\Modules\Query\DTO\CompiledQuery;
 use App\Modules\Query\DTO\QueryRequestDTO;
 use App\Modules\Query\Validators\QueryRequestValidator;
+use App\Modules\Semantic\Services\SemanticQueryCompiler;
 use Throwable;
 
 class QueryService
@@ -28,6 +29,7 @@ class QueryService
         private readonly AggregateQueryRouter $aggregateRouter,
         private readonly AccelerationQueryRouter $accelerationRouter,
         private readonly AccelerationQueryExecutor $accelerationExecutor,
+        private readonly SemanticQueryCompiler $semanticQueryCompiler,
     ) {}
 
     /**
@@ -35,6 +37,25 @@ class QueryService
      * @return array{columns: list<array{name: string, label: string, type: string}>, rows: list<array<string, mixed>>, meta: array{elapsed_ms: int, cached: bool, total: int}}
      */
     public function execute(array $payload, ?User $user, array $cacheContext = []): array
+    {
+        if ($this->semanticQueryCompiler->usesSemanticLayer($payload)) {
+            $plan = $this->semanticQueryCompiler->compile($payload);
+            $result = $this->executeResolved($plan->queryPayload, $user, [
+                ...$cacheContext,
+                ...$this->semanticQueryCompiler->context($plan),
+            ]);
+
+            return $this->semanticQueryCompiler->applyResult($plan, $result);
+        }
+
+        return $this->executeResolved($payload, $user, $cacheContext);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{columns: list<array{name: string, label: string, type: string}>, rows: list<array<string, mixed>>, meta: array{elapsed_ms: int, cached: bool, total: int}}
+     */
+    private function executeResolved(array $payload, ?User $user, array $cacheContext = []): array
     {
         $query = QueryRequestDTO::fromArray($payload);
         $dataset = Dataset::query()
@@ -357,6 +378,10 @@ class QueryService
             'engine_type' => $context['engine_type'] ?? null,
             'data_source_type' => $context['data_source_type'] ?? null,
             'data_source_id' => $context['data_source_id'] ?? null,
+            'semantic_layer_used' => (bool) ($context['semantic_layer_used'] ?? false),
+            'semantic_metrics' => $context['semantic_metrics_json'] ?? null,
+            'semantic_dimensions' => $context['semantic_dimensions_json'] ?? null,
+            'metric_versions' => $context['metric_versions_json'] ?? null,
             'acceleration_hit' => (bool) ($context['acceleration_hit'] ?? false),
             'acceleration_profile_id' => $context['acceleration_profile_id'] ?? null,
             'acceleration_engine' => $context['acceleration_engine'] ?? null,

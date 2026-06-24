@@ -1,6 +1,7 @@
 import {
     Activity,
     BarChart3,
+    BookOpen,
     Database,
     Download,
     Gauge,
@@ -15,6 +16,7 @@ export const navigationItems = [
     { name: '首页概览', path: '/', icon: Gauge },
     { name: '数据源', path: '/data-sources', icon: Database },
     { name: '数据集', path: '/datasets', icon: Table2 },
+    { name: '语义层', path: '/semantic-layer', icon: BookOpen },
     { name: '图表配置', path: '/charts', icon: BarChart3 },
     { name: '仪表盘', path: '/dashboards', icon: LayoutDashboard },
     { name: '导入任务', path: '/imports', icon: Upload },

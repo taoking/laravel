@@ -5,13 +5,17 @@ namespace App\Modules\Chart\Services;
 use App\Modules\Dataset\Models\Dataset;
 use App\Modules\Query\DTO\QueryRequestDTO;
 use App\Modules\Query\Validators\QueryRequestValidator;
+use App\Modules\Semantic\Services\SemanticQueryCompiler;
 use Illuminate\Validation\ValidationException;
 
 class ChartConfigValidator
 {
     public const CHART_TYPES = ['metric_card', 'bar', 'line', 'pie', 'table'];
 
-    public function __construct(private readonly QueryRequestValidator $queryRequestValidator) {}
+    public function __construct(
+        private readonly QueryRequestValidator $queryRequestValidator,
+        private readonly SemanticQueryCompiler $semanticQueryCompiler,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $config
@@ -24,8 +28,15 @@ class ChartConfigValidator
             ]);
         }
 
-        $dimensions = $config['dimensions'] ?? [];
-        $metrics = $config['metrics'] ?? [];
+        $validationConfig = $this->semanticQueryCompiler->usesSemanticLayer($config)
+            ? $this->semanticQueryCompiler->compile([
+                ...$config,
+                'dataset_id' => $dataset->id,
+            ])->queryPayload
+            : $config;
+
+        $dimensions = $validationConfig['dimensions'] ?? [];
+        $metrics = $validationConfig['metrics'] ?? [];
 
         match ($chartType) {
             'metric_card' => $this->requireMetric($metrics),
@@ -36,7 +47,7 @@ class ChartConfigValidator
         $this->queryRequestValidator->validate(
             $dataset->loadMissing('fields'),
             QueryRequestDTO::fromArray([
-                ...$config,
+                ...$validationConfig,
                 'dataset_id' => $dataset->id,
             ]),
         );

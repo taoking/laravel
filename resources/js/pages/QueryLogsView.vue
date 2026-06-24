@@ -14,6 +14,7 @@ const filters = reactive({
     chart_id: '',
     dashboard_id: '',
     engine_type: '',
+    semantic_layer_used: '',
     page_size: 20,
 });
 
@@ -30,6 +31,7 @@ const columns = [
     { key: 'dashboard_id', label: '仪表盘' },
     { key: 'engine_type', label: '引擎' },
     { key: 'data_source_type', label: '数据源' },
+    { key: 'semantic_layer_used', label: '语义层' },
     { key: 'elapsed_ms', label: '耗时 ms' },
     { key: 'row_count', label: '行数' },
     { key: 'cached', label: '缓存' },
@@ -81,6 +83,11 @@ onMounted(load);
                 <option value="doris">doris</option>
                 <option value="clickhouse">clickhouse</option>
             </select>
+            <select v-model="filters.semantic_layer_used">
+                <option value="">全部语义</option>
+                <option value="1">semantic</option>
+                <option value="0">raw</option>
+            </select>
             <select v-model="filters.status">
                 <option value="">全部状态</option>
                 <option value="success">success</option>
@@ -115,6 +122,9 @@ onMounted(load);
                 </template>
                 <template #cell-data_source_type="{ value }">
                     <StatusBadge :value="value ?? '-'" />
+                </template>
+                <template #cell-semantic_layer_used="{ value }">
+                    <StatusBadge :value="value ? 'semantic' : 'raw'" />
                 </template>
                 <template #cell-sql="{ value }">
                     <code class="inline-code">{{ String(value ?? '').slice(0, 140) }}</code>

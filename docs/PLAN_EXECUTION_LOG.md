@@ -431,3 +431,72 @@ POST /api/charts/{chart}/explain
 - 不将 StarRocks / Doris 强行接入 ClickHouse acceleration profile。
 - 物化视图第一版只做展示和刷新，查询改写由 OLAP 引擎优化器完成。
 - 方言第一版使用 MySQL 协议兼容函数；复杂函数差异可继续在 dialect 类中扩展。
+
+## Phase 11 BI 语义层 / 指标库 / 口径治理
+
+目标：在已有数据源、数据集、查询引擎、图表、仪表盘、查询缓存、查询日志和 OLAP 能力之上，增加最小可用的语义层与指标库闭环。
+
+主要产物：
+
+- 数据表：新增 `metric_categories`、`metrics`、`metric_versions`、`dimensions`、`metric_dependencies`、`metric_usages`。
+- Query Log：新增 `semantic_layer_used`、`semantic_metrics_json`、`semantic_dimensions_json`、`metric_versions_json`。
+- 模型：`MetricCategory`、`Metric`、`MetricVersion`、`Dimension`、`MetricDependency`、`MetricUsage`。
+- 服务：指标创建更新、版本快照、公式解析、依赖同步、循环检测、使用记录、影响分析、语义查询编译、语义层权限校验。
+- 公式：只允许指标编码、数字、四则运算和括号，禁止 SQL 片段和函数调用。
+- Query Engine：支持 `semantic_metrics` 和 `semantic_dimensions`，编译为现有维度/指标协议，复合指标在结果层计算。
+- Chart：图表配置支持语义维度和语义指标，保存/更新/删除时同步指标使用记录。
+- Cache：查询缓存 key 增加 `semantic:{metric_versions_hash|none}` 段。
+- Audit：查询日志资源和筛选支持语义层字段。
+- 前端：新增 `SemanticLayerView.vue` 页面；图表页面增加语义指标/维度快速配置；查询日志页面增加语义层筛选。
+- 文档：新增 `docs/bi-semantic-layer.md`，README 和功能页面文档已更新。
+
+新增 API：
+
+```text
+GET    /api/metric-categories
+POST   /api/metric-categories
+GET    /api/metric-categories/{metricCategory}
+PUT    /api/metric-categories/{metricCategory}
+DELETE /api/metric-categories/{metricCategory}
+GET    /api/semantic-metrics
+POST   /api/semantic-metrics
+GET    /api/semantic-metrics/{metric}
+PUT    /api/semantic-metrics/{metric}
+DELETE /api/semantic-metrics/{metric}
+POST   /api/semantic-metrics/validate-formula
+POST   /api/semantic-metrics/{metric}/activate
+POST   /api/semantic-metrics/{metric}/deprecate
+POST   /api/semantic-metrics/{metric}/archive
+GET    /api/semantic-metrics/{metric}/versions
+GET    /api/semantic-metrics/{metric}/dependencies
+GET    /api/semantic-metrics/{metric}/usages
+GET    /api/semantic-metrics/{metric}/impact
+GET    /api/dimensions
+POST   /api/dimensions
+GET    /api/dimensions/{dimension}
+PUT    /api/dimensions/{dimension}
+DELETE /api/dimensions/{dimension}
+GET    /api/datasets/{dataset}/dimensions
+POST   /api/datasets/{dataset}/dimensions/init-from-fields
+GET    /api/datasets/{dataset}/metrics
+POST   /api/datasets/{dataset}/metrics/init-from-fields
+GET    /api/datasets/{dataset}/semantic-layer
+```
+
+验收：
+
+- 新增 Feature 测试 `tests/Feature/SemanticLayerTest.php`，覆盖分类、维度初始化、指标初始化、版本、依赖、循环检测、语义查询、查询日志语义字段、图表使用记录、影响分析和语义层权限边界。
+- 语义层查询保持现有字段白名单、权限、缓存、日志、加速和 OLAP 主链路兼容。
+- 已执行 `php artisan test`，74 tests，641 assertions，全部通过。
+- 已执行 `vendor/bin/pint --test`、`npm run build`、`php artisan route:list --path=api`、`php artisan migrate --pretend --database=sqlite`。
+- 新增语义层迁移已在 sqlite 临时库执行 `migrate` 后通过 `migrate:rollback --step=2` 验证 up/down。
+- API routes：168 条。
+- Frontend build：通过，存在 Vite 单 chunk 体积提示。
+
+当前边界：
+
+- 不实现完整审批流，只保留指标状态、版本和影响分析。
+- 不实现可视化公式编辑器和复杂血缘图谱。
+- 不支持跨数据集指标公式。
+- 复合指标第一版在 PHP 结果层计算，不下推数据库表达式。
+- 复合指标排序暂不作为第一版能力。

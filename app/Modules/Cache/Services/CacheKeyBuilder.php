@@ -34,12 +34,13 @@ class CacheKeyBuilder
         return "bi:chart:{$chartId}:config";
     }
 
-    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null): string
+    public function chartQuery(int $chartId, string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null, ?string $metricVersionsHash = null): string
     {
         $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
         $source = $this->sourceSegment($engineType, $dataSourceId);
+        $semantic = $this->semanticSegment($metricVersionsHash);
 
-        return "bi:chart:{$chartId}:query:{$scope}:{$source}:{$acceleration}:{$queryHash}";
+        return "bi:chart:{$chartId}:query:{$scope}:{$semantic}:{$source}:{$acceleration}:{$queryHash}";
     }
 
     public function chartQueryIndex(int $chartId): string
@@ -62,12 +63,18 @@ class CacheKeyBuilder
         return "bi:user:{$userId}:data_permissions";
     }
 
-    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null): string
+    public function query(string $queryHash, string $scope, bool $accelerationHit = false, ?int $profileId = null, int $version = 0, ?int $aggregateDefinitionId = null, ?string $engineType = null, ?int $dataSourceId = null, ?string $metricVersionsHash = null): string
     {
         $acceleration = $this->accelerationSegment($accelerationHit, $profileId, $version, $aggregateDefinitionId);
         $source = $this->sourceSegment($engineType, $dataSourceId);
+        $semantic = $this->semanticSegment($metricVersionsHash);
 
-        return "bi:query:{$scope}:{$source}:{$acceleration}:{$queryHash}";
+        return "bi:query:{$scope}:{$semantic}:{$source}:{$acceleration}:{$queryHash}";
+    }
+
+    private function semanticSegment(?string $metricVersionsHash): string
+    {
+        return 'semantic:'.($metricVersionsHash !== null && $metricVersionsHash !== '' ? $metricVersionsHash : 'none');
     }
 
     private function sourceSegment(?string $engineType, ?int $dataSourceId): string

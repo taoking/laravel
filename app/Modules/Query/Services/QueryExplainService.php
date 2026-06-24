@@ -12,6 +12,7 @@ use App\Modules\DataSource\Services\DataSourceMetadataService;
 use App\Modules\Query\Compilers\SqlCompiler;
 use App\Modules\Query\DTO\QueryRequestDTO;
 use App\Modules\Query\Validators\QueryRequestValidator;
+use App\Modules\Semantic\Services\SemanticQueryCompiler;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -24,6 +25,7 @@ class QueryExplainService
         private readonly DataSourceMetadataService $metadataService,
         private readonly ChartConfigValidator $chartConfigValidator,
         private readonly ChartQueryBuilder $chartQueryBuilder,
+        private readonly SemanticQueryCompiler $semanticQueryCompiler,
     ) {}
 
     /**
@@ -33,11 +35,19 @@ class QueryExplainService
     public function dataset(Dataset $dataset, array $payload, ?User $user): array
     {
         $dataset->loadMissing(['dataSource', 'fields']);
-        $query = QueryRequestDTO::fromArray([
+        $queryPayload = [
             ...$payload,
             'dataset_id' => $dataset->id,
             'use_cache' => false,
-        ]);
+        ];
+        $semanticPlan = null;
+
+        if ($this->semanticQueryCompiler->usesSemanticLayer($queryPayload)) {
+            $semanticPlan = $this->semanticQueryCompiler->compile($queryPayload);
+            $queryPayload = $semanticPlan->queryPayload;
+        }
+
+        $query = QueryRequestDTO::fromArray($queryPayload);
 
         $this->dataPermissionService->assertCanAccessDataset($dataset, $user);
         $this->validator->validate($dataset, $query, $user);
@@ -63,6 +73,10 @@ class QueryExplainService
             'explain_result' => $explainResult,
             'estimated_info' => null,
             'warnings' => $warnings,
+            'semantic_layer_used' => $semanticPlan !== null,
+            'semantic_metrics' => $semanticPlan?->semanticMetrics,
+            'semantic_dimensions' => $semanticPlan?->semanticDimensions,
+            'metric_versions' => $semanticPlan?->metricVersions,
             'elapsed_ms' => (int) round((microtime(true) - $startedAt) * 1000),
         ];
     }

@@ -77,6 +77,10 @@ class QueryLogService
         return [
             'engine_type' => $context['engine_type'] ?? $context['acceleration_engine'] ?? $dataSourceType,
             'data_source_type' => $dataSourceType,
+            'semantic_layer_used' => (bool) ($context['semantic_layer_used'] ?? false),
+            'semantic_metrics_json' => $context['semantic_metrics_json'] ?? null,
+            'semantic_dimensions_json' => $context['semantic_dimensions_json'] ?? null,
+            'metric_versions_json' => $context['metric_versions_json'] ?? null,
             'acceleration_hit' => (bool) ($context['acceleration_hit'] ?? false),
             'acceleration_profile_id' => $context['acceleration_profile_id'] ?? null,
             'acceleration_engine' => $context['acceleration_engine'] ?? null,

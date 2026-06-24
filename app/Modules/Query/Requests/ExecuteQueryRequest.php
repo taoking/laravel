@@ -19,6 +19,11 @@ class ExecuteQueryRequest extends FormRequest
     {
         return [
             'dataset_id' => ['required', 'integer', 'exists:datasets,id'],
+            'semantic_metrics' => ['nullable', 'array'],
+            'semantic_metrics.*.metric_code' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
+            'semantic_dimensions' => ['nullable', 'array'],
+            'semantic_dimensions.*.dimension_code' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
+            'semantic_dimensions.*.time_granularity' => ['nullable', 'string', Rule::in(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute'])],
             'dimensions' => ['nullable', 'array'],
             'dimensions.*.field' => ['required', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_]+\z/'],
             'dimensions.*.time_granularity' => ['nullable', 'string', Rule::in(['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute'])],

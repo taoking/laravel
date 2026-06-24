@@ -29,6 +29,10 @@ use App\Modules\Permission\Controllers\PermissionController;
 use App\Modules\Permission\Controllers\RoleController;
 use App\Modules\Query\Controllers\QueryController;
 use App\Modules\Query\Controllers\QueryExplainController;
+use App\Modules\Semantic\Controllers\DatasetSemanticController;
+use App\Modules\Semantic\Controllers\DimensionController;
+use App\Modules\Semantic\Controllers\MetricCategoryController;
+use App\Modules\Semantic\Controllers\MetricController;
 use App\Modules\User\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +72,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('datasets/{dataset}/fields/{field}', [DatasetController::class, 'updateField']);
     Route::post('datasets/{dataset}/preview', [DatasetController::class, 'preview']);
     Route::post('datasets/{dataset}/explain', [QueryExplainController::class, 'dataset']);
+    Route::get('datasets/{dataset}/dimensions', [DimensionController::class, 'dataset']);
+    Route::post('datasets/{dataset}/dimensions/init-from-fields', [DimensionController::class, 'initFromFields']);
+    Route::get('datasets/{dataset}/metrics', [DatasetSemanticController::class, 'metrics']);
+    Route::post('datasets/{dataset}/metrics/init-from-fields', [DatasetSemanticController::class, 'initMetricsFromFields']);
+    Route::get('datasets/{dataset}/semantic-layer', [DatasetSemanticController::class, 'semanticLayer']);
     Route::get('datasets/{dataset}/acceleration', [DatasetAccelerationController::class, 'index']);
     Route::post('datasets/{dataset}/acceleration/build', [DatasetAccelerationController::class, 'build']);
     Route::get('datasets/{dataset}/acceleration/columns', [DatasetAccelerationController::class, 'columns']);
@@ -76,6 +85,22 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('datasets', DatasetController::class);
 
     Route::post('query/execute', [QueryController::class, 'execute']);
+
+    Route::post('semantic-metrics/validate-formula', [MetricController::class, 'validateFormula']);
+    Route::post('semantic-metrics/{metric}/activate', [MetricController::class, 'activate']);
+    Route::post('semantic-metrics/{metric}/deprecate', [MetricController::class, 'deprecate']);
+    Route::post('semantic-metrics/{metric}/archive', [MetricController::class, 'archive']);
+    Route::get('semantic-metrics/{metric}/versions', [MetricController::class, 'versions']);
+    Route::get('semantic-metrics/{metric}/dependencies', [MetricController::class, 'dependencies']);
+    Route::get('semantic-metrics/{metric}/usages', [MetricController::class, 'usages']);
+    Route::get('semantic-metrics/{metric}/impact', [MetricController::class, 'impact']);
+    Route::apiResource('semantic-metrics', MetricController::class)->parameters([
+        'semantic-metrics' => 'metric',
+    ]);
+    Route::apiResource('metric-categories', MetricCategoryController::class)->parameters([
+        'metric-categories' => 'metricCategory',
+    ]);
+    Route::apiResource('dimensions', DimensionController::class);
 
     Route::prefix('acceleration')->group(function (): void {
         Route::get('tasks', [AccelerationTaskController::class, 'index']);

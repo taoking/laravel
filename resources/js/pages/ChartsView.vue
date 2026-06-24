@@ -7,12 +7,14 @@ import DataTable from '../components/DataTable.vue';
 import JsonTextarea from '../components/JsonTextarea.vue';
 import PageHeader from '../components/PageHeader.vue';
 import StatusBadge from '../components/StatusBadge.vue';
-import { chartApi, datasetApi } from '../services/api';
+import { chartApi, datasetApi, semanticApi } from '../services/api';
 import { itemsFrom } from '../services/http';
 
 const charts = ref([]);
 const datasets = ref([]);
 const fields = ref([]);
+const semanticMetrics = ref([]);
+const semanticDimensions = ref([]);
 const previewResult = ref({ columns: [], rows: [] });
 const loading = ref(false);
 const previewing = ref(false);
@@ -25,6 +27,8 @@ const quick = reactive({
     dimension: '',
     metric: '',
     aggregate: 'sum',
+    semanticDimension: '',
+    semanticMetric: '',
 });
 
 const form = reactive({
@@ -64,6 +68,8 @@ const fieldOptions = computed(() => fields.value.map((field) => ({
 
 const dimensionOptions = computed(() => fieldOptions.value.filter((field) => field.isDimension));
 const metricOptions = computed(() => fieldOptions.value.filter((field) => field.isMetric));
+const semanticDimensionOptions = computed(() => semanticDimensions.value.filter((dimension) => dimension.status === 'active'));
+const semanticMetricOptions = computed(() => semanticMetrics.value.filter((metric) => ['active', 'deprecated'].includes(metric.status)));
 
 function resetForm() {
     Object.assign(form, {
@@ -83,8 +89,10 @@ function resetForm() {
         style_json: { title: '' },
         status: 'active',
     });
-    Object.assign(quick, { dimension: '', metric: '', aggregate: 'sum' });
+    Object.assign(quick, { dimension: '', metric: '', aggregate: 'sum', semanticDimension: '', semanticMetric: '' });
     fields.value = [];
+    semanticMetrics.value = [];
+    semanticDimensions.value = [];
     previewResult.value = { columns: [], rows: [] };
 }
 
@@ -99,6 +107,7 @@ function edit(row) {
         style_json: row.style_json ?? {},
         status: row.status ?? 'active',
     });
+    loadFields(row.dataset_id);
 }
 
 function applyQuickConfig() {
@@ -108,6 +117,18 @@ function applyQuickConfig() {
         ...form.config_json,
         dimensions: quick.dimension ? [{ field: quick.dimension }] : [],
         metrics: quick.metric ? [{ field: quick.metric, aggregate: quick.aggregate, alias: metricAlias }] : [],
+        limit: form.config_json.limit ?? 100,
+        use_cache: form.config_json.use_cache ?? true,
+    };
+}
+
+function applySemanticConfig() {
+    form.config_json = {
+        ...form.config_json,
+        dimensions: [],
+        metrics: [],
+        semantic_dimensions: quick.semanticDimension ? [{ dimension_code: quick.semanticDimension }] : [],
+        semantic_metrics: quick.semanticMetric ? [{ metric_code: quick.semanticMetric }] : [],
         limit: form.config_json.limit ?? 100,
         use_cache: form.config_json.use_cache ?? true,
     };
@@ -146,12 +167,19 @@ async function load() {
 async function loadFields(datasetId) {
     if (!datasetId) {
         fields.value = [];
+        semanticMetrics.value = [];
+        semanticDimensions.value = [];
         return;
     }
 
     try {
-        const result = await datasetApi.fields(datasetId);
-        fields.value = result.data ?? [];
+        const [fieldResult, semanticResult] = await Promise.all([
+            datasetApi.fields(datasetId),
+            semanticApi.semanticLayer(datasetId).catch(() => ({ data: { metrics: [], dimensions: [] } })),
+        ]);
+        fields.value = fieldResult.data ?? [];
+        semanticMetrics.value = semanticResult.data?.metrics ?? [];
+        semanticDimensions.value = semanticResult.data?.dimensions ?? [];
     } catch (exception) {
         error.value = exception.message ?? '字段加载失败';
     }
@@ -278,6 +306,24 @@ onMounted(load);
                         </select>
                     </label>
                     <button class="tool-button" type="button" @click="applyQuickConfig">生成配置</button>
+                </div>
+
+                <div class="form-grid three quick-config">
+                    <label>
+                        <span>语义维度</span>
+                        <select v-model="quick.semanticDimension">
+                            <option value="">不设置</option>
+                            <option v-for="dimension in semanticDimensionOptions" :key="dimension.code" :value="dimension.code">{{ dimension.name }} ({{ dimension.code }})</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>语义指标</span>
+                        <select v-model="quick.semanticMetric">
+                            <option value="">不设置</option>
+                            <option v-for="metric in semanticMetricOptions" :key="metric.code" :value="metric.code">{{ metric.name }} v{{ metric.version }}</option>
+                        </select>
+                    </label>
+                    <button class="tool-button" type="button" @click="applySemanticConfig">生成语义配置</button>
                 </div>
 
                 <label class="full-row"><span>描述</span><textarea v-model="form.description" rows="3" /></label>
