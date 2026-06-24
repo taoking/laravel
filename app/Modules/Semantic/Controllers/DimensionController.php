@@ -46,9 +46,9 @@ class DimensionController extends Controller
         return ApiResponse::success((new DimensionResource($dimension))->resolve($request));
     }
 
-    public function destroy(Dimension $dimension, DimensionService $service): JsonResponse
+    public function destroy(Dimension $dimension, Request $request, DimensionService $service): JsonResponse
     {
-        $service->delete($dimension, $request->user());
+        $service->delete($dimension, $request->user(), $request->boolean('force'));
 
         return ApiResponse::noContent();
     }

@@ -8,6 +8,8 @@ use App\Modules\Dashboard\Models\Dashboard;
 use App\Modules\Dashboard\Models\DashboardFilter;
 use App\Modules\Dashboard\Models\DashboardShare;
 use App\Modules\Dashboard\Models\DashboardWidget;
+use App\Modules\Metadata\Services\MetadataChangeGuardService;
+use App\Modules\Metadata\Services\MetadataLifecycleService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -15,7 +17,11 @@ use Illuminate\Support\Str;
 
 class DashboardService
 {
-    public function __construct(private readonly DashboardCacheService $dashboardCacheService) {}
+    public function __construct(
+        private readonly DashboardCacheService $dashboardCacheService,
+        private readonly MetadataLifecycleService $metadataLifecycleService,
+        private readonly MetadataChangeGuardService $metadataChangeGuardService,
+    ) {}
 
     public function paginate(int $pageSize): LengthAwarePaginator
     {
@@ -48,6 +54,7 @@ class DashboardService
         });
 
         $this->dashboardCacheService->forget($dashboard);
+        $this->metadataLifecycleService->sync('dashboard', (int) $dashboard->id);
 
         return $dashboard;
     }
@@ -72,12 +79,15 @@ class DashboardService
         });
 
         $this->dashboardCacheService->forget($updatedDashboard);
+        $this->metadataLifecycleService->sync('dashboard', (int) $updatedDashboard->id);
 
         return $updatedDashboard;
     }
 
-    public function delete(Dashboard $dashboard): void
+    public function delete(Dashboard $dashboard, ?User $actor = null, bool $force = false): void
     {
+        $assetId = (int) $dashboard->id;
+        $this->metadataChangeGuardService->guardDelete('dashboard', $assetId, $actor, $force);
         $this->dashboardCacheService->forget($dashboard);
 
         DB::transaction(function () use ($dashboard): void {
@@ -87,6 +97,8 @@ class DashboardService
             $dashboard->widgets()->delete();
             $dashboard->delete();
         });
+
+        $this->metadataLifecycleService->archive('dashboard', $assetId);
     }
 
     /**
@@ -112,6 +124,7 @@ class DashboardService
         });
 
         $this->dashboardCacheService->forget($dashboard);
+        $this->metadataLifecycleService->sync('dashboard', (int) $dashboard->id);
 
         return $widget;
     }
@@ -133,6 +146,7 @@ class DashboardService
         });
 
         $this->dashboardCacheService->forget($dashboard);
+        $this->metadataLifecycleService->sync('dashboard', (int) $dashboard->id);
 
         return $updatedWidget;
     }
@@ -147,6 +161,7 @@ class DashboardService
         });
 
         $this->dashboardCacheService->forget($dashboard);
+        $this->metadataLifecycleService->sync('dashboard', (int) $dashboard->id);
     }
 
     /**

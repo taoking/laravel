@@ -4,6 +4,8 @@ namespace App\Modules\DataSource\Services;
 
 use App\Models\User;
 use App\Modules\DataSource\Models\DataSource;
+use App\Modules\Metadata\Services\MetadataChangeGuardService;
+use App\Modules\Metadata\Services\MetadataLifecycleService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,8 @@ class DataSourceService
     public function __construct(
         private readonly DataSourcePasswordEncryptor $passwordEncryptor,
         private readonly DataSourceMetadataService $metadataService,
+        private readonly MetadataLifecycleService $metadataLifecycleService,
+        private readonly MetadataChangeGuardService $metadataChangeGuardService,
     ) {}
 
     public function paginate(int $pageSize): LengthAwarePaginator
@@ -28,7 +32,7 @@ class DataSourceService
      */
     public function create(array $payload, ?User $actor): DataSource
     {
-        return DB::transaction(function () use ($payload, $actor): DataSource {
+        $dataSource = DB::transaction(function () use ($payload, $actor): DataSource {
             $payload['type'] ??= 'mysql';
             $payload['port'] ??= $this->defaultPort((string) $payload['type']);
             $payload['charset'] ??= 'utf8mb4';
@@ -42,6 +46,10 @@ class DataSourceService
 
             return DataSource::query()->create($payload);
         });
+
+        $this->metadataLifecycleService->sync('data_source', (int) $dataSource->id);
+
+        return $dataSource;
     }
 
     /**
@@ -49,7 +57,7 @@ class DataSourceService
      */
     public function update(DataSource $dataSource, array $payload, ?User $actor): DataSource
     {
-        return DB::transaction(function () use ($dataSource, $payload, $actor): DataSource {
+        $updatedDataSource = DB::transaction(function () use ($dataSource, $payload, $actor): DataSource {
             if (array_key_exists('password', $payload)) {
                 $password = Arr::pull($payload, 'password');
 
@@ -67,16 +75,25 @@ class DataSourceService
 
             return $dataSource->refresh()->loadCount(['tables', 'fields']);
         });
+
+        $this->metadataLifecycleService->sync('data_source', (int) $updatedDataSource->id);
+
+        return $updatedDataSource;
     }
 
-    public function delete(DataSource $dataSource): void
+    public function delete(DataSource $dataSource, ?User $actor = null, bool $force = false): void
     {
+        $assetId = (int) $dataSource->id;
+        $this->metadataChangeGuardService->guardDelete('data_source', $assetId, $actor, $force);
+
         DB::transaction(function () use ($dataSource): void {
             $this->metadataService->forget($dataSource);
             $dataSource->fields()->delete();
             $dataSource->tables()->delete();
             $dataSource->delete();
         });
+
+        $this->metadataLifecycleService->archive('data_source', $assetId);
     }
 
     private function defaultPort(string $type): int

@@ -51,9 +51,9 @@ class DatasetController extends Controller
         return ApiResponse::success((new DatasetResource($dataset))->resolve($request));
     }
 
-    public function destroy(Dataset $dataset, DatasetService $datasetService): JsonResponse
+    public function destroy(Dataset $dataset, Request $request, DatasetService $datasetService): JsonResponse
     {
-        $datasetService->delete($dataset);
+        $datasetService->delete($dataset, $request->user(), $request->boolean('force'));
 
         return ApiResponse::noContent();
     }

@@ -44,7 +44,7 @@ Laravel BI Platform 是一个基于 Laravel 13 和 Vue 3 的轻量 BI 管理平�
 
 ## 文档入口
 
-- [Plan 执行日志](docs/PLAN_EXECUTION_LOG.md)：记录 Phase 1 到 Phase 13 的实现过程、产物和验收结果。
+- [Plan 执行日志](docs/PLAN_EXECUTION_LOG.md)：记录 Phase 1 到 Phase 14 的实现过程、产物和验收结果。
 - [项目使用说明](docs/PROJECT_USAGE.md)：包含 Docker 启动、本地运行、前端管理端、API 认证、主要接口示例、测试和注意事项。
 - [功能页面文档介绍](docs/FEATURE_PAGES.md)：按前端页面/工作台说明已实现功能、接口和交互。
 - [BI 查询加速方案](docs/bi-acceleration.md)：说明 ClickHouse 加速层、profile、同步任务、查询路由、fallback、缓存 key 和边界。
@@ -98,13 +98,16 @@ php artisan migrate --pretend --database=sqlite
 php artisan bi:acceleration:recommend --dry-run
 php artisan bi:acceleration:refresh-due --dry-run
 php artisan bi:acceleration:benefit-report
+php artisan bi:metadata:sync --all --dry-run
+php artisan bi:metadata:lineage:rebuild --all --dry-run
+php artisan bi:metadata:usage-stats --dry-run
 ```
 
 当前验证基线：
 
 ```text
-74 tests, 641 assertions
-168 API routes
+81 tests, 720 assertions
+187 API routes
 ```
 
 ## API 认证

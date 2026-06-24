@@ -55,9 +55,9 @@ class DashboardController extends Controller
         return ApiResponse::success((new DashboardResource($dashboard))->resolve($request));
     }
 
-    public function destroy(Dashboard $dashboard, DashboardService $dashboardService): JsonResponse
+    public function destroy(Dashboard $dashboard, Request $request, DashboardService $dashboardService): JsonResponse
     {
-        $dashboardService->delete($dashboard);
+        $dashboardService->delete($dashboard, $request->user(), $request->boolean('force'));
 
         return ApiResponse::noContent();
     }

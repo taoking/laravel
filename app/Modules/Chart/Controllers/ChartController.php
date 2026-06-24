@@ -49,9 +49,9 @@ class ChartController extends Controller
         return ApiResponse::success((new ChartResource($chart))->resolve($request));
     }
 
-    public function destroy(Chart $chart, ChartService $chartService): JsonResponse
+    public function destroy(Chart $chart, Request $request, ChartService $chartService): JsonResponse
     {
-        $chartService->delete($chart);
+        $chartService->delete($chart, $request->user(), $request->boolean('force'));
 
         return ApiResponse::noContent();
     }

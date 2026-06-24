@@ -5,6 +5,8 @@ namespace App\Modules\Semantic\Services;
 use App\Models\User;
 use App\Modules\Dataset\Models\Dataset;
 use App\Modules\DataSource\Services\IdentifierGuard;
+use App\Modules\Metadata\Services\MetadataChangeGuardService;
+use App\Modules\Metadata\Services\MetadataLifecycleService;
 use App\Modules\Semantic\Models\Metric;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +19,8 @@ class MetricService
         private readonly MetricVersionService $versionService,
         private readonly MetricDependencyService $dependencyService,
         private readonly SemanticLayerAuthorizer $authorizer,
+        private readonly MetadataLifecycleService $metadataLifecycleService,
+        private readonly MetadataChangeGuardService $metadataChangeGuardService,
     ) {}
 
     /**
@@ -68,7 +72,7 @@ class MetricService
      */
     public function create(array $payload, ?User $actor): Metric
     {
-        return DB::transaction(function () use ($payload, $actor): Metric {
+        $metric = DB::transaction(function () use ($payload, $actor): Metric {
             $payload = $this->normalize($payload);
             $this->authorizer->assertCanManageDataset(Dataset::query()->findOrFail($payload['dataset_id']), $actor);
             $this->validateDefinition($payload);
@@ -85,6 +89,10 @@ class MetricService
 
             return $metric->refresh()->load(['category', 'dataset', 'dependencies.dependsOnMetric']);
         });
+
+        $this->metadataLifecycleService->sync('metric', (int) $metric->id);
+
+        return $metric;
     }
 
     /**
@@ -92,7 +100,7 @@ class MetricService
      */
     public function update(Metric $metric, array $payload, ?User $actor): Metric
     {
-        return DB::transaction(function () use ($metric, $payload, $actor): Metric {
+        $updatedMetric = DB::transaction(function () use ($metric, $payload, $actor): Metric {
             $this->authorizer->assertCanManageMetric($metric, $actor);
             $payload = $this->normalize([
                 ...$metric->only([
@@ -132,6 +140,10 @@ class MetricService
 
             return $metric->refresh()->load(['category', 'dataset', 'dependencies.dependsOnMetric']);
         });
+
+        $this->metadataLifecycleService->sync('metric', (int) $updatedMetric->id);
+
+        return $updatedMetric;
     }
 
     public function transition(Metric $metric, string $status, ?User $actor): Metric
@@ -145,23 +157,26 @@ class MetricService
         return $this->update($metric, ['status' => $status], $actor);
     }
 
-    public function delete(Metric $metric, ?User $actor): void
+    public function delete(Metric $metric, ?User $actor, bool $force = false): void
     {
         $this->authorizer->assertCanManageMetric($metric, $actor);
+        $assetId = (int) $metric->id;
+        $this->metadataChangeGuardService->guardDelete('metric', $assetId, $actor, $force);
 
-        if ($metric->usages()->exists()) {
+        if (! $force && $metric->usages()->exists()) {
             throw ValidationException::withMessages([
                 'metric' => ['The metric is still used by charts or dashboards.'],
             ]);
         }
 
-        if ($metric->dependents()->exists()) {
+        if (! $force && $metric->dependents()->exists()) {
             throw ValidationException::withMessages([
                 'metric' => ['The metric is still referenced by other metrics.'],
             ]);
         }
 
         $metric->delete();
+        $this->metadataLifecycleService->archive('metric', $assetId);
     }
 
     /**

@@ -237,7 +237,45 @@ CLI 命令默认允许执行；API 同步入口需要管理员或治理管理权
 - `high`：影响 4-10 个图表或多个仪表盘。
 - `critical`：影响核心指标、公开分享仪表盘，或超过 10 个图表。
 
-第一版删除前不强制拦截业务删除接口，只提供可复用影响分析 API。后续可在 data source、dataset、dataset field、metric、dimension、chart、dashboard 删除入口接入 `force=true` 二次确认。
+删除前风险检查已经接入关键业务删除流程：
+
+```text
+DELETE /api/data-sources/{data_source}
+DELETE /api/datasets/{dataset}
+DELETE /api/semantic-metrics/{metric}
+DELETE /api/dimensions/{dimension}
+DELETE /api/charts/{chart}
+DELETE /api/dashboards/{dashboard}
+```
+
+当影响分析风险为 `high` 或 `critical` 时，删除会返回 `422`，错误中包含风险等级和受影响对象摘要。调用方需要先查看影响分析结果，确认迁移或下线方案后，再显式传入 `force=true`：
+
+```text
+DELETE /api/charts/1?force=1
+```
+
+也可以在 JSON body 中传：
+
+```json
+{
+  "force": true
+}
+```
+
+`force=true` 只表示确认风险，不会绕过原有权限校验。删除成功后，对应 `metadata_assets.status` 会标记为 `archived`。
+
+## 自动同步范围
+
+除了 Artisan 命令和 `POST /api/metadata/sync`，关键业务对象变更后也会自动刷新元数据：
+
+- data source create/update 后同步 data source 元数据。
+- dataset create/update、sync fields、field update 后同步 dataset、dataset field 和相关血缘。
+- metric create/update/status transition 后同步 metric 和指标血缘。
+- dimension create/update 后同步 dimension 和维度血缘。
+- chart create/update 后同步 chart、chart -> dataset / metric / dimension / field 血缘。
+- dashboard create/update 后同步 dashboard。
+- dashboard widget add/update/delete 后同步 dashboard -> chart / dataset / metric 血缘。
+- data source、dataset、metric、dimension、chart、dashboard 删除成功后，对应资产标记为 `archived`。
 
 ## 使用统计
 
@@ -313,7 +351,7 @@ avg_duration_ms >= 3000
 - 不做复杂审批流。
 - 不做数据质量规则引擎。
 - 不做敏感数据自动识别完整模型。
-- 删除前风险检查第一版通过 API 暴露，未强制接入所有删除接口。
+- 删除前风险检查已接入关键对象删除流程，但还未实现完整审批流、通知流和变更工单。
 
 ## 后续扩展
 

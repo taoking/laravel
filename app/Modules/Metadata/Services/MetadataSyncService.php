@@ -24,6 +24,47 @@ class MetadataSyncService
     ) {}
 
     /**
+     * @return array{asset_type: string, asset_id: int, assets_synced: int, relations_synced: int}
+     */
+    public function syncAssetMetadata(string $assetType, int $assetId, bool $withLineage = true): array
+    {
+        $this->assetService->assertAssetType($assetType);
+
+        $assetsSynced = match ($assetType) {
+            'data_source' => $this->syncDataSources(false, $assetId)
+                + $this->syncPhysicalTables(false, $assetId)
+                + $this->syncPhysicalColumns(false, $assetId),
+            'physical_table' => $this->syncPhysicalTables(false, null, $assetId),
+            'physical_column' => $this->syncPhysicalColumns(false, null, $assetId),
+            'dataset' => $this->syncDatasets(false, null, $assetId)
+                + $this->syncDatasetFields(false, $assetId)
+                + $this->syncDimensions(false, $assetId)
+                + $this->syncMetrics(false, $assetId)
+                + $this->syncCharts(false, $assetId)
+                + $this->syncAccelerationProfiles(false, $assetId)
+                + $this->syncAggregateDefinitions(false, $assetId),
+            'dataset_field' => $this->syncDatasetFields(false, null, $assetId),
+            'dimension' => $this->syncDimensions(false, null, $assetId),
+            'metric' => $this->syncMetrics(false, null, $assetId),
+            'chart' => $this->syncCharts(false, null, $assetId),
+            'dashboard' => $this->syncDashboards(false, $assetId),
+            'acceleration_profile' => $this->syncAccelerationProfiles(false, null, $assetId),
+            'aggregate_definition' => $this->syncAggregateDefinitions(false, null, $assetId),
+            'materialized_view' => $this->syncPhysicalTables(false, null, $assetId),
+            default => 0,
+        };
+
+        return [
+            'asset_type' => $assetType,
+            'asset_id' => $assetId,
+            'assets_synced' => $assetsSynced,
+            'relations_synced' => $withLineage && $assetsSynced > 0
+                ? $this->syncLineageForAsset($assetType, $assetId)
+                : 0,
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
@@ -220,9 +261,12 @@ class MetadataSyncService
         return $sources->count();
     }
 
-    private function syncPhysicalTables(bool $dryRun, ?int $dataSourceId): int
+    private function syncPhysicalTables(bool $dryRun, ?int $dataSourceId, ?int $tableId = null): int
     {
-        $tables = DataSourceTable::query()->when($dataSourceId, fn ($query) => $query->where('data_source_id', $dataSourceId))->get();
+        $tables = DataSourceTable::query()
+            ->when($dataSourceId, fn ($query) => $query->where('data_source_id', $dataSourceId))
+            ->when($tableId, fn ($query) => $query->whereKey($tableId))
+            ->get();
 
         if ($dryRun) {
             return $tables->count();
@@ -252,9 +296,12 @@ class MetadataSyncService
         return $tables->count();
     }
 
-    private function syncPhysicalColumns(bool $dryRun, ?int $dataSourceId): int
+    private function syncPhysicalColumns(bool $dryRun, ?int $dataSourceId, ?int $fieldId = null): int
     {
-        $columns = DataSourceField::query()->when($dataSourceId, fn ($query) => $query->where('data_source_id', $dataSourceId))->get();
+        $columns = DataSourceField::query()
+            ->when($dataSourceId, fn ($query) => $query->where('data_source_id', $dataSourceId))
+            ->when($fieldId, fn ($query) => $query->whereKey($fieldId))
+            ->get();
 
         if ($dryRun) {
             return $columns->count();
@@ -307,9 +354,12 @@ class MetadataSyncService
         return $datasets->count();
     }
 
-    private function syncDatasetFields(bool $dryRun, ?int $datasetId): int
+    private function syncDatasetFields(bool $dryRun, ?int $datasetId, ?int $fieldId = null): int
     {
-        $fields = DatasetField::query()->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))->get();
+        $fields = DatasetField::query()
+            ->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))
+            ->when($fieldId, fn ($query) => $query->whereKey($fieldId))
+            ->get();
 
         if ($dryRun) {
             return $fields->count();
@@ -342,9 +392,12 @@ class MetadataSyncService
         return $fields->count();
     }
 
-    private function syncDimensions(bool $dryRun, ?int $datasetId): int
+    private function syncDimensions(bool $dryRun, ?int $datasetId, ?int $dimensionId = null): int
     {
-        $dimensions = Dimension::query()->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))->get();
+        $dimensions = Dimension::query()
+            ->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))
+            ->when($dimensionId, fn ($query) => $query->whereKey($dimensionId))
+            ->get();
 
         if ($dryRun) {
             return $dimensions->count();
@@ -367,9 +420,12 @@ class MetadataSyncService
         return $dimensions->count();
     }
 
-    private function syncMetrics(bool $dryRun, ?int $datasetId): int
+    private function syncMetrics(bool $dryRun, ?int $datasetId, ?int $metricId = null): int
     {
-        $metrics = Metric::query()->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))->get();
+        $metrics = Metric::query()
+            ->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))
+            ->when($metricId, fn ($query) => $query->whereKey($metricId))
+            ->get();
 
         if ($dryRun) {
             return $metrics->count();
@@ -395,9 +451,12 @@ class MetadataSyncService
         return $metrics->count();
     }
 
-    private function syncCharts(bool $dryRun, ?int $datasetId): int
+    private function syncCharts(bool $dryRun, ?int $datasetId, ?int $chartId = null): int
     {
-        $charts = Chart::query()->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))->get();
+        $charts = Chart::query()
+            ->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))
+            ->when($chartId, fn ($query) => $query->whereKey($chartId))
+            ->get();
 
         if ($dryRun) {
             return $charts->count();
@@ -418,9 +477,11 @@ class MetadataSyncService
         return $charts->count();
     }
 
-    private function syncDashboards(bool $dryRun): int
+    private function syncDashboards(bool $dryRun, ?int $dashboardId = null): int
     {
-        $dashboards = Dashboard::query()->get();
+        $dashboards = Dashboard::query()
+            ->when($dashboardId, fn ($query) => $query->whereKey($dashboardId))
+            ->get();
 
         if ($dryRun) {
             return $dashboards->count();
@@ -440,9 +501,12 @@ class MetadataSyncService
         return $dashboards->count();
     }
 
-    private function syncAccelerationProfiles(bool $dryRun, ?int $datasetId): int
+    private function syncAccelerationProfiles(bool $dryRun, ?int $datasetId, ?int $profileId = null): int
     {
-        $profiles = AccelerationProfile::query()->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))->get();
+        $profiles = AccelerationProfile::query()
+            ->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))
+            ->when($profileId, fn ($query) => $query->whereKey($profileId))
+            ->get();
 
         if ($dryRun) {
             return $profiles->count();
@@ -466,9 +530,12 @@ class MetadataSyncService
         return $profiles->count();
     }
 
-    private function syncAggregateDefinitions(bool $dryRun, ?int $datasetId): int
+    private function syncAggregateDefinitions(bool $dryRun, ?int $datasetId, ?int $definitionId = null): int
     {
-        $definitions = AccelerationAggregateDefinition::query()->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))->get();
+        $definitions = AccelerationAggregateDefinition::query()
+            ->when($datasetId, fn ($query) => $query->where('dataset_id', $datasetId))
+            ->when($definitionId, fn ($query) => $query->whereKey($definitionId))
+            ->get();
 
         if ($dryRun) {
             return $definitions->count();
@@ -499,5 +566,28 @@ class MetadataSyncService
         }
 
         return (int) $value;
+    }
+
+    private function syncLineageForAsset(string $assetType, int $assetId): int
+    {
+        if ($assetType === 'dataset_field') {
+            $datasetId = DatasetField::query()->whereKey($assetId)->value('dataset_id');
+
+            return $datasetId !== null ? $this->lineageService->syncAsset('dataset', (int) $datasetId) : 0;
+        }
+
+        if (in_array($assetType, ['physical_table', 'materialized_view'], true)) {
+            $dataSourceId = DataSourceTable::query()->whereKey($assetId)->value('data_source_id');
+
+            return $dataSourceId !== null ? $this->lineageService->syncAsset('data_source', (int) $dataSourceId) : 0;
+        }
+
+        if ($assetType === 'physical_column') {
+            $dataSourceId = DataSourceField::query()->whereKey($assetId)->value('data_source_id');
+
+            return $dataSourceId !== null ? $this->lineageService->syncAsset('data_source', (int) $dataSourceId) : 0;
+        }
+
+        return $this->lineageService->syncAsset($assetType, $assetId);
     }
 }

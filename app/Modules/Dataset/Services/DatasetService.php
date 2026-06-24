@@ -10,6 +10,8 @@ use App\Modules\Dataset\Models\DatasetTable;
 use App\Modules\DataSource\Models\DataSource;
 use App\Modules\DataSource\Services\DataSourceMetadataService;
 use App\Modules\DataSource\Services\IdentifierGuard;
+use App\Modules\Metadata\Services\MetadataChangeGuardService;
+use App\Modules\Metadata\Services\MetadataLifecycleService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,8 @@ class DatasetService
         private readonly DataSourceMetadataService $metadataService,
         private readonly DatasetFieldClassifier $fieldClassifier,
         private readonly DatasetCacheService $datasetCacheService,
+        private readonly MetadataLifecycleService $metadataLifecycleService,
+        private readonly MetadataChangeGuardService $metadataChangeGuardService,
     ) {}
 
     public function paginate(int $pageSize): LengthAwarePaginator
@@ -41,7 +45,7 @@ class DatasetService
         $mainTable = (string) $payload['main_table'];
         $this->assertSafeTable($dataSource, $mainTable);
 
-        return DB::transaction(function () use ($payload, $actor, $dataSource, $mainTable): Dataset {
+        $dataset = DB::transaction(function () use ($payload, $actor, $dataSource, $mainTable): Dataset {
             $dataset = Dataset::query()->create([
                 'tenant_id' => $payload['tenant_id'] ?? null,
                 'name' => $payload['name'],
@@ -67,6 +71,10 @@ class DatasetService
 
             return $dataset->load(['dataSource', 'tables', 'fields']);
         });
+
+        $this->metadataLifecycleService->sync('dataset', (int) $dataset->id);
+
+        return $dataset;
     }
 
     /**
@@ -115,12 +123,15 @@ class DatasetService
         });
 
         $this->datasetCacheService->forget($updatedDataset);
+        $this->metadataLifecycleService->sync('dataset', (int) $updatedDataset->id);
 
         return $updatedDataset;
     }
 
-    public function delete(Dataset $dataset): void
+    public function delete(Dataset $dataset, ?User $actor = null, bool $force = false): void
     {
+        $assetId = (int) $dataset->id;
+        $this->metadataChangeGuardService->guardDelete('dataset', $assetId, $actor, $force);
         $this->datasetCacheService->forget($dataset);
 
         DB::transaction(function () use ($dataset): void {
@@ -129,6 +140,8 @@ class DatasetService
             $dataset->tables()->delete();
             $dataset->delete();
         });
+
+        $this->metadataLifecycleService->archive('dataset', $assetId);
     }
 
     /**
@@ -182,6 +195,7 @@ class DatasetService
         });
 
         $this->datasetCacheService->forget($dataset);
+        $this->metadataLifecycleService->sync('dataset', (int) $dataset->id);
 
         return [
             'fields' => count($sourceFields),
@@ -200,6 +214,7 @@ class DatasetService
         $field->fill($payload);
         $field->save();
         $this->datasetCacheService->forget($dataset);
+        $this->metadataLifecycleService->sync('dataset', (int) $dataset->id);
 
         return $field->refresh();
     }

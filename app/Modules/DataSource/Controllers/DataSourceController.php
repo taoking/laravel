@@ -52,9 +52,9 @@ class DataSourceController extends Controller
         return ApiResponse::success((new DataSourceResource($dataSource))->resolve($request));
     }
 
-    public function destroy(DataSource $dataSource, DataSourceService $dataSourceService): JsonResponse
+    public function destroy(DataSource $dataSource, Request $request, DataSourceService $dataSourceService): JsonResponse
     {
-        $dataSourceService->delete($dataSource);
+        $dataSourceService->delete($dataSource, $request->user(), $request->boolean('force'));
 
         return ApiResponse::noContent();
     }

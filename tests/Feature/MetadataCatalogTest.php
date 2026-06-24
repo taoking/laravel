@@ -237,6 +237,145 @@ class MetadataCatalogTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_high_risk_chart_delete_requires_force_and_archives_metadata_asset(): void
+    {
+        $admin = $this->adminUser();
+        Sanctum::actingAs($admin);
+        $fixture = $this->createFixture($admin);
+        $this->artisan('bi:metadata:sync --all')->assertExitCode(0);
+
+        DashboardShare::query()->create([
+            'dashboard_id' => $fixture['dashboard']->id,
+            'share_token' => 'public-delete-token',
+            'share_type' => 'public',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->deleteJson("/api/charts/{$fixture['chart']->id}")
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.risk_level.0', 'critical');
+
+        $this->assertNotSoftDeleted('charts', ['id' => $fixture['chart']->id]);
+
+        $this->deleteJson("/api/charts/{$fixture['chart']->id}?force=1")
+            ->assertOk();
+
+        $this->assertSoftDeleted('charts', ['id' => $fixture['chart']->id]);
+        $this->assertDatabaseHas('metadata_assets', [
+            'asset_type' => 'chart',
+            'asset_id' => $fixture['chart']->id,
+            'status' => 'archived',
+        ]);
+    }
+
+    public function test_metadata_lifecycle_syncs_metric_chart_and_dashboard_widget_changes(): void
+    {
+        $admin = $this->adminUser();
+        Sanctum::actingAs($admin);
+        $fixture = $this->createFixture($admin);
+
+        $metricId = $this->postJson('/api/semantic-metrics', [
+            'dataset_id' => $fixture['dataset']->id,
+            'name' => 'Tax Amount',
+            'code' => 'tax_amount',
+            'metric_type' => 'base',
+            'aggregate_function' => 'sum',
+            'source_field' => 'amount',
+            'status' => 'active',
+        ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseHas('metadata_assets', [
+            'asset_type' => 'metric',
+            'asset_id' => $metricId,
+            'code' => 'tax_amount',
+        ]);
+        $this->assertDatabaseHas('metadata_lineage_relations', [
+            'source_asset_type' => 'metric',
+            'source_asset_id' => $metricId,
+            'target_asset_type' => 'dataset_field',
+            'target_asset_id' => $fixture['amount_field']->id,
+            'relation_type' => 'depends_on',
+        ]);
+
+        $chartId = $this->postJson('/api/charts', [
+            'name' => 'Tax Chart',
+            'dataset_id' => $fixture['dataset']->id,
+            'chart_type' => 'bar',
+            'config_json' => [
+                'semantic_dimensions' => [
+                    ['dimension_code' => 'province'],
+                ],
+                'semantic_metrics' => [
+                    ['metric_code' => 'tax_amount'],
+                ],
+            ],
+        ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->assertDatabaseHas('metadata_assets', [
+            'asset_type' => 'chart',
+            'asset_id' => $chartId,
+            'name' => 'Tax Chart',
+        ]);
+        $this->assertDatabaseHas('metadata_lineage_relations', [
+            'source_asset_type' => 'chart',
+            'source_asset_id' => $chartId,
+            'target_asset_type' => 'metric',
+            'target_asset_id' => $metricId,
+            'relation_type' => 'uses',
+        ]);
+
+        $dashboardId = $this->postJson('/api/dashboards', [
+            'name' => 'Tax Dashboard',
+            'status' => 'active',
+        ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->postJson("/api/dashboards/{$dashboardId}/widgets", [
+            'chart_id' => $chartId,
+            'widget_type' => 'chart',
+            'x' => 0,
+            'y' => 0,
+            'w' => 6,
+            'h' => 4,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('metadata_assets', [
+            'asset_type' => 'dashboard',
+            'asset_id' => $dashboardId,
+            'name' => 'Tax Dashboard',
+        ]);
+        $this->assertDatabaseHas('metadata_lineage_relations', [
+            'source_asset_type' => 'dashboard',
+            'source_asset_id' => $dashboardId,
+            'target_asset_type' => 'chart',
+            'target_asset_id' => $chartId,
+            'relation_type' => 'contains',
+        ]);
+    }
+
+    public function test_dimension_delete_endpoint_works_and_archives_metadata_asset(): void
+    {
+        $admin = $this->adminUser();
+        Sanctum::actingAs($admin);
+        $fixture = $this->createFixture($admin);
+        $this->artisan('bi:metadata:sync --all')->assertExitCode(0);
+
+        $this->deleteJson("/api/dimensions/{$fixture['dimension']->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('dimensions', ['id' => $fixture['dimension']->id]);
+        $this->assertDatabaseHas('metadata_assets', [
+            'asset_type' => 'dimension',
+            'asset_id' => $fixture['dimension']->id,
+            'status' => 'archived',
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */

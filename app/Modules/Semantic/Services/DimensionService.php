@@ -5,6 +5,8 @@ namespace App\Modules\Semantic\Services;
 use App\Models\User;
 use App\Modules\Dataset\Models\Dataset;
 use App\Modules\DataSource\Services\IdentifierGuard;
+use App\Modules\Metadata\Services\MetadataChangeGuardService;
+use App\Modules\Metadata\Services\MetadataLifecycleService;
 use App\Modules\Semantic\Models\Dimension;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +14,11 @@ use Illuminate\Validation\ValidationException;
 
 class DimensionService
 {
-    public function __construct(private readonly SemanticLayerAuthorizer $authorizer) {}
+    public function __construct(
+        private readonly SemanticLayerAuthorizer $authorizer,
+        private readonly MetadataLifecycleService $metadataLifecycleService,
+        private readonly MetadataChangeGuardService $metadataChangeGuardService,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $filters
@@ -65,11 +71,15 @@ class DimensionService
         $this->authorizer->assertCanManageDataset(Dataset::query()->findOrFail($payload['dataset_id']), $actor);
         $this->validateDefinition($payload);
 
-        return Dimension::query()->create([
+        $dimension = Dimension::query()->create([
             ...$payload,
             'status' => $payload['status'] ?? 'active',
             'created_by' => $actor?->id,
         ])->load('dataset');
+
+        $this->metadataLifecycleService->sync('dimension', (int) $dimension->id);
+
+        return $dimension;
     }
 
     /**
@@ -96,15 +106,19 @@ class DimensionService
         $this->validateDefinition($payload, $dimension);
         $dimension->fill($payload);
         $dimension->save();
+        $this->metadataLifecycleService->sync('dimension', (int) $dimension->id);
 
         return $dimension->refresh()->load('dataset');
     }
 
-    public function delete(Dimension $dimension, ?User $actor): void
+    public function delete(Dimension $dimension, ?User $actor, bool $force = false): void
     {
         $dimension->loadMissing('dataset');
         $this->authorizer->assertCanManageDataset($dimension->dataset, $actor);
+        $assetId = (int) $dimension->id;
+        $this->metadataChangeGuardService->guardDelete('dimension', $assetId, $actor, $force);
         $dimension->delete();
+        $this->metadataLifecycleService->archive('dimension', $assetId);
     }
 
     /**

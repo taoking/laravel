@@ -57,7 +57,7 @@ class MetricController extends Controller
 
     public function destroy(Metric $metric, MetricService $service, Request $request): JsonResponse
     {
-        $service->delete($metric, $request->user());
+        $service->delete($metric, $request->user(), $request->boolean('force'));
 
         return ApiResponse::noContent();
     }

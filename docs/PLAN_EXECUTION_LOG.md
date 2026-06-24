@@ -1,6 +1,6 @@
 # Plan Execution Log
 
-记录 `plan.md` 从 Phase 1 到 Phase 13 的执行过程、核心产物与验收结果。
+记录 `plan.md` 从 Phase 1 到 Phase 14 的执行过程、核心产物与验收结果。
 
 执行日期：2026-06-18  
 项目目录：`/Users/tao/workspace/code/laravel/laravel`  
@@ -673,12 +673,106 @@ php artisan list bi:metadata --format=json
 - 不接 Neo4j 或图数据库，图谱第一版返回节点和边结构，由前端表格展示。
 - 不做完整 SQL AST 字段级解析，自定义 SQL 数据集第一版降级到数据源级依赖。
 - 不做跨系统 ETL、调度、Kafka、Flink 作业血缘。
-- 不做复杂审批流；删除前风险检查当前通过可复用影响分析 API 提供，尚未强制接入所有业务删除接口。
 - 不做完整敏感字段识别模型，当前只提供敏感标签权限限制和文档边界。
+
+## Phase 14 治理闭环 / 删除前风险拦截 / 元数据自动同步
+
+目标：基于 Phase 12 的元数据目录、血缘和影响分析，把治理能力接入真实业务变更流程，避免高风险删除只停留在“可查询、未拦截”的状态。
+
+主要产物：
+
+- 新增 `MetadataChangeGuardService`：删除前同步资产、调用影响分析、阻断 high / critical 风险删除，并支持 `force=true` 二次确认。
+- 新增 `MetadataLifecycleService`：统一提供业务对象变更后的单资产同步和删除后的资产归档。
+- 扩展 `MetadataSyncService::syncAssetMetadata()`：支持单资产同步，避免业务服务只能触发全量同步。
+- 接入删除保护：`DataSourceService`、`DatasetService`、`MetricService`、`DimensionService`、`ChartService`、`DashboardService`。
+- 接入自动同步：data source、dataset、metric、dimension、chart、dashboard create/update 后自动刷新元数据和血缘；dataset field update、dataset sync fields、dashboard widget add/update/delete 后刷新相关血缘。
+- 修复现有 bug：`DimensionController::destroy()` 缺少 `Request` 参数导致维度删除接口不可用。
+- 文档：更新 `docs/bi-metadata-lineage.md`，说明删除保护、`force=true` 和自动同步范围。
+
+修改文件列表：
+
+```text
+prompt9.md
+app/Modules/Metadata/Services/MetadataChangeGuardService.php
+app/Modules/Metadata/Services/MetadataLifecycleService.php
+app/Modules/Metadata/Services/MetadataSyncService.php
+app/Modules/DataSource/Controllers/DataSourceController.php
+app/Modules/DataSource/Services/DataSourceService.php
+app/Modules/Dataset/Controllers/DatasetController.php
+app/Modules/Dataset/Services/DatasetService.php
+app/Modules/Chart/Controllers/ChartController.php
+app/Modules/Chart/Services/ChartService.php
+app/Modules/Dashboard/Controllers/DashboardController.php
+app/Modules/Dashboard/Services/DashboardService.php
+app/Modules/Semantic/Controllers/DimensionController.php
+app/Modules/Semantic/Controllers/MetricController.php
+app/Modules/Semantic/Services/DimensionService.php
+app/Modules/Semantic/Services/MetricService.php
+tests/Feature/MetadataCatalogTest.php
+docs/bi-metadata-lineage.md
+docs/PLAN_EXECUTION_LOG.md
+```
+
+变更 API 行为：
+
+```text
+DELETE /api/data-sources/{data_source}
+DELETE /api/datasets/{dataset}
+DELETE /api/semantic-metrics/{metric}
+DELETE /api/dimensions/{dimension}
+DELETE /api/charts/{chart}
+DELETE /api/dashboards/{dashboard}
+```
+
+- high / critical 风险默认返回 `422`。
+- `?force=1` 或 JSON body `{ "force": true }` 表示确认风险并继续删除。
+- `force=true` 不绕过认证、权限、路由模型绑定或已有业务校验。
+- 删除成功后对应 `metadata_assets.status` 标记为 `archived`。
+
+删除风险拦截规则：
+
+```text
+low / medium: 允许删除
+high / critical: 阻断删除，必须 force=true
+```
+
+自动同步范围：
+
+- data source create/update。
+- dataset create/update/sync fields/update field。
+- metric create/update/status transition。
+- dimension create/update。
+- chart create/update。
+- dashboard create/update。
+- dashboard widget add/update/delete。
+
+测试结果：
+
+- 新增/扩展 Feature 测试 `tests/Feature/MetadataCatalogTest.php`，覆盖 high / critical 删除阻断、`force=true` 删除确认、删除后 metadata asset 归档、metric/chart/dashboard widget 自动同步、dashboard -> chart 血缘自动重建，以及维度删除接口修复。
+- 已执行 `php artisan test`：81 tests，720 assertions，全部通过。
+- 已执行 `vendor/bin/pint --test`：通过。
+- 已执行 `npm run build`：通过，保留 Vite 单 chunk 体积提示。
+- 已执行 `php artisan route:list --path=api`：187 routes。
+
+运行过的命令：
+
+```text
+php artisan test tests/Feature/MetadataCatalogTest.php
+php artisan test
+vendor/bin/pint --test
+npm run build
+php artisan route:list --path=api
+```
+
+当前边界：
+
+- 不实现完整审批流，只做同步阻断和 force 确认。
+- 不实现变更通知、订阅、工单或发布流。
+- 不做 SQL AST 字段级血缘。
+- 不改变现有查询、缓存、加速和权限主链路。
 
 下一阶段建议：
 
-- 将影响分析接入 data source、dataset、dataset field、metric、dimension、chart、dashboard 删除入口，支持 `force=true` 二次确认。
 - 为 SQL 数据集接入 SQL Parser，增强字段级血缘。
 - 元数据搜索接 Elasticsearch 或 Meilisearch。
 - 核心指标和高风险资产变更接审批、订阅通知和版本发布。

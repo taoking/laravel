@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Modules\Cache\Services\ChartCacheService;
 use App\Modules\Chart\Models\Chart;
 use App\Modules\Dataset\Models\Dataset;
+use App\Modules\Metadata\Services\MetadataChangeGuardService;
+use App\Modules\Metadata\Services\MetadataLifecycleService;
 use App\Modules\Semantic\Services\MetricUsageService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,8 @@ class ChartService
         private readonly ChartConfigValidator $configValidator,
         private readonly ChartCacheService $chartCacheService,
         private readonly MetricUsageService $metricUsageService,
+        private readonly MetadataLifecycleService $metadataLifecycleService,
+        private readonly MetadataChangeGuardService $metadataChangeGuardService,
     ) {}
 
     public function paginate(int $pageSize): LengthAwarePaginator
@@ -34,7 +38,7 @@ class ChartService
         $dataset = Dataset::query()->with('fields')->findOrFail($payload['dataset_id']);
         $this->configValidator->validate($dataset, $payload['chart_type'], $payload['config_json']);
 
-        return DB::transaction(function () use ($payload, $actor, $dataset): Chart {
+        $chart = DB::transaction(function () use ($payload, $actor, $dataset): Chart {
             $chart = Chart::query()->create([
                 'tenant_id' => $payload['tenant_id'] ?? null,
                 'name' => $payload['name'],
@@ -51,6 +55,10 @@ class ChartService
 
             return $chart->load('dataset');
         });
+
+        $this->metadataLifecycleService->sync('chart', (int) $chart->id);
+
+        return $chart;
     }
 
     /**
@@ -80,14 +88,18 @@ class ChartService
         });
 
         $this->chartCacheService->forget($updatedChart);
+        $this->metadataLifecycleService->sync('chart', (int) $updatedChart->id);
 
         return $updatedChart;
     }
 
-    public function delete(Chart $chart): void
+    public function delete(Chart $chart, ?User $actor = null, bool $force = false): void
     {
+        $assetId = (int) $chart->id;
+        $this->metadataChangeGuardService->guardDelete('chart', $assetId, $actor, $force);
         $this->chartCacheService->forget($chart);
         $this->metricUsageService->forgetChart($chart);
         $chart->delete();
+        $this->metadataLifecycleService->archive('chart', $assetId);
     }
 }
