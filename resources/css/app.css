@@ -341,6 +341,50 @@ label span {
     grid-column: 1 / -1;
 }
 
+.full-span {
+    grid-column: 1 / -1;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.metric-grid > div {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-muted);
+    padding: 14px;
+}
+
+.metric-grid strong {
+    display: block;
+    font-size: 24px;
+}
+
+.metric-grid span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.plain-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.color-swatch {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
 .filter-bar,
 .inline-form {
     display: flex;

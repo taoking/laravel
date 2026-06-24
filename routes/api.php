@@ -23,6 +23,13 @@ use App\Modules\DataSource\Controllers\DataSourceController;
 use App\Modules\DataSource\Controllers\OlapMaterializedViewController;
 use App\Modules\Export\Controllers\ExportTaskController;
 use App\Modules\Import\Controllers\ImportTaskController;
+use App\Modules\Metadata\Controllers\MetadataAssetController;
+use App\Modules\Metadata\Controllers\MetadataImpactController;
+use App\Modules\Metadata\Controllers\MetadataLineageController;
+use App\Modules\Metadata\Controllers\MetadataSearchController;
+use App\Modules\Metadata\Controllers\MetadataSyncController;
+use App\Modules\Metadata\Controllers\MetadataTagController;
+use App\Modules\Metadata\Controllers\MetadataUsageStatController;
 use App\Modules\Monitor\Controllers\HealthController;
 use App\Modules\Monitor\Controllers\MetricsController;
 use App\Modules\Permission\Controllers\PermissionController;
@@ -159,6 +166,25 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('login-logs', [LoginLogController::class, 'index']);
     Route::get('export-logs', [ExportLogController::class, 'index']);
     Route::get('query-logs', [QueryLogController::class, 'index']);
+
+    Route::prefix('metadata')->group(function (): void {
+        Route::get('assets', [MetadataAssetController::class, 'index']);
+        Route::get('assets/{assetType}/{assetId}', [MetadataAssetController::class, 'show']);
+        Route::put('assets/{assetType}/{assetId}', [MetadataAssetController::class, 'update']);
+        Route::post('assets/{assetType}/{assetId}/archive', [MetadataAssetController::class, 'archive']);
+        Route::post('assets/{assetType}/{assetId}/tags', [MetadataAssetController::class, 'attachTag']);
+        Route::delete('assets/{assetType}/{assetId}/tags/{tag}', [MetadataAssetController::class, 'detachTag']);
+        Route::get('assets/{assetType}/{assetId}/usage-stats', [MetadataAssetController::class, 'usageStats']);
+        Route::get('search', MetadataSearchController::class);
+        Route::get('lineage/{assetType}/{assetId}/upstream', [MetadataLineageController::class, 'upstream']);
+        Route::get('lineage/{assetType}/{assetId}/downstream', [MetadataLineageController::class, 'downstream']);
+        Route::get('lineage/{assetType}/{assetId}/graph', [MetadataLineageController::class, 'graph']);
+        Route::post('lineage/{assetType}/{assetId}/sync', [MetadataLineageController::class, 'sync']);
+        Route::post('impact/analyze', [MetadataImpactController::class, 'analyze']);
+        Route::get('usage-stats', [MetadataUsageStatController::class, 'index']);
+        Route::post('sync', MetadataSyncController::class);
+        Route::apiResource('tags', MetadataTagController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
 
     Route::apiResource('users', UserController::class);
     Route::apiResource('roles', RoleController::class);

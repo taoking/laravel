@@ -4,6 +4,7 @@ import AppShell from '../layouts/AppShell.vue';
 import ChartsView from '../pages/ChartsView.vue';
 import DashboardOverviewView from '../pages/DashboardOverviewView.vue';
 import DashboardsView from '../pages/DashboardsView.vue';
+import DataGovernanceView from '../pages/DataGovernanceView.vue';
 import DataSourcesView from '../pages/DataSourcesView.vue';
 import DatasetsView from '../pages/DatasetsView.vue';
 import ExportTasksView from '../pages/ExportTasksView.vue';
@@ -33,6 +34,7 @@ const router = createRouter({
                 { path: 'data-sources', name: 'data-sources', component: DataSourcesView },
                 { path: 'datasets', name: 'datasets', component: DatasetsView },
                 { path: 'semantic-layer', name: 'semantic-layer', component: SemanticLayerView },
+                { path: 'data-governance', name: 'data-governance', component: DataGovernanceView },
                 { path: 'charts', name: 'charts', component: ChartsView },
                 { path: 'dashboards', name: 'dashboards', component: DashboardsView },
                 { path: 'imports', name: 'imports', component: ImportTasksView },

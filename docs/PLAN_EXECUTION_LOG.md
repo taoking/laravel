@@ -500,3 +500,186 @@ GET    /api/datasets/{dataset}/semantic-layer
 - 不支持跨数据集指标公式。
 - 复合指标第一版在 PHP 结果层计算，不下推数据库表达式。
 - 复合指标排序暂不作为第一版能力。
+
+## Phase 12 元数据目录 / 数据血缘 / 影响分析增强
+
+目标：在已有数据源、数据集、语义层、图表、仪表盘、查询日志和查询加速能力之上，补齐最小可用的数据治理能力，支持统一元数据目录、内部血缘关系、影响分析、资产标签和使用统计。
+
+主要产物：
+
+- 数据表：新增 `metadata_assets`、`metadata_lineage_relations`、`metadata_tags`、`metadata_asset_tags`、`metadata_usage_stats`、`impact_analysis_logs`。
+- 模型：`MetadataAsset`、`MetadataLineageRelation`、`MetadataTag`、`MetadataAssetTag`、`MetadataUsageStat`、`ImpactAnalysisLog`。
+- 服务：`MetadataAssetService`、`MetadataLineageService`、`MetadataSyncService`、`MetadataSearchService`、`MetadataImpactAnalysisService`、`MetadataUsageStatService`、`MetadataTagService`、`MetadataGraphService`、`MetadataAuthorizer`。
+- 资产目录：支持 data source、physical table、physical column、dataset、dataset field、dimension、metric、chart、dashboard、acceleration profile、aggregate definition、materialized view。
+- 血缘规则：支持 data source -> table -> column，dataset -> physical table / dataset field，dataset field -> physical column，dimension / metric -> dataset field，compound metric -> base metric，chart -> dataset / metric / dimension / dataset field，dashboard -> chart / dataset / metric，加速配置和预聚合定义 -> dataset / field。
+- 影响分析：基于下游血缘聚合受影响数据集、字段、维度、指标、图表、仪表盘和加速配置，并按公开分享仪表盘、核心指标和影响对象数量计算风险等级。
+- 标签体系：支持标签 CRUD、资产打标签和移除标签；敏感标签只允许管理员维护。
+- 使用统计：基于 `query_logs` 聚合 dataset、metric、chart、dashboard、acceleration profile、aggregate definition 的 query count、慢查询、平均耗时和最近使用时间，识别低频资产和高频慢查询资产。
+- 权限与安全：资产可见性复用数据集资源权限；影响分析过滤无权限资产；asset type 和 relation type 白名单；图谱深度最大 5；分页最大 100；数据源资产不输出 host、username、password、token、secret 或完整连接字符串。
+- 前端：新增 `DataGovernanceView.vue` 页面和“数据治理”导航，包含元数据目录、血缘、影响分析、资产标签和使用统计。
+- 文档：新增 `docs/bi-metadata-lineage.md`，README 和功能页面文档已更新。
+
+修改文件列表：
+
+```text
+README.md
+docs/FEATURE_PAGES.md
+docs/PLAN_EXECUTION_LOG.md
+docs/bi-metadata-lineage.md
+database/migrations/2026_06_17_154600_create_metadata_catalog_tables.php
+app/Modules/Metadata/Controllers/MetadataAssetController.php
+app/Modules/Metadata/Controllers/MetadataImpactController.php
+app/Modules/Metadata/Controllers/MetadataLineageController.php
+app/Modules/Metadata/Controllers/MetadataSearchController.php
+app/Modules/Metadata/Controllers/MetadataSyncController.php
+app/Modules/Metadata/Controllers/MetadataTagController.php
+app/Modules/Metadata/Controllers/MetadataUsageStatController.php
+app/Modules/Metadata/Models/ImpactAnalysisLog.php
+app/Modules/Metadata/Models/MetadataAsset.php
+app/Modules/Metadata/Models/MetadataAssetTag.php
+app/Modules/Metadata/Models/MetadataLineageRelation.php
+app/Modules/Metadata/Models/MetadataTag.php
+app/Modules/Metadata/Models/MetadataUsageStat.php
+app/Modules/Metadata/Resources/MetadataAssetResource.php
+app/Modules/Metadata/Resources/MetadataTagResource.php
+app/Modules/Metadata/Resources/MetadataUsageStatResource.php
+app/Modules/Metadata/Services/MetadataAssetService.php
+app/Modules/Metadata/Services/MetadataAuthorizer.php
+app/Modules/Metadata/Services/MetadataGraphService.php
+app/Modules/Metadata/Services/MetadataImpactAnalysisService.php
+app/Modules/Metadata/Services/MetadataLineageService.php
+app/Modules/Metadata/Services/MetadataSearchService.php
+app/Modules/Metadata/Services/MetadataSyncService.php
+app/Modules/Metadata/Services/MetadataTagService.php
+app/Modules/Metadata/Services/MetadataUsageStatService.php
+resources/css/app.css
+resources/js/navigation.js
+resources/js/router/index.js
+resources/js/services/api.js
+resources/js/pages/DataGovernanceView.vue
+routes/api.php
+routes/console.php
+tests/Feature/MetadataCatalogTest.php
+```
+
+新增 migration：
+
+```text
+database/migrations/2026_06_17_154600_create_metadata_catalog_tables.php
+```
+
+新增 Model：
+
+```text
+ImpactAnalysisLog
+MetadataAsset
+MetadataAssetTag
+MetadataLineageRelation
+MetadataTag
+MetadataUsageStat
+```
+
+新增 Service：
+
+```text
+MetadataAssetService
+MetadataAuthorizer
+MetadataGraphService
+MetadataImpactAnalysisService
+MetadataLineageService
+MetadataSearchService
+MetadataSyncService
+MetadataTagService
+MetadataUsageStatService
+```
+
+新增 API：
+
+```text
+GET    /api/metadata/assets
+GET    /api/metadata/assets/{assetType}/{assetId}
+PUT    /api/metadata/assets/{assetType}/{assetId}
+POST   /api/metadata/assets/{assetType}/{assetId}/archive
+GET    /api/metadata/search
+GET    /api/metadata/lineage/{assetType}/{assetId}/upstream
+GET    /api/metadata/lineage/{assetType}/{assetId}/downstream
+GET    /api/metadata/lineage/{assetType}/{assetId}/graph
+POST   /api/metadata/lineage/{assetType}/{assetId}/sync
+POST   /api/metadata/impact/analyze
+GET    /api/metadata/tags
+POST   /api/metadata/tags
+PUT    /api/metadata/tags/{tag}
+DELETE /api/metadata/tags/{tag}
+POST   /api/metadata/assets/{assetType}/{assetId}/tags
+DELETE /api/metadata/assets/{assetType}/{assetId}/tags/{tag}
+GET    /api/metadata/usage-stats
+GET    /api/metadata/assets/{assetType}/{assetId}/usage-stats
+POST   /api/metadata/sync
+```
+
+新增 Artisan Command：
+
+```text
+php artisan bi:metadata:sync
+php artisan bi:metadata:lineage:rebuild
+php artisan bi:metadata:usage-stats
+```
+
+新增前端页面：
+
+```text
+resources/js/pages/DataGovernanceView.vue
+```
+
+新增文档：
+
+```text
+docs/bi-metadata-lineage.md
+```
+
+运行过的命令：
+
+```text
+php -l tests/Feature/MetadataCatalogTest.php
+php artisan test tests/Feature/MetadataCatalogTest.php
+php artisan route:list --path=api
+php artisan migrate --pretend --database=sqlite
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_metadata_phase12.sqlite php artisan migrate --force
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_metadata_phase12.sqlite php artisan bi:metadata:sync --all --dry-run
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_metadata_phase12.sqlite php artisan bi:metadata:lineage:rebuild --all --dry-run
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_metadata_phase12.sqlite php artisan bi:metadata:usage-stats --dry-run
+DB_CONNECTION=sqlite DB_DATABASE=/tmp/laravel_metadata_phase12.sqlite php artisan migrate:rollback --step=1 --force
+php artisan test
+vendor/bin/pint
+vendor/bin/pint --test
+npm run build
+php artisan list bi:metadata --format=json
+```
+
+验收：
+
+- 新增 Feature 测试 `tests/Feature/MetadataCatalogTest.php`，覆盖资产同步、字段/指标/图表/仪表盘血缘、上游/下游/图谱 API、影响分析高风险识别、标签绑定/移除、搜索、使用统计、低频资产/高频慢查询识别、权限过滤和敏感连接信息不泄露。
+- 已执行 `php artisan test`：78 tests，699 assertions，全部通过。
+- 已执行 `vendor/bin/pint --test`：通过。
+- 已执行 `npm run build`：通过，保留 Vite 单 chunk 体积提示。
+- 已执行 `php artisan route:list --path=api`：187 routes。
+- 已执行 `php artisan migrate --pretend --database=sqlite`：通过。
+- 已在临时 sqlite 数据库执行 `php artisan migrate --force`：通过。
+- 已在临时 sqlite 数据库执行 `php artisan bi:metadata:sync --all --dry-run`、`php artisan bi:metadata:lineage:rebuild --all --dry-run`、`php artisan bi:metadata:usage-stats --dry-run`：通过。
+- 新增元数据迁移已在临时 sqlite 数据库通过 `php artisan migrate:rollback --step=1 --force` 验证回滚。
+
+当前边界：
+
+- 不接 Neo4j 或图数据库，图谱第一版返回节点和边结构，由前端表格展示。
+- 不做完整 SQL AST 字段级解析，自定义 SQL 数据集第一版降级到数据源级依赖。
+- 不做跨系统 ETL、调度、Kafka、Flink 作业血缘。
+- 不做复杂审批流；删除前风险检查当前通过可复用影响分析 API 提供，尚未强制接入所有业务删除接口。
+- 不做完整敏感字段识别模型，当前只提供敏感标签权限限制和文档边界。
+
+下一阶段建议：
+
+- 将影响分析接入 data source、dataset、dataset field、metric、dimension、chart、dashboard 删除入口，支持 `force=true` 二次确认。
+- 为 SQL 数据集接入 SQL Parser，增强字段级血缘。
+- 元数据搜索接 Elasticsearch 或 Meilisearch。
+- 核心指标和高风险资产变更接审批、订阅通知和版本发布。
+- 大型图谱接图数据库或专用 DAG 可视化组件。

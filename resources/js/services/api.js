@@ -73,6 +73,31 @@ export const semanticApi = {
     semanticLayer: (datasetId) => http.get(`/datasets/${datasetId}/semantic-layer`),
 };
 
+export const metadataApi = {
+    assets: {
+        list: (params) => list('/metadata/assets', params),
+        show: (assetType, assetId) => http.get(`/metadata/assets/${assetType}/${assetId}`),
+        update: (assetType, assetId, payload) => http.put(`/metadata/assets/${assetType}/${assetId}`, payload),
+        archive: (assetType, assetId) => http.post(`/metadata/assets/${assetType}/${assetId}/archive`),
+        attachTag: (assetType, assetId, payload) => http.post(`/metadata/assets/${assetType}/${assetId}/tags`, payload),
+        detachTag: (assetType, assetId, tag) => http.delete(`/metadata/assets/${assetType}/${assetId}/tags/${encodeURIComponent(tag)}`),
+        usageStats: (assetType, assetId, params = {}) => http.get(`/metadata/assets/${assetType}/${assetId}/usage-stats`, { params }),
+    },
+    search: (params) => list('/metadata/search', params),
+    lineage: {
+        upstream: (assetType, assetId, params = {}) => http.get(`/metadata/lineage/${assetType}/${assetId}/upstream`, { params }),
+        downstream: (assetType, assetId, params = {}) => http.get(`/metadata/lineage/${assetType}/${assetId}/downstream`, { params }),
+        graph: (assetType, assetId, params = {}) => http.get(`/metadata/lineage/${assetType}/${assetId}/graph`, { params }),
+        sync: (assetType, assetId) => http.post(`/metadata/lineage/${assetType}/${assetId}/sync`),
+    },
+    impact: {
+        analyze: (payload) => http.post('/metadata/impact/analyze', payload),
+    },
+    tags: resource('/metadata/tags'),
+    usageStats: (params = {}) => list('/metadata/usage-stats', params),
+    sync: (payload = {}) => http.post('/metadata/sync', payload),
+};
+
 export const dashboardApi = {
     ...resource('/dashboards'),
     createWidget: (dashboardId, payload) => http.post(`/dashboards/${dashboardId}/widgets`, payload),

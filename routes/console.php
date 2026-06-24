@@ -3,6 +3,8 @@
 use App\Modules\Acceleration\Services\AccelerationBenefitReportService;
 use App\Modules\Acceleration\Services\AccelerationRecommendationService;
 use App\Modules\Acceleration\Services\AccelerationRefreshRunner;
+use App\Modules\Metadata\Services\MetadataSyncService;
+use App\Modules\Metadata\Services\MetadataUsageStatService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -63,6 +65,91 @@ Artisan::command('bi:acceleration:benefit-report {--date=} {--days=1}', function
 
     return 0;
 })->purpose('Generate acceleration benefit report snapshots');
+
+Artisan::command('bi:metadata:sync {--all} {--data-source=} {--dataset=} {--metrics} {--charts} {--dashboards} {--dry-run}', function () {
+    $scope = 'all';
+
+    if ($this->option('metrics')) {
+        $scope = 'metrics';
+    } elseif ($this->option('charts')) {
+        $scope = 'charts';
+    } elseif ($this->option('dashboards')) {
+        $scope = 'dashboards';
+    } elseif ($this->option('data-source') !== null) {
+        $scope = 'data_source';
+    } elseif ($this->option('dataset') !== null) {
+        $scope = 'dataset';
+    }
+
+    $result = app(MetadataSyncService::class)->sync([
+        'scope' => $scope,
+        'data_source_id' => $this->option('data-source'),
+        'dataset_id' => $this->option('dataset'),
+        'dry_run' => (bool) $this->option('dry-run'),
+    ]);
+
+    $this->info('Metadata sync complete.');
+    $this->line('Scope: '.$result['scope']);
+    $this->line('Assets synced: '.$result['assets_synced']);
+    $this->line('Relations synced: '.$result['relations_synced']);
+    $this->line('Dry run: '.($result['dry_run'] ? 'yes' : 'no'));
+
+    foreach ($result['counts'] as $name => $count) {
+        $this->line($name.': '.$count);
+    }
+
+    return 0;
+})->purpose('Sync BI objects into metadata assets');
+
+Artisan::command('bi:metadata:lineage:rebuild {--all} {--data-source=} {--dataset=} {--metric=} {--chart=} {--dashboard=} {--dry-run}', function () {
+    $scope = 'all';
+
+    foreach (['data-source' => 'data_source', 'dataset' => 'dataset', 'metric' => 'metric', 'chart' => 'chart', 'dashboard' => 'dashboard'] as $option => $candidate) {
+        if ($this->option($option) !== null) {
+            $scope = $candidate;
+            break;
+        }
+    }
+
+    $result = app(MetadataSyncService::class)->rebuildLineage([
+        'scope' => $scope,
+        'data_source_id' => $this->option('data-source'),
+        'dataset_id' => $this->option('dataset'),
+        'metric_id' => $this->option('metric'),
+        'chart_id' => $this->option('chart'),
+        'dashboard_id' => $this->option('dashboard'),
+        'dry_run' => (bool) $this->option('dry-run'),
+    ]);
+
+    $this->info('Metadata lineage rebuild complete.');
+    $this->line('Scope: '.$result['scope']);
+    $this->line('Assets scanned: '.$result['assets_scanned']);
+    $this->line('Relations synced: '.$result['relations_synced']);
+    $this->line('Dry run: '.($result['dry_run'] ? 'yes' : 'no'));
+
+    foreach ($result['counts'] as $name => $count) {
+        $this->line($name.': '.$count);
+    }
+
+    return 0;
+})->purpose('Rebuild metadata lineage relations');
+
+Artisan::command('bi:metadata:usage-stats {--date=} {--days=1} {--dry-run}', function () {
+    $result = app(MetadataUsageStatService::class)->generate(
+        date: $this->option('date') ?: null,
+        days: (int) $this->option('days'),
+        dryRun: (bool) $this->option('dry-run'),
+    );
+
+    $this->info('Metadata usage stats generated.');
+    $this->line('Date: '.$result['date']);
+    $this->line('Days: '.$result['days']);
+    $this->line('Query logs: '.$result['query_log_count']);
+    $this->line('Stats: '.$result['stat_count']);
+    $this->line('Dry run: '.($result['dry_run'] ? 'yes' : 'no'));
+
+    return 0;
+})->purpose('Generate metadata usage statistics from query logs');
 
 $refreshInterval = (int) config('bi_acceleration.refresh.scheduler_interval_minutes', 5);
 $refreshSchedule = Schedule::command('bi:acceleration:refresh-due')->withoutOverlapping();

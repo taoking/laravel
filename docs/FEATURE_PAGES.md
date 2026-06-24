@@ -11,6 +11,7 @@
 数据源
 数据集
 语义层
+数据治理
 图表配置
 仪表盘
 导入任务
@@ -318,6 +319,47 @@
 - 复合指标公式使用指标编码引用其他 active 指标。
 - 图表页面可选择语义维度和语义指标，保存后会记录指标使用关系。
 - 查询日志页面可筛选语义层查询。
+
+## 数据治理页面
+
+页面目标：统一查看元数据目录、数据血缘、影响分析、资产标签和使用统计。
+
+主要区域：
+
+- 元数据目录：资产列表，支持资产类型、状态、标签和关键字筛选。
+- 数据血缘：选择资产后查看上游、下游和图谱结构。
+- 影响分析：选择资产和变更类型，查看风险等级、受影响指标、图表、仪表盘和建议。
+- 资产标签：维护标签，并给资产绑定标签。
+- 使用统计：查看低频资产、高频慢查询资产和统计明细。
+
+可用接口：
+
+- `GET /api/metadata/assets`
+- `GET /api/metadata/assets/{assetType}/{assetId}`
+- `PUT /api/metadata/assets/{assetType}/{assetId}`
+- `POST /api/metadata/assets/{assetType}/{assetId}/archive`
+- `GET /api/metadata/search`
+- `GET /api/metadata/lineage/{assetType}/{assetId}/upstream`
+- `GET /api/metadata/lineage/{assetType}/{assetId}/downstream`
+- `GET /api/metadata/lineage/{assetType}/{assetId}/graph`
+- `POST /api/metadata/lineage/{assetType}/{assetId}/sync`
+- `POST /api/metadata/impact/analyze`
+- `GET /api/metadata/tags`
+- `POST /api/metadata/tags`
+- `PUT /api/metadata/tags/{tag}`
+- `DELETE /api/metadata/tags/{tag}`
+- `POST /api/metadata/assets/{assetType}/{assetId}/tags`
+- `DELETE /api/metadata/assets/{assetType}/{assetId}/tags/{tag}`
+- `GET /api/metadata/usage-stats`
+- `GET /api/metadata/assets/{assetType}/{assetId}/usage-stats`
+- `POST /api/metadata/sync`
+
+交互说明：
+
+- 图谱第一版使用节点表和边表展示，不引入复杂可视化图编辑器。
+- 影响分析会过滤当前用户无权限查看的资产。
+- 标签和同步入口需要管理员或数据治理管理权限。
+- 删除前强制拦截未接入所有业务删除接口，当前通过影响分析 API 提供可复用检查。
 
 ## 图表管理页
 
@@ -710,6 +752,7 @@ monitor.view
 - `DataSourcesView.vue`：数据源管理。
 - `DatasetsView.vue`：数据集管理。
 - `SemanticLayerView.vue`：语义层、指标库、维度和影响分析。
+- `DataGovernanceView.vue`：元数据目录、血缘、影响分析、标签和使用统计。
 - `ChartsView.vue`：图表配置与预览。
 - `DashboardsView.vue`：仪表盘和组件管理。
 - `ImportTasksView.vue`：导入任务。
